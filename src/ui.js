@@ -30,7 +30,7 @@ function offerLabel(offer) {
     case 'buyEnchantedTile': return `${offer.letter} ×${offer.modId} — ${offer.cost}c`;
     case 'enchantTile':      return `Enchant a tile (${offer.modId}) — ${offer.cost}c`;
     case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} — ${offer.cost}c`;
-    case 'thinLetter':       return `Thin a ${offer.letter} — ${offer.cost}c`;
+    case 'thinLetter':       return `Thin a tile — ${offer.cost}c`;
     case 'buyRelic':         return `Relic: ${offer.relicId} — ${offer.cost}c`;
     default:                 return `${offer.type} — ${offer.cost}c`;
   }

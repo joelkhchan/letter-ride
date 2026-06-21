@@ -14,7 +14,7 @@ export function generateShop(run, rng, pool = {}) {
     candidates.push({ type: 'buyEnchantedTile', letter, modId, cost: cfg.cost.buyEnchantedTile });
   for (const modId of modIds) candidates.push({ type: 'enchantTile', modId, cost: cfg.cost.enchantTile });
   for (const letter of cfg.buyableLetters) candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: cfg.cost.upgradeLetter });
-  for (const letter of cfg.buyableLetters) candidates.push({ type: 'thinLetter', letter, cost: cfg.cost.thinLetter });
+  candidates.push({ type: 'thinLetter', cost: cfg.cost.thinLetter });
   for (const relicId of relicIds) candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic });
 
   const offers = shuffle(candidates, rng).slice(0, Math.min(cfg.offersPerShop, candidates.length));
