@@ -73,3 +73,21 @@ test('an economy relic with coinsOnRoundClear adds to the award', () => {
   const res = playWord(run, seatCat(run));        // playsLeft after play = 1 -> +2 coins
   assert.equal(res.run.coins, 6 + 2);             // base award 6 + relic 2*1 = 8
 });
+
+test('newRun applies a stake (plays delta) and loadout (extra discards, start coins, start relic)', () => {
+  resetTileIds();
+  const relic = { id: 'startTest', evaluate: () => ({}) };
+  const run = newRun({
+    config, dictionary: dict, seed: 1,
+    stake: { playsDelta: -1, discardsDelta: 0 },
+    loadout: { extraDiscards: 1, startCoins: 5, startRelics: [relic] },
+  });
+  assert.equal(run.playsLeft, config.PLAYS_PER_ROUND - 1);
+  assert.equal(run.discardsLeft, config.DISCARDS_PER_ROUND + 1);
+  assert.equal(run.coins, 5);
+  assert.deepEqual(run.relics.map(r => r.id), ['startTest']);
+  // Verify boosts persist on nextRound
+  nextRound(run);
+  assert.equal(run.playsLeft, config.PLAYS_PER_ROUND - 1);
+  assert.equal(run.discardsLeft, config.DISCARDS_PER_ROUND + 1);
+});

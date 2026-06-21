@@ -12,8 +12,10 @@ export function awardCoins(run) {
   return coins;
 }
 
-export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGETS, deck = null, stake = null, loadout = {} /* reserved for Tier 2 loadout boosts (Task 19) */ }) {
+export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGETS, deck = null, stake = null, loadout = {} }) {
   const letters = (deck && deck.startingBag) || config.STARTING_BAG;
+  const playsPerRound = config.PLAYS_PER_ROUND + (stake?.playsDelta || 0);
+  const discardsPerRound = config.DISCARDS_PER_ROUND + (stake?.discardsDelta || 0) + (loadout.extraDiscards || 0);
   return {
     config, dictionary,
     seed, rng: makeRng(seed),
@@ -21,12 +23,14 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     roundIndex: 0,
     target: targets[0],
     roundTotal: 0,
-    playsLeft: config.PLAYS_PER_ROUND,
-    discardsLeft: config.DISCARDS_PER_ROUND,
+    playsPerRound,
+    discardsPerRound,
+    playsLeft: playsPerRound,
+    discardsLeft: discardsPerRound,
     bag: makeBag(letters.map(l => makeTile(l))),
     tileValues: { ...config.TILE_VALUES },
-    relics: [],
-    coins: 0,
+    relics: [...(loadout.startRelics || [])],
+    coins: loadout.startCoins || 0,
     rack: [],
     wordsPlayedThisRound: 0,
     stake, deck,
@@ -68,8 +72,8 @@ export function nextRound(run) {
   run.roundIndex = next;
   run.target = run.targets[next];
   run.roundTotal = 0;
-  run.playsLeft = run.config.PLAYS_PER_ROUND;
-  run.discardsLeft = run.config.DISCARDS_PER_ROUND;
+  run.playsLeft = run.playsPerRound;
+  run.discardsLeft = run.discardsPerRound;
   run.wordsPlayedThisRound = 0;
   run.status = 'playing';
   return run;
