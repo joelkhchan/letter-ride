@@ -5,6 +5,7 @@ import { serializeRun, deserializeRun, saveRun, loadRun } from '../src/storage.j
 import { newRun, drawRack } from '../src/run.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { resetTileIds } from '../src/tiles.js';
+import { RELICS } from '../src/relics.js';
 
 const dict = makeDictionary(['cat']);
 const config = {
@@ -60,4 +61,15 @@ test('saveRun then loadRun reconstructs the run', () => {
   const loaded = loadRun(s, { config, dictionary: dict });
   assert.equal(loaded.seed, 9);
   assert.deepEqual(loaded.rack.map(t => t.id), run.rack.map(t => t.id));
+});
+
+test('owned relics survive save -> load with a working evaluate', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  drawRack(run);
+  run.relics = [RELICS.vowelBonus];
+  const restored = deserializeRun(serializeRun(run), { config, dictionary: dict });
+  assert.equal(restored.relics.length, 1);
+  assert.equal(restored.relics[0].id, 'vowelBonus');
+  assert.equal(typeof restored.relics[0].evaluate, 'function');
 });

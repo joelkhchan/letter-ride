@@ -14,7 +14,7 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
   let addMult = 0, timesMult = 1;
   const apply = (d) => {
     if (!d) return;
-    wit += d.addWit || 0;
+    wit += d.addWit ?? 0;
     addMult += d.addMult || 0;
     timesMult *= (d.timesMult ?? 1);
   };

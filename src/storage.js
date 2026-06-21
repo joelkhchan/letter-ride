@@ -2,6 +2,7 @@
 import { makeBag } from './bag.js';
 import { makeRng } from './rng.js';
 import { rehydrateTile, setMinTileId, tileIdNum } from './tiles.js';
+import { RELICS } from './relics.js';
 
 const KEY = 'letterRide.run';
 
@@ -50,7 +51,7 @@ export function deserializeRun(data, { config, dictionary }) {
     stake: data.stake,
     deck: data.deck,
     tileValues: { ...data.tileValues },
-    relics: [],                                          // Tier 1 maps relicIds via RELICS
+    relics: (data.relicIds || []).map(id => RELICS[id]).filter(Boolean),
     bag: makeBag(tiles),
     rack: data.rackIds.map(id => byId.get(id)).filter(Boolean),
   };
