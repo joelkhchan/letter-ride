@@ -22,7 +22,31 @@ export const CONFIG = {
     upgradePlus: 1,                                  // +Wit per upgradeLetter purchase
     buyableLetters: ['E','A','R','T','S','N','L','D','G','C','K','J','Q','X','Z'],  // shop letter pool
   },
-  META_EARN: { perRoundCleared: 2, winBonus: 10 },         // Tier 2
+  META: {
+    earn: { perRoundCleared: 2, winBonus: 10 },
+    baseUnlocked: {
+      relics: ['vowelBonus','shortAndSweet','lengthy','freshStart','comboCounter','recycler'],
+      mods: ['resonator','polished','catalyst','anchor'],
+      decks: ['standard'],
+      stakes: [0],
+    },
+    unlockCost: { relic: 15, mod: 12, deck: 20, stake: 10 },
+  },
+  DECKS: {
+    standard:   { id: 'standard',   name: 'Standard',    startingBag: null },  // null => CONFIG.STARTING_BAG
+    vowelHeavy: { id: 'vowelHeavy', name: 'Vowel Heavy', startingBag: ['A','A','A','A','E','E','E','E','I','I','O','O','U','U','R','S','T','L','N','D','C','M','B','P','G','H'] },
+    wildcard:   { id: 'wildcard',   name: 'Wildcard',    startingBag: ['A','A','A','E','E','E','I','I','O','O','U','R','S','T','L','N','D','C','M','B','P','G','H','F','*','*'] },
+  },
+  STAKES: [
+    { id: 0, name: 'Stake 0', targetMult: 1.0,  playsDelta: 0,  discardsDelta: 0,  metaMult: 1.0 },
+    { id: 1, name: 'Stake 1', targetMult: 1.25, playsDelta: 0,  discardsDelta: 0,  metaMult: 1.5 },
+    { id: 2, name: 'Stake 2', targetMult: 1.5,  playsDelta: -1, discardsDelta: 0,  metaMult: 2.0 },
+  ],
+  LOADOUT: {
+    extraDiscards: { name: '+1 Discard / round', max: 2, cost: 10 },
+    startCoins:    { name: '+5 starting Coins',  max: 2, cost: 8 },   // each level = +5 coins
+    startRelic:    { name: 'Start with Vowel Bonus', max: 1, cost: 25, relicId: 'vowelBonus' },
+  },
   PROFANITY_FILTER: true,
   PROFANITY_BLOCKLIST: [ /* add slurs to reject; author may empty this */ ],
 };
