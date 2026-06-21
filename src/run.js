@@ -4,6 +4,14 @@ import { makeRng } from './rng.js';
 import { validate, isLegalSelection } from './word.js';
 import { scoreWord } from './scoring.js';
 
+export function awardCoins(run) {
+  const c = run.config.COINS_ON_CLEAR;
+  let coins = c.base + c.perUnusedPlay * run.playsLeft + c.perUnusedDiscard * run.discardsLeft;
+  for (const r of run.relics) coins += r.coinsOnRoundClear?.(run) ?? 0;
+  run.coins += coins;
+  return coins;
+}
+
 export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGETS, deck = null, stake = null, loadout = {} /* reserved for Tier 2 loadout boosts (Task 19) */ }) {
   const letters = (deck && deck.startingBag) || config.STARTING_BAG;
   return {
@@ -44,7 +52,7 @@ export function playWord(run, selection) {
   run.roundTotal += scored.points;
   run.wordsPlayedThisRound += 1;
   run.playsLeft -= 1;
-  if (run.roundTotal >= run.target) run.status = 'roundCleared';
+  if (run.roundTotal >= run.target) { run.status = 'roundCleared'; if (run.config.COINS_ON_CLEAR) awardCoins(run); }
   else if (run.playsLeft <= 0) run.status = 'lost';
   return { ok: true, scored, run };
 }

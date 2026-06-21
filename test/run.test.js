@@ -54,3 +54,22 @@ test('clearing the last round wins', () => {
   run.roundIndex = 1; run.status = 'roundCleared';
   assert.equal(nextRound(run).status, 'won');
 });
+
+test('clearing a round awards coins: base + unused plays + unused discards', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  // config: PLAYS_PER_ROUND 2, DISCARDS_PER_ROUND 1, ROUND_TARGETS [5,100]; COINS_ON_CLEAR needed
+  run.config = { ...config, COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 } };
+  const res = playWord(run, seatCat(run));        // CAT=5 clears target 5; playsLeft 2->1, discards 1
+  assert.equal(res.run.status, 'roundCleared');
+  assert.equal(res.run.coins, 4 + 1 + 1);         // base 4 + 1 unused play + 1 unused discard = 6
+});
+
+test('an economy relic with coinsOnRoundClear adds to the award', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.config = { ...config, COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 } };
+  run.relics = [{ id: 'recyclerTest', coinsOnRoundClear: (r) => 2 * r.playsLeft }];
+  const res = playWord(run, seatCat(run));        // playsLeft after play = 1 -> +2 coins
+  assert.equal(res.run.coins, 6 + 2);             // base award 6 + relic 2*1 = 8
+});
