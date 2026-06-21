@@ -239,7 +239,7 @@ export function renderMeta(meta, config, allRelicIds, allModIds) {
       case 'unlockMod':    return `Unlock mod: ${offer.modId} — ${offer.cost}`;
       case 'unlockDeck':   return `Unlock deck: ${config.DECKS[offer.deckId]?.name || offer.deckId} — ${offer.cost}`;
       case 'unlockStake':  return `Unlock stake: ${config.STAKES.find(s => s.id === offer.stakeId)?.name || offer.stakeId} — ${offer.cost}`;
-      case 'loadout':      return `+1 ${offer.key} — ${offer.cost}`;
+      case 'loadout':      return `${config.LOADOUT[offer.key]?.name || offer.key} — ${offer.cost}`;
       default:             return `${offer.type} — ${offer.cost}`;
     }
   }

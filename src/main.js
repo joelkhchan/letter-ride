@@ -6,7 +6,7 @@ import { saveRun, loadRun } from './storage.js';
 import { generateShop, purchase } from './shop.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { ALL_MOD_IDS } from './tiles.js';
-import { makeMetaState, saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
+import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
 import { renderRun, renderMeta, bindControls, flashInvalid } from './ui.js';
 
 try {
