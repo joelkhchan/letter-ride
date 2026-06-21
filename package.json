@@ -2,5 +2,5 @@
   "name": "letter-ride",
   "version": "0.0.1",
   "type": "module",
-  "scripts": { "test": "node --test", "serve": "npx --yes serve ." }
+  "scripts": { "test": "node --test", "serve": "npx --yes serve .", "analyze": "node scripts/analyze-builds.js" }
 }
