@@ -7,7 +7,7 @@ export function makeRng(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
   rng.getState = () => a;
-  rng.setState = (s) => { a = s | 0; };
+  rng.setState = (s) => { a = s >>> 0; };
   return rng;
 }
 
