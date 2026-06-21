@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { serializeRun, deserializeRun, saveRun, loadRun } from '../src/storage.js';
-import { newRun, drawRack } from '../src/run.js';
+import { newRun, drawRack, nextRound } from '../src/run.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { resetTileIds } from '../src/tiles.js';
 import { RELICS } from '../src/relics.js';
@@ -72,4 +72,15 @@ test('owned relics survive save -> load with a working evaluate', () => {
   assert.equal(restored.relics.length, 1);
   assert.equal(restored.relics[0].id, 'vowelBonus');
   assert.equal(typeof restored.relics[0].evaluate, 'function');
+});
+
+test('deserializeRun -> nextRound resets playsLeft/discardsLeft from persisted per-round values', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1,
+    stake: { playsDelta: -1, discardsDelta: 0 },
+    loadout: { extraDiscards: 1, startCoins: 0, startRelics: [] } });
+  const restored = deserializeRun(serializeRun(run), { config, dictionary: dict });
+  nextRound(restored);
+  assert.equal(restored.playsLeft, config.PLAYS_PER_ROUND - 1);
+  assert.equal(restored.discardsLeft, config.DISCARDS_PER_ROUND + 1);
 });
