@@ -1,8 +1,13 @@
 // src/ui.js
+import { metaShopOffers } from './meta.js';
+import { RELICS } from './relics.js';
+
 const app = () => document.getElementById('app');
 let handlers = {};
 let selection = [];      // [{ tile, letter }]
 let lastRun = null;
+let selectedDeckId = 'standard';
+let selectedStakeId = null;  // will be set to config.STAKES[0].id on first render
 
 export function bindControls(h) { handlers = h; }
 
@@ -131,8 +136,8 @@ export function renderRun(run) {
       <button id="back" ${done ? 'disabled' : ''}>⌫</button>
       <button id="clear" ${done ? 'disabled' : ''}>Clear</button>
       <button id="discard" ${done || run.discardsLeft <= 0 ? 'disabled' : ''}>Discard</button>
-      ${run.status === 'won' ? '<div class="end">🎉 Run cleared!</div><button id="new">New run</button>' : ''}
-      ${run.status === 'lost' ? '<div class="end">💀 Out of plays.</div><button id="new">New run</button>' : ''}
+      ${run.status === 'won' ? `<div class="end">🎉 Run cleared!${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
+      ${run.status === 'lost' ? `<div class="end">💀 Out of plays.${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
     </div>`;
 
   run.rack.forEach(t => {
@@ -144,7 +149,7 @@ export function renderRun(run) {
   on('back', () => { selection.pop(); renderRun(run); });
   on('clear', () => { selection = []; renderRun(run); });
   on('discard', () => { selection = []; handlers.onDiscard?.(); });
-  on('new', () => { selection = []; handlers.onNewRun?.(); });
+  on('new', () => { selection = []; handlers.onRunEnd?.(); });
 }
 
 function renderShop(run) {
@@ -201,4 +206,99 @@ function renderShop(run) {
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('reroll', () => handlers.onReroll?.());
   on('continue', () => { selection = []; handlers.onContinue?.(); });
+}
+
+export function renderMeta(meta, config, allRelicIds, allModIds) {
+  // Reset selectedStakeId if null or no longer valid.
+  if (!selectedStakeId || !meta.unlockedStakes.includes(selectedStakeId)) {
+    selectedStakeId = meta.unlockedStakes[0] ?? (config.STAKES[0]?.id || null);
+  }
+
+  // Meta-shop offers.
+  const offers = metaShopOffers(meta, config, allRelicIds, allModIds);
+
+  // Build deck picker buttons HTML.
+  const deckButtonsHtml = meta.unlockedDecks.map(id => {
+    const name = config.DECKS[id]?.name || id;
+    const active = id === selectedDeckId ? ' style="font-weight:bold;outline:2px solid #333;"' : '';
+    return `<button class="deck-pick" data-deck="${id}"${active}>${name}</button>`;
+  }).join(' ');
+
+  // Build stake picker buttons HTML.
+  const stakeButtonsHtml = meta.unlockedStakes.map(id => {
+    const stakeObj = config.STAKES.find(s => s.id === id);
+    const name = stakeObj?.name || id;
+    const active = id === selectedStakeId ? ' style="font-weight:bold;outline:2px solid #333;"' : '';
+    return `<button class="stake-pick" data-stake="${id}"${active}>${name}</button>`;
+  }).join(' ');
+
+  // Build meta-shop offers HTML.
+  function metaOfferLabel(offer) {
+    switch (offer.type) {
+      case 'unlockRelic':  return `Unlock relic: ${RELICS[offer.relicId]?.name || offer.relicId} — ${offer.cost}`;
+      case 'unlockMod':    return `Unlock mod: ${offer.modId} — ${offer.cost}`;
+      case 'unlockDeck':   return `Unlock deck: ${config.DECKS[offer.deckId]?.name || offer.deckId} — ${offer.cost}`;
+      case 'unlockStake':  return `Unlock stake: ${config.STAKES.find(s => s.id === offer.stakeId)?.name || offer.stakeId} — ${offer.cost}`;
+      case 'loadout':      return `+1 ${offer.key} — ${offer.cost}`;
+      default:             return `${offer.type} — ${offer.cost}`;
+    }
+  }
+
+  const shopHtml = offers.length
+    ? offers.map((offer, i) => {
+        const disabled = meta.meta < offer.cost ? 'disabled' : '';
+        return `<button class="meta-offer" data-idx="${i}" ${disabled}>${metaOfferLabel(offer)}</button>`;
+      }).join('')
+    : '<div>(No offers available)</div>';
+
+  app().innerHTML = `
+    <div id="meta-screen">
+      <h2>Letter Ride</h2>
+      <div id="meta-balance">Meta: ${meta.meta}</div>
+      <div id="deck-picker">
+        <div><b>Deck:</b></div>
+        <div id="deck-buttons">${deckButtonsHtml}</div>
+      </div>
+      <div id="stake-picker">
+        <div><b>Stake:</b></div>
+        <div id="stake-buttons">${stakeButtonsHtml}</div>
+      </div>
+      <button id="start-run">Start Run</button>
+      <hr>
+      <div id="meta-shop">
+        <div><b>Meta Shop</b></div>
+        <div id="meta-offers">${shopHtml}</div>
+      </div>
+    </div>`;
+
+  // Wire deck picker.
+  app().querySelectorAll('.deck-pick').forEach(btn => {
+    btn.onclick = () => { selectedDeckId = btn.dataset.deck; renderMeta(meta, config, allRelicIds, allModIds); };
+  });
+
+  // Wire stake picker.
+  app().querySelectorAll('.stake-pick').forEach(btn => {
+    btn.onclick = () => { selectedStakeId = btn.dataset.stake; renderMeta(meta, config, allRelicIds, allModIds); };
+  });
+
+  // Wire Start Run.
+  const startBtn = document.getElementById('start-run');
+  if (startBtn) {
+    startBtn.onclick = () => {
+      const deck = selectedDeckId;
+      const stake = selectedStakeId;
+      selectedDeckId = 'standard';
+      selectedStakeId = null;
+      handlers.onStartRun?.(deck, stake);
+    };
+  }
+
+  // Wire meta-shop offer buttons.
+  offers.forEach((offer, i) => {
+    const btn = app().querySelector(`.meta-offer[data-idx="${i}"]`);
+    if (!btn || btn.disabled) return;
+    btn.onclick = () => {
+      handlers.onMetaBuy?.(offer);
+    };
+  });
 }
