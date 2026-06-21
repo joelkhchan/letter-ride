@@ -57,3 +57,34 @@ export function buildLoadout(metaState, config, RELICS) {
     startRelics,
   };
 }
+
+export function metaShopOffers(metaState, config, allRelicIds, allModIds) {
+  const offers = [];
+  const c = config.META.unlockCost;
+  for (const id of allRelicIds) if (!metaState.unlockedRelics.includes(id)) offers.push({ type: 'unlockRelic', relicId: id, cost: c.relic });
+  for (const id of allModIds) if (!metaState.unlockedMods.includes(id)) offers.push({ type: 'unlockMod', modId: id, cost: c.mod });
+  for (const id of Object.keys(config.DECKS)) if (!metaState.unlockedDecks.includes(id)) offers.push({ type: 'unlockDeck', deckId: id, cost: c.deck });
+  for (const s of config.STAKES) if (!metaState.unlockedStakes.includes(s.id)) offers.push({ type: 'unlockStake', stakeId: s.id, cost: c.stake });
+  for (const key of Object.keys(config.LOADOUT)) if ((metaState.loadout[key] || 0) < config.LOADOUT[key].max) offers.push({ type: 'loadout', key, cost: config.LOADOUT[key].cost });
+  return offers;
+}
+
+export function purchaseMeta(metaState, offer, config) {
+  if (metaState.meta < offer.cost) return { ok: false, reason: 'broke' };
+  const addUnique = (arr, id) => { if (arr.includes(id)) return false; arr.push(id); return true; };
+  switch (offer.type) {
+    case 'unlockRelic': if (!addUnique(metaState.unlockedRelics, offer.relicId)) return { ok: false, reason: 'owned' }; break;
+    case 'unlockMod':   if (!addUnique(metaState.unlockedMods, offer.modId))   return { ok: false, reason: 'owned' }; break;
+    case 'unlockDeck':  if (!addUnique(metaState.unlockedDecks, offer.deckId)) return { ok: false, reason: 'owned' }; break;
+    case 'unlockStake': if (!addUnique(metaState.unlockedStakes, offer.stakeId)) return { ok: false, reason: 'owned' }; break;
+    case 'loadout': {
+      const cur = metaState.loadout[offer.key] || 0;
+      if (cur >= config.LOADOUT[offer.key].max) return { ok: false, reason: 'maxed' };
+      metaState.loadout[offer.key] = cur + 1;
+      break;
+    }
+    default: return { ok: false, reason: 'unknown' };
+  }
+  metaState.meta -= offer.cost;
+  return { ok: true };
+}

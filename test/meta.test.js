@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { makeMetaState, saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout } from '../src/meta.js';
+import { makeMetaState, saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from '../src/meta.js';
 
 const config = {
   ROUND_TARGETS: [40,70,110,160,230,320,440,600],
@@ -52,4 +52,51 @@ test('buildLoadout translates levels into run values', () => {
   assert.equal(lo.extraDiscards, 1);
   assert.equal(lo.startCoins, 10);            // 2 levels * 5
   assert.deepEqual(lo.startRelics.map(r => r.id), ['vowelBonus']);
+});
+
+test('metaShopOffers lists locked content + loadout below max', () => {
+  const cfg2 = {
+    ...config,
+    DECKS: { standard: { id:'standard' }, vowelHeavy: { id:'vowelHeavy' } },
+    STAKES: [{ id:0 }, { id:1 }],
+    LOADOUT: { extraDiscards: { max:2, cost:10 }, startCoins: { max:2, cost:8 }, startRelic: { max:1, cost:25, relicId:'vowelBonus' } },
+  };
+  const ALL_RELICS = ['vowelBonus','lengthy','rareHoarder'];
+  const ALL_MODS = ['polished','catalyst'];
+  const m = makeMetaState(cfg2);
+  const offers = metaShopOffers(m, cfg2, ALL_RELICS, ALL_MODS);
+  assert.ok(offers.some(o => o.type==='unlockRelic' && o.relicId==='lengthy'));
+  assert.ok(offers.some(o => o.type==='unlockRelic' && o.relicId==='rareHoarder'));
+  assert.ok(!offers.some(o => o.type==='unlockRelic' && o.relicId==='vowelBonus')); // already unlocked
+  assert.ok(offers.some(o => o.type==='unlockMod' && o.modId==='catalyst'));
+  assert.ok(offers.some(o => o.type==='unlockDeck' && o.deckId==='vowelHeavy'));
+  assert.ok(offers.some(o => o.type==='unlockStake' && o.stakeId===1));
+  assert.ok(offers.some(o => o.type==='loadout' && o.key==='extraDiscards'));
+});
+test('purchaseMeta unlocks a relic and deducts meta; broke/owned/maxed handled', () => {
+  const cfg2 = {
+    ...config,
+    DECKS: { standard: { id:'standard' }, vowelHeavy: { id:'vowelHeavy' } },
+    STAKES: [{ id:0 }, { id:1 }],
+    LOADOUT: { extraDiscards: { max:2, cost:10 }, startCoins: { max:2, cost:8 }, startRelic: { max:1, cost:25, relicId:'vowelBonus' } },
+  };
+  const m = makeMetaState(cfg2); m.meta = 100;
+  assert.deepEqual(purchaseMeta(m, { type:'unlockRelic', relicId:'lengthy', cost:15 }, cfg2), { ok:true });
+  assert.ok(m.unlockedRelics.includes('lengthy'));
+  assert.equal(m.meta, 85);
+  assert.deepEqual(purchaseMeta(m, { type:'unlockRelic', relicId:'lengthy', cost:15 }, cfg2), { ok:false, reason:'owned' });
+  m.meta = 1;
+  assert.deepEqual(purchaseMeta(m, { type:'unlockRelic', relicId:'rareHoarder', cost:15 }, cfg2), { ok:false, reason:'broke' });
+});
+test('purchaseMeta increments a loadout level up to max', () => {
+  const cfg2 = {
+    ...config,
+    DECKS: { standard: { id:'standard' }, vowelHeavy: { id:'vowelHeavy' } },
+    STAKES: [{ id:0 }, { id:1 }],
+    LOADOUT: { extraDiscards: { max:2, cost:10 }, startCoins: { max:2, cost:8 }, startRelic: { max:1, cost:25, relicId:'vowelBonus' } },
+  };
+  const m = makeMetaState(cfg2); m.meta = 100;
+  assert.deepEqual(purchaseMeta(m, { type:'loadout', key:'startRelic', cost:25 }, cfg2), { ok:true });
+  assert.equal(m.loadout.startRelic, 1);
+  assert.deepEqual(purchaseMeta(m, { type:'loadout', key:'startRelic', cost:25 }, cfg2), { ok:false, reason:'maxed' });
 });
