@@ -4,6 +4,7 @@ import { loadFromFile } from './dictionary.js';
 import { newRun, drawRack, playWord, discard, nextRound } from './run.js';
 import { saveRun, loadRun } from './storage.js';
 import { renderRun, bindControls, flashInvalid } from './ui.js';
+import { generateShop, purchase } from './shop.js';
 
 try {
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
@@ -11,9 +12,14 @@ try {
 
   let run = loadRun(window.localStorage, { config: CONFIG, dictionary });   // null on absent/corrupt → fresh
   if (!run) {
-    run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets: CONFIG.TIER0_TARGETS });
+    run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets: CONFIG.ROUND_TARGETS });
     drawRack(run);
   }
+  // On resume: if round was cleared but shop wasn't serialized, regenerate it.
+  if (run.status === 'roundCleared' && !run.shop) {
+    run.shop = generateShop(run, run.rng);
+  }
+
   const save = () => saveRun(run, window.localStorage);
   const render = () => renderRun(run);
 
@@ -21,13 +27,26 @@ try {
     onSubmit(selection) {
       const res = playWord(run, selection);
       if (!res.ok) return flashInvalid(res.reason);
+      if (run.status === 'roundCleared') run.shop = generateShop(run, run.rng);
       if (run.status === 'playing') drawRack(run);
       save(); render();
     },
     onDiscard() { discard(run); save(); render(); },
-    onNext() { nextRound(run); if (run.status === 'playing') drawRack(run); save(); render(); },
+    onBuy(offer, targetTileId) {
+      const res = purchase(run, offer, { targetTileId });
+      if (res.ok) run.shop = generateShop(run, run.rng);
+      save(); render(); return res;
+    },
+    onReroll() {
+      if (run.coins >= run.shop.rerollCost) {
+        run.coins -= run.shop.rerollCost;
+        run.shop = generateShop(run, run.rng);
+        save(); render();
+      }
+    },
+    onContinue() { run.shop = null; nextRound(run); if (run.status === 'playing') drawRack(run); save(); render(); },
     onNewRun() {
-      run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets: CONFIG.TIER0_TARGETS });
+      run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets: CONFIG.ROUND_TARGETS });
       drawRack(run); save(); render();
     },
   });
