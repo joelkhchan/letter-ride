@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { makeMetaState, saveMeta, loadMeta, metaEarned } from '../src/meta.js';
+import { makeMetaState, saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout } from '../src/meta.js';
 
 const config = {
   ROUND_TARGETS: [40,70,110,160,230,320,440,600],
@@ -35,4 +35,21 @@ test('metaEarned: win pays all rounds + bonus; loss pays rounds cleared', () => 
   assert.equal(metaEarned(won, config), 8 * 2 + 10);   // 8 rounds *2 + 10 = 26
   const lost = { status: 'lost', roundIndex: 3, targets: config.ROUND_TARGETS };
   assert.equal(metaEarned(lost, config), 3 * 2);        // cleared 3 -> 6
+});
+test('poolFromMeta exposes the unlocked relic/mod ids', () => {
+  const m = makeMetaState(config); m.unlockedRelics.push('lengthy');
+  assert.deepEqual(poolFromMeta(m), { relicIds: ['vowelBonus','lengthy'], modIds: ['polished'] });
+});
+test('applyStakeTargets scales targets by targetMult (ceil)', () => {
+  assert.deepEqual(applyStakeTargets([40,70], { targetMult: 1.25 }), [50, 88]);
+  assert.deepEqual(applyStakeTargets([40,70], null), [40, 70]);    // no stake -> unchanged
+});
+test('buildLoadout translates levels into run values', () => {
+  const cfg = { LOADOUT: { startCoins: { max:2 }, startRelic: { max:1, relicId:'vowelBonus' }, extraDiscards: { max:2 } } };
+  const RELICS = { vowelBonus: { id: 'vowelBonus' } };
+  const m = { loadout: { extraDiscards: 1, startCoins: 2, startRelic: 1 } };
+  const lo = buildLoadout(m, cfg, RELICS);
+  assert.equal(lo.extraDiscards, 1);
+  assert.equal(lo.startCoins, 10);            // 2 levels * 5
+  assert.deepEqual(lo.startRelics.map(r => r.id), ['vowelBonus']);
 });

@@ -34,3 +34,26 @@ export function metaEarned(run, config) {
   const e = config.META.earn;
   return cleared * e.perRoundCleared + (run.status === 'won' ? e.winBonus : 0);
 }
+
+export function poolFromMeta(metaState) {
+  return { relicIds: metaState.unlockedRelics, modIds: metaState.unlockedMods };
+}
+
+export function applyStakeTargets(baseTargets, stake) {
+  const mult = stake?.targetMult ?? 1;
+  return baseTargets.map(t => Math.ceil(t * mult));
+}
+
+export function buildLoadout(metaState, config, RELICS) {
+  const lo = metaState.loadout || {};
+  const startRelics = [];
+  if ((lo.startRelic || 0) > 0) {
+    const r = RELICS[config.LOADOUT.startRelic.relicId];
+    if (r) startRelics.push(r);
+  }
+  return {
+    extraDiscards: lo.extraDiscards || 0,
+    startCoins: (lo.startCoins || 0) * 5,
+    startRelics,
+  };
+}
