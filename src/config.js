@@ -15,6 +15,13 @@ export const CONFIG = {
   TIER0_TARGETS: [20, 35, 55, 80, 110, 145, 185, 230],     // beatable from base bag, no shop
   ROUND_TARGETS:  [40, 70, 110, 160, 230, 320, 440, 600],  // real run (Tier 1+; assumes shop scaling)
   COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 }, // Tier 1
+  SHOP: {
+    offersPerShop: 4,
+    rerollCost: 2,
+    cost: { buyLetter: 3, buyEnchantedTile: 7, enchantTile: 6, upgradeLetter: 5, thinLetter: 3, buyRelic: 8 },
+    upgradePlus: 1,                                  // +Wit per upgradeLetter purchase
+    buyableLetters: ['E','A','R','T','S','N','L','D','G','C','K','J','Q','X','Z'],  // shop letter pool
+  },
   META_EARN: { perRoundCleared: 2, winBonus: 10 },         // Tier 2
   PROFANITY_FILTER: true,
   PROFANITY_BLOCKLIST: [ /* add slurs to reject; author may empty this */ ],
