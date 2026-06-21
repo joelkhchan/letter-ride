@@ -2,5 +2,18 @@
   "name": "letter-ride",
   "version": "0.0.1",
   "type": "module",
-  "scripts": { "test": "node --test", "serve": "npx --yes serve .", "analyze": "node scripts/analyze-builds.js" }
+  "scripts": {
+    "test": "node --test",
+    "serve": "npx --yes serve .",
+    "analyze": "node scripts/analyze-builds.js",
+    "cap:copy": "node scripts/build-www.js",
+    "cap:sync": "npm run cap:copy && npx cap sync"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/android": "^6.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0"
+  }
 }
