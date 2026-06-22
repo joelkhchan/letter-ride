@@ -33,13 +33,13 @@ function tapTile(tile) {
 // Return a short display label for an offer.
 function offerLabel(offer) {
   switch (offer.type) {
-    case 'buyLetter':        return `Buy ${offer.letter} — ${offer.cost}c`;
-    case 'buyEnchantedTile': return `${offer.letter} (${getMod(offer.modId)?.name || offer.modId}) — ${offer.cost}c`;
-    case 'enchantTile':      return `Enchant a tile (${getMod(offer.modId)?.name || offer.modId}) — ${offer.cost}c`;
-    case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} — ${offer.cost}c`;
-    case 'thinLetter':       return `Thin a tile — ${offer.cost}c`;
-    case 'buyRelic':         return `Relic: ${RELICS[offer.relicId]?.name || offer.relicId} — ${offer.cost}c`;
-    default:                 return `${offer.type} — ${offer.cost}c`;
+    case 'buyLetter':        return `Buy ${offer.letter} — $${offer.cost}`;
+    case 'buyEnchantedTile': return `${offer.letter} (${getMod(offer.modId)?.name || offer.modId}) — $${offer.cost}`;
+    case 'enchantTile':      return `Enchant a tile (${getMod(offer.modId)?.name || offer.modId}) — $${offer.cost}`;
+    case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} — $${offer.cost}`;
+    case 'thinLetter':       return `Thin a tile — $${offer.cost}`;
+    case 'buyRelic':         return `Relic: ${RELICS[offer.relicId]?.name || offer.relicId} — $${offer.cost}`;
+    default:                 return `${offer.type} — $${offer.cost}`;
   }
 }
 
@@ -130,21 +130,21 @@ function scorePreviewHtml(run, sel) {
   const parts = [];
   parts.push(`Base ${bd.base}`);
   if (bd.lengthBonus > 0) parts.push(`+${bd.lengthBonus} length`);
-  for (const p of bd.witParts) parts.push(`+${p.amount} ${p.label}`);
+  for (const p of bd.pointParts) parts.push(`+${p.amount} ${p.label}`);
 
   let multStr = `×${result.mult % 1 === 0 ? result.mult : result.mult.toFixed(2)}`;
   const multParts = [];
   if (bd.addMultParts.length) multParts.push(bd.addMultParts.map(p => `+${p.amount} ${p.label}`).join(', '));
   if (bd.timesMultParts.length) multParts.push(bd.timesMultParts.map(p => `×${p.amount} ${p.label}`).join(', '));
 
-  const witPart = parts.join(' ');
+  const pointsPart = parts.join(' ');
   const multDetail = multParts.length ? ` (${multParts.join('; ')})` : '';
   const word = sel.map(s => s.letter).join('');
 
   return `<div id="scorebug">
     <span class="sb-word">${word}</span>
-    <span class="sb-formula">${result.wit} Wit ${multStr} Mult${multDetail} = <b>${result.points}</b> pts</span>
-    <span class="sb-detail">${witPart}</span>
+    <span class="sb-formula">${result.points} Points ${multStr} Mult${multDetail} = <b>${result.score}</b> Score</span>
+    <span class="sb-detail">${pointsPart}</span>
   </div>`;
 }
 
@@ -161,14 +161,14 @@ export function renderRun(run) {
   const staged = selection.map(s => s.letter).join('');
   const done = run.status !== 'playing';
 
-  // Coins counter (only in Tier 1; coins field exists on run after Task 10).
+  // Currency counter (only in Tier 1; coins field exists on run after Task 10).
   const coinsHtml = (typeof run.coins === 'number')
-    ? `<div id="coins">Coins: ${run.coins}</div>`
+    ? `<div id="coins">$${run.coins}</div>`
     : '';
 
   // Last play result
   const lastPlayHtml = run.lastPlay
-    ? `<div id="last-play">Last: <b>${run.lastPlay.word}</b> = ${run.lastPlay.points} pts</div>`
+    ? `<div id="last-play">Last: <b>${run.lastPlay.word}</b> = ${run.lastPlay.score} Score</div>`
     : '';
 
   // Live score preview (only when playing and selection non-empty)
@@ -177,7 +177,7 @@ export function renderRun(run) {
   app().innerHTML = `
     <div id="hud">
       <div>Round ${run.roundIndex + 1}/${run.targets.length}</div>
-      <div><b>${run.roundTotal}</b> / ${run.target} Points</div>
+      <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
     </div>
@@ -262,14 +262,14 @@ function renderShop(run) {
   app().innerHTML = `
     <div id="hud">
       <div>Round ${run.roundIndex + 1}/${run.targets.length} — Shop</div>
-      <div><b>${run.roundTotal}</b> / ${run.target} Points ✓</div>
-      <div id="coins">Coins: ${coins}</div>
+      <div><b>${run.roundTotal}</b> / ${run.target} Score ✓</div>
+      <div id="coins">$${coins}</div>
     </div>
     ${relicsModsPanelHtml(run)}
     <div id="shop">
       <div id="shop-offers">${offersHtml}</div>
       <div id="shop-actions">
-        <button id="reroll" ${rerollDisabled}>Reroll (${shop.rerollCost}c)</button>
+        <button id="reroll" ${rerollDisabled}>Reroll ($${shop.rerollCost})</button>
         <button id="continue">Continue →</button>
       </div>
     </div>

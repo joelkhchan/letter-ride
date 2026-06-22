@@ -1,6 +1,6 @@
 # Letter Ride — Design Spec
 
-**Date:** 2026-06-20 · **Revised:** 2026-06-21 (v2 — major scope expansion, author-approved)
+**Date:** 2026-06-20 · **Revised:** 2026-06-21 (v2 — major scope expansion, author-approved) · **Term update (2026-06-22):** base "Wit"→"Points", total "Points"→"Score", currency "Coins"→"$".
 **Status:** Draft for review
 **Type:** Word-builder roguelike (single-player, score-target) with run-over-run meta-progression
 
@@ -17,8 +17,8 @@
 
 *Letter Ride* is a single-player, turn-based word-builder roguelike in the Balatro mould.
 You build a **bag of letter tiles** (your "deck"), draw a small **rack** each turn, and tap
-tiles to spell the highest-scoring word you can. Beat a rising **Points** target each round
-to survive; spend **Coins** between rounds in a **shop** to buy, enchant, upgrade, and thin
+tiles to spell the highest-scoring word you can. Beat a rising **Score** target each round
+to survive; spend **$** between rounds in a **shop** to buy, enchant, upgrade, and thin
 tiles and collect **relics** that warp scoring. Across runs you earn **Meta** currency and
 spend it in a between-runs **meta-shop** that unlocks content, decks, difficulty stakes, and
 permanent loadout boosts. The fun is not "know big words" — it's **building a letter economy
@@ -36,12 +36,12 @@ against a number, then against your own mastery.
   deckbuilding and the answer to "why do purchases matter."
 - **Scarcity is the core pillar.** Letters are *drawn from a bag you build*, never an open
   alphabet. Bag composition is the deckbuilding. **Non-negotiable.**
-- **One scoring formula, phase-ordered.** `Points = Wit × Mult`, with all `+Mult` applied
+- **One scoring formula, phase-ordered.** `Score = Points × Mult`, with all `+Mult` applied
   before any `×Mult` (Balatro order), enforced by the engine regardless of acquisition order.
 - **Relics + tile-mods are the skill expression**, decoupling success from raw vocabulary. A
   clever short word with the right modifiers must be able to beat a long word without them.
-- **Three currencies, each with a distinct job** (see §7): **Points** (in-round score),
-  **Coins** (in-run shop), **Meta** (persistent, between-runs meta-shop).
+- **Three currencies, each with a distinct job** (see §7): **Score** (in-round total),
+  **$** (in-run shop), **Meta** (persistent, between-runs meta-shop).
 - **Solo vs. a target, then vs. mastery.** No enemy AI. The meta loop supplies long-term pull.
 - **Stack:** HTML5 + vanilla JS, no build step. **Android via Capacitor** is the delivery
   target (Tier 3), not abandoned — but built last, after the game is proven fun.
@@ -56,13 +56,13 @@ against a number, then against your own mastery.
 META SCREEN (title)
   ├─ spend META in the meta-shop (unlocks, decks, stakes, loadout)
   └─► START RUN (pick deck + stake; seed)
-        └─► ROUND (a "blind" with a Points target)
+        └─► ROUND (a "blind" with a Score target)
               repeat up to K plays, or until target met:
                 1. Draw a RACK of N tiles from your BAG
                 2. Tap tiles to form one valid word (min length 3)
-                3. Score it (Wit × Mult = Points) → add to round total
+                3. Score it (Points × Mult = Score) → add to round total
                 4. (optional) discard the rack and redraw, limited times
-              ├─ target met  → earn COINS → in-run SHOP → next round (higher target)
+              ├─ target met  → earn $ → in-run SHOP → next round (higher target)
               └─ plays used, target NOT met → RUN OVER
         └─► Clear all rounds → WIN the run
   └─► RUN END (win or loss) → earn META (by rounds cleared + win bonus) → back to META SCREEN
@@ -87,11 +87,11 @@ context = {
   roundIndex, stake, ...      // any other state modifiers may read
 }
 
-PHASE 1 — WIT (additive base):
-  wit  = Σ witValue(tile)                          // base tile value; WILD = 0
-       + lengthBonus(word.length)                  // +W per letter beyond 3
-       + Σ relic.addWit(context)                   // global relics
-       + Σ tileMod.addWit(tile, context)           // mods on tiles actually played
+PHASE 1 — POINTS (additive base):
+  points = Σ pointValue(tile)                      // base tile value; WILD = 0
+         + lengthBonus(word.length)                // +W per letter beyond 3
+         + Σ relic.addWit(context)                 // global relics
+         + Σ tileMod.addWit(tile, context)         // mods on tiles actually played
 
 PHASE 2 — +MULT (additive multiplier):
   mult = 1
@@ -102,8 +102,8 @@ PHASE 3 — ×MULT (multiplicative multiplier, applied LAST):
   mult = mult × Π relic.timesMult(context)
               × Π tileMod.timesMult(tile, context)
 
-Points = wit × mult
-roundTotal += Points
+Score = points × mult
+roundTotal += Score
 ```
 
 - **Base tile values** (`config`, tunable): A E I O U L N S T R = 1; D G = 2; B C M P = 3;
@@ -114,8 +114,9 @@ roundTotal += Points
   Phase 3. **Scaling** modifiers (gain Mult per word/round) are content built on a small
   amount of per-modifier state (see §6), not an engine change.
 - A modifier is a plain object returning **deltas** (`{ addWit?, addMult?, timesMult? }`) for
-  a context. It never mutates shared score state directly. This is what makes phase order
-  enforceable and every modifier independently unit-testable.
+  a context. (Note: the internal delta key remains `addWit` for compatibility with existing
+  modifier definitions.) It never mutates shared score state directly. This is what makes
+  phase order enforceable and every modifier independently unit-testable.
 
 ---
 
@@ -166,23 +167,23 @@ True part-of-speech detection is **deferred** (needs a tagged dictionary).
 
 | # | Relic | Effect | Build |
 |---|---|---|---|
-| 1 | Vowel Bonus | +2 Wit per vowel used | Vowel-heavy |
-| 2 | Rare Hoarder | +30 Wit if word uses J/Q/X/Z | Rare-letter |
+| 1 | Vowel Bonus | +2 Points per vowel used | Vowel-heavy |
+| 2 | Rare Hoarder | +30 Points if word uses J/Q/X/Z | Rare-letter |
 | 3 | Short & Sweet | words ≤3 letters: ×3 Mult | **Short-word (anti-vocab)** |
 | 4 | Lengthy | +1 Mult per letter beyond 4 | Long-word |
-| 5 | Double Trouble | +40 Wit if word has a doubled letter | Pattern |
+| 5 | Double Trouble | +40 Points if word has a doubled letter | Pattern |
 | 6 | Fresh Start | word starting with a vowel: +2 Mult | Conditional |
 | 7 | Combo Counter | +1 Mult per word already played this round | Escalation |
-| 8 | Recycler | +2 Coins per unused play at round end (economy) | Economy |
+| 8 | Recycler | +2 $ per unused play at round end (economy) | Economy |
 
 **Starter tile-mods (4)** — attached to specific tiles, fire when that tile is played:
 
 | Mod | Effect (when the tile is used) | Build |
 |---|---|---|
-| Resonator | +5 Wit if the word has 2+ of this tile's letter | Letter-stacking |
-| Polished | +4 Wit, always | Reliable value |
+| Resonator | +5 Points if the word has 2+ of this tile's letter | Letter-stacking |
+| Polished | +4 Points, always | Reliable value |
 | Catalyst | +1 Mult, always | Mult engine |
-| Anchor | +8 Wit if this tile is the word's first letter | Positional |
+| Anchor | +8 Points if this tile is the word's first letter | Positional |
 
 All numbers above are **tunable in `config`** and are explicitly *not* claimed balanced —
 balance is the author's playtest job (see §11).
@@ -193,16 +194,16 @@ balance is the author's playtest job (see §11).
 
 | Currency | Earned | Spent on | Scope | Persists? |
 |---|---|---|---|---|
-| **Points** | scoring words (`Wit × Mult`) | nothing — raced against the round **Target** | per round | no (resets each round) |
-| **Coins** | clearing a round: `4 + unusedPlays + unusedDiscards` (+ Recycler) | the **in-run shop** (§8) | per run | no (resets each run) |
+| **Score** | scoring words (`Points × Mult`) | nothing — raced against the round **Target** | per round | no (resets each round) |
+| **$** (in-run) | clearing a round: `4 + unusedPlays + unusedDiscards` (+ Recycler) | the **in-run shop** (§8) | per run | no (resets each run) |
 | **Meta** | run end: `roundsCleared × A + (won ? winBonus : 0)` | the **meta-shop** (§9) | account | **yes** (localStorage) |
 
-Points and Coins were already distinct in v1; **Meta** is the new persistent third currency
+Score and $ were already distinct in v1 (as "Points" and "Coins"); **Meta** is the new persistent third currency
 and the reason the meta loop exists. All earn formulas are tunable in `config`.
 
 ---
 
-## 8. The in-run shop (Coins) — 7 offer types
+## 8. The in-run shop ($) — 7 offer types
 
 Generated from a seeded RNG between rounds; offers a random subset each time.
 
@@ -214,7 +215,7 @@ Generated from a seeded RNG between rounds; offers a random subset each time.
 | `upgradeLetter` | +N base Wit to **all** tiles of one letter (type-wide). |
 | `thinLetter` | Remove one tile from the bag (concentrates the rest). |
 | `buyRelic` | Add a relic from the currently-unlocked pool. |
-| `reroll` | Reroll the shop offers (small Coin cost). |
+| `reroll` | Reroll the shop offers (small $ cost). |
 
 **The economy's built-in governor (enchant-vs-dilute):** every tile added enlarges the bag,
 so each tile — including your good ones — appears in fewer racks. You cannot stuff the bag
@@ -259,7 +260,7 @@ Each tier is independently playable and gated by a 🛑 fun-check. **Do not star
 the previous one is proven fun.** If Tier 0 is flat, nothing above saves it.
 
 - **Tier 0 — Spine.** Tile instances (plain), bag + draw rack, dictionary validation,
-  tap-to-build word formation, the `Wit × Mult = Points` phase engine (no mods yet), round
+  tap-to-build word formation, the `Points × Mult = Score` phase engine (no mods yet), round
   **Tier-0 target curve**, K plays, discards, advance/lose, linear run, **localStorage
   save/resume**. *No shop, no relics, no mods, no meta.*
   🛑 **Gate:** narrowed to what Tier 0 can decide — *(1) is tap-to-build ergonomic on the phone
@@ -271,13 +272,13 @@ the previous one is proven fun.** If Tier 0 is flat, nothing above saves it.
   size, lower `TIER0_TARGETS` (a tuning miss, not a mechanic failure). **Only STOP if tap-to-build
   itself feels bad after honest tuning.**
 
-- **Tier 1 — In-run roguelike.** Coins, the 7-offer shop, the 8 relics, the 4 tile-mods,
+- **Tier 1 — In-run roguelike.** $ (in-run currency), the 7-offer shop, the 8 relics, the 4 tile-mods,
   WILD tiles, scaling/conditional mults, pattern synergies. **The core deliverable.**
   🛑 **Gate:** *Do builds diverge? Does enchant-vs-dilute feel like a real decision? Is the real
   `ROUND_TARGETS` difficulty ramp tense-but-fair (first tier it's playable)?* **Short-word
   criterion (measurable — the design's soul):** via the headless analysis harness (plan Task
   11a), a 3-letter Short&Sweet+chip build must reach **≥80% of the median long-word build's
-  per-play Points across N seeded racks** and be able to clear round 5. **If short words can't be
+  per-play Score across N seeded racks** and be able to clear round 5. **If short words can't be
   made competitive after tuning, surface it as a design failure — don't paper over it.**
 
 - **Tier 2 — Meta-progression.** Meta currency earn, `MetaState` persistence, the meta-shop
@@ -309,7 +310,7 @@ Strict logic/UI split. All rules live in pure, DOM-free modules, unit-tested hea
 | `src/bag.js` | Bag state (`Tile[]`); `draw(n, rng)`, `add(tile)`, `remove(tileId)`. |
 | `src/word.js` | `validate(tiles, dict, minLen)`; wild resolution; word string from tapped tiles. |
 | `src/patterns.js` | Cheap synergy predicates (digraph, doubled, palindrome, suffix, countOf). |
-| `src/scoring.js` | The phase engine: `scoreWord(playedTiles, ctx)` → `{ wit, mult, points }`. |
+| `src/scoring.js` | The phase engine: `scoreWord(playedTiles, ctx)` → `{ points, mult, score }`. |
 | `src/relics.js` | Relic definitions + their `evaluate`. |
 | `src/shop.js` | In-run shop generation + 7 purchase types. |
 | `src/run.js` | Run/round state machine (`RunState`): targets, plays, discards, coins, win/lose. |
@@ -319,7 +320,7 @@ Strict logic/UI split. All rules live in pure, DOM-free modules, unit-tested hea
 | `src/main.js` | Boot, load dictionary, wire modules, drive meta→run→round state machine. |
 | `capacitor.config.*`, `android/` | Tier 3 packaging. |
 
-- **Two state layers from day one:** `RunState` (bag, coins, relics, tiles, round, points,
+- **Two state layers from day one:** `RunState` (bag, coins, relics, tiles, round, score,
   seed, stake, deck) vs `MetaState` (meta currency, unlocked content/decks/stakes, owned
   loadout). The split exists in Tier 0; the meta *content* lands in Tier 2.
 - **Determinism:** seeded RNG for all bag draws and shop generation → reproducible, testable
@@ -339,13 +340,13 @@ Strict logic/UI split. All rules live in pure, DOM-free modules, unit-tested hea
 **Playtest-only (the author's call — NOT pre-solved, per the project's working agreement):**
 - **Short-word competitiveness** — the design's soul. A stacked 3-letter word must be able to
   beat a bare 7-letter word. Current numbers probably don't achieve it; Short & Sweet may need
-  a bigger ×Mult or a flat-Wit injection. **The Tier 1 gate tests this with a concrete bar
-  (≥80% of median long-word per-play Points across N seeded racks + can clear round 5), computed
+  a bigger ×Mult or a flat-Points injection. **The Tier 1 gate tests this with a concrete bar
+  (≥80% of median long-word per-play Score across N seeded racks + can clear round 5), computed
   by a small headless analysis harness — see plan Task 11a.** This converts the soul from a
   vibe-check into a number to tune against.
 - **Enchant-vs-dilute** — is adding power-tiles a satisfying tradeoff, or does dilution feel
   bad? Levers: starting bag size, thin cost, enchant cost.
-- **Overlapping chip axes** — `upgradeLetter` (type-wide) vs. `Polished`/per-tile flat Wit:
+- **Overlapping chip axes** — `upgradeLetter` (type-wide) vs. `Polished`/per-tile flat Points:
   ensure one doesn't dominate the other.
 - **Wild abuse** — 0-Wit keeps wilds honest, but flag if wild + mod stacking degenerates.
 - **E-stacking** — Resonator + "more-of-this-letter" + buying many enchanted E's; tune the
@@ -376,6 +377,6 @@ Baked as defaults so the spec is buildable as-is:
 6. **Tier-0 target curve** (flat, beatable from the base bag with no shop) vs **full curve**
    (assumes shop scaling) — two separate config arrays. Tier-0 is for the standalone Tier-0
    playtest; the full curve is the real run.
-7. **Base term:** **Wit**. Multiplier term: **Mult**. Score term: **Points**.
+7. **Base term:** **Points**. Multiplier term: **Mult**. Result term: **Score**.
 8. **Meta earn `A` and `winBonus`, stake count, starter unlock pool size** — tunable, set
    during Tier 2 informed by Tier 0/1 playtests.

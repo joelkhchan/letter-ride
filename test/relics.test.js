@@ -8,16 +8,16 @@ const tv = { C:3, A:1, T:1, E:1, I:1, O:1, U:1, S:1, L:1, B:3, Q:10, Y:4, N:1 };
 const sel = (word) => [...word].map(ch => ({ tile: makeTile(ch), letter: ch }));
 const base = (word, opts = {}) => scoreWord(sel(word), { tileValues: tv, lengthBonusPerLetter: 0, ...opts });
 
-test('vowelBonus: +2 Wit per vowel', () => {
+test('vowelBonus: +2 Points per vowel', () => {
   resetTileIds();
   const b = base('CAT');                                   // 1 vowel (A)
   const r = base('CAT', { relics: [RELICS.vowelBonus] });
-  assert.equal(r.wit - b.wit, 2);
+  assert.equal(r.points - b.points, 2);
 });
-test('rareHoarder: +30 Wit if word uses J/Q/X/Z', () => {
+test('rareHoarder: +30 Points if word uses J/Q/X/Z', () => {
   resetTileIds();
-  assert.equal(base('QI', { relics: [RELICS.rareHoarder] }).wit - base('QI').wit, 30);
-  assert.equal(base('CAT', { relics: [RELICS.rareHoarder] }).wit - base('CAT').wit, 0);
+  assert.equal(base('QI', { relics: [RELICS.rareHoarder] }).points - base('QI').points, 30);
+  assert.equal(base('CAT', { relics: [RELICS.rareHoarder] }).points - base('CAT').points, 0);
 });
 test('shortAndSweet: ×3 Mult for words <= 3 letters only', () => {
   resetTileIds();
@@ -29,10 +29,10 @@ test('lengthy: +1 Mult per letter beyond 4', () => {
   assert.equal(base('CASTLE', { relics: [RELICS.lengthy] }).mult, 1 + 2);  // 6 letters -> +2
   assert.equal(base('CAT', { relics: [RELICS.lengthy] }).mult, 1);
 });
-test('doubleTrouble: +40 Wit if a doubled letter', () => {
+test('doubleTrouble: +40 Points if a doubled letter', () => {
   resetTileIds();
-  assert.equal(base('BALL', { relics: [RELICS.doubleTrouble] }).wit - base('BALL').wit, 40);
-  assert.equal(base('CAT', { relics: [RELICS.doubleTrouble] }).wit - base('CAT').wit, 0);
+  assert.equal(base('BALL', { relics: [RELICS.doubleTrouble] }).points - base('BALL').points, 40);
+  assert.equal(base('CAT', { relics: [RELICS.doubleTrouble] }).points - base('CAT').points, 0);
 });
 test('freshStart: +2 Mult if first letter is a vowel', () => {
   resetTileIds();

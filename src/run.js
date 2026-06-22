@@ -53,7 +53,7 @@ export function playWord(run, selection) {
     relics: run.relics,
     context: { wordsPlayedThisRound: run.wordsPlayedThisRound },
   });
-  run.roundTotal += scored.points;
+  run.roundTotal += scored.score;
   run.wordsPlayedThisRound += 1;
   run.playsLeft -= 1;
   if (run.roundTotal >= run.target) { run.status = 'roundCleared'; if (run.config.COINS_ON_CLEAR) awardCoins(run); }

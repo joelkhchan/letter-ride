@@ -39,7 +39,7 @@ try {
 
   bindControls({
     onSubmit(sel) { const r = playWord(run, sel); if (!r.ok) return flashInvalid(r.reason);
-      run.lastPlay = { word: sel.map(s => s.letter).join(''), points: r.scored.points };
+      run.lastPlay = { word: sel.map(s => s.letter).join(''), score: r.scored.score };
       if (run.status === 'roundCleared') run.shop = generateShop(run, run.rng, pool());
       if (run.status === 'playing') drawRack(run); saveAll(); render(); return r; },
     onDiscard() { discard(run); saveAll(); render(); },

@@ -33,13 +33,13 @@ for (let i = 0; i < N; i++) {
 
   // Best long word, no relics
   let bestLong = 0;
-  for (const w of formable) bestLong = Math.max(bestLong, scoreWord(selOf(w), { tileValues: tv, lengthBonusPerLetter: lb }).points);
+  for (const w of formable) bestLong = Math.max(bestLong, scoreWord(selOf(w), { tileValues: tv, lengthBonusPerLetter: lb }).score);
 
   // Best <=3-letter word with a Short&Sweet + Polished-on-every-tile build (proxy for a stacked short build)
   let bestShort = 0;
   for (const w of formable.filter(w => w.length <= 3)) {
     const sel = [...w].map(ch => ({ tile: { id: 't', letter: ch, mods: [getMod('polished')] }, letter: ch }));
-    bestShort = Math.max(bestShort, scoreWord(sel, { tileValues: tv, lengthBonusPerLetter: lb, relics: [RELICS.shortAndSweet] }).points);
+    bestShort = Math.max(bestShort, scoreWord(sel, { tileValues: tv, lengthBonusPerLetter: lb, relics: [RELICS.shortAndSweet] }).score);
   }
   longTotal += bestLong; shortTotal += bestShort;
   if (bestShort >= bestLong) shortWins++;
@@ -47,8 +47,8 @@ for (let i = 0; i < N; i++) {
 
 const ratio = shortTotal / longTotal;
 console.log(`Letter Ride — short-vs-long balance over ${N} seeded base-bag racks`);
-console.log(`  median-ish avg best long-word points (no relics): ${(longTotal / N).toFixed(1)}`);
-console.log(`  avg best short build (Short&Sweet + Polished):    ${(shortTotal / N).toFixed(1)}`);
+console.log(`  median-ish avg best long-word score (no relics): ${(longTotal / N).toFixed(1)}`);
+console.log(`  avg best short build (Short&Sweet + Polished):   ${(shortTotal / N).toFixed(1)}`);
 console.log(`  short/long ratio: ${(ratio * 100).toFixed(0)}%  (Tier 1 gate bar: >= 80%)`);
 console.log(`  racks where short >= long: ${shortWins}/${N}`);
 console.log(`  round 5 target = ${target5}; short build reaches it in one play on ${'<eyeball above>'} racks`);
