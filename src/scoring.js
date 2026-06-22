@@ -5,24 +5,32 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
   const ctx = { word, letters, selection, ...context };
 
   // Phase 1 — base Wit
-  let wit = selection.reduce(
+  const base = selection.reduce(
     (s, { tile, letter }) => s + (tile.letter === '*' ? 0 : (tileValues[letter.toUpperCase()] || 0)),
     0
   );
-  wit += Math.max(0, letters.length - 3) * lengthBonusPerLetter;
+  const lengthBonus = Math.max(0, letters.length - 3) * lengthBonusPerLetter;
+  let wit = base + lengthBonus;
 
   let addMult = 0, timesMult = 1;
-  const apply = (d) => {
+
+  // Breakdown tracking
+  const witParts = [];
+  const addMultParts = [];
+  const timesMultParts = [];
+
+  const apply = (d, label) => {
     if (!d) return;
-    wit += d.addWit ?? 0;
-    addMult += d.addMult || 0;
-    timesMult *= (d.timesMult ?? 1);
+    if (d.addWit) { wit += d.addWit; witParts.push({ label, amount: d.addWit }); }
+    if (d.addMult) { addMult += d.addMult; addMultParts.push({ label, amount: d.addMult }); }
+    if (d.timesMult && d.timesMult !== 1) { timesMult *= d.timesMult; timesMultParts.push({ label, amount: d.timesMult }); }
   };
 
-  for (const relic of relics) apply(relic.evaluate?.(ctx));          // global (none in Tier 0)
-  for (const { tile } of selection)                                  // tile-mods (none in Tier 0)
-    for (const mod of (tile.mods || [])) apply(mod.evaluate?.(tile, ctx));
+  for (const relic of relics) apply(relic.evaluate?.(ctx), relic.name || relic.id);   // global
+  for (const { tile } of selection)                                                     // tile-mods
+    for (const mod of (tile.mods || [])) apply(mod.evaluate?.(tile, ctx), mod.name || mod.id);
 
   const mult = (1 + addMult) * timesMult;                            // +Mult then ×Mult
-  return { wit, mult, points: wit * mult };
+  const breakdown = { base, lengthBonus, witParts, addMultParts, timesMultParts };
+  return { wit, mult, points: wit * mult, breakdown };
 }

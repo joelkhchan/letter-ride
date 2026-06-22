@@ -1,11 +1,76 @@
 :root { color-scheme: light dark; }
 body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; }
-#hud { display: flex; justify-content: space-between; font-size: 1.1rem; margin-bottom: 12px; }
+#hud { display: flex; justify-content: space-between; font-size: 1.1rem; margin-bottom: 12px; flex-wrap: wrap; gap: 4px; }
 #staging { min-height: 2.2rem; font-size: 2rem; letter-spacing: 4px; text-align: center; font-weight: 700; }
+
+/* Rack tiles */
 #rack { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 12px 0; }
-.tile { width: 56px; height: 56px; font-size: 1.6rem; font-weight: 700; border-radius: 10px; border: 2px solid #888; background: #fafafa; }
+.tile {
+  position: relative;
+  width: 56px; height: 56px;
+  font-size: 1.6rem; font-weight: 700;
+  border-radius: 10px; border: 2px solid #888; background: #fafafa;
+  display: flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px;  /* keep tap target large */
+}
 .tile.used { opacity: 0.3; }
+
+/* Mod badge — top-left */
+.mod-badge {
+  position: absolute; top: 2px; left: 3px;
+  font-size: 0.5rem; font-weight: 700;
+  background: #e67e22; color: #fff;
+  border-radius: 3px; padding: 1px 3px;
+  line-height: 1.2;
+}
+
+/* Tile value badge — top-right */
+.tile-val {
+  position: absolute; top: 2px; right: 3px;
+  font-size: 0.55rem; font-weight: 600;
+  color: #555;
+  line-height: 1.2;
+}
+
+/* Live scorebug */
+#scorebug {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  margin: 6px auto; padding: 8px 14px;
+  background: #f0f8ff; border: 1.5px solid #6ab0de; border-radius: 10px;
+  max-width: 360px;
+}
+.sb-word { font-size: 1.4rem; font-weight: 700; letter-spacing: 3px; }
+.sb-formula { font-size: 1rem; font-weight: 600; }
+.sb-detail { font-size: 0.8rem; color: #555; }
+
+/* Last play result */
+#last-play {
+  text-align: center; font-size: 0.95rem; color: #27ae60;
+  margin: 4px 0 2px;
+}
+
+/* Relics + mods panel */
+#relics-mods-panel {
+  background: #fafafa; border: 1px solid #ddd; border-radius: 8px;
+  padding: 6px 10px; margin-bottom: 8px; font-size: 0.85rem;
+}
+.rp-row { margin: 2px 0; }
+.rp-label { font-weight: 700; }
+.relic-entry { cursor: default; border-bottom: 1px dotted #888; }
+.none-label { color: #aaa; font-style: italic; }
+
+/* Controls */
 #controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 14px; }
 #controls button { font-size: 1.1rem; padding: 12px 18px; border-radius: 10px; }
 #msg { text-align: center; color: #c0392b; min-height: 1.2rem; }
 .end { width: 100%; text-align: center; font-size: 1.3rem; margin: 8px 0; }
+
+@media (prefers-color-scheme: dark) {
+  .tile { background: #2a2a2a; border-color: #666; color: #eee; }
+  .tile-val { color: #aaa; }
+  #scorebug { background: #1a2733; border-color: #4a8ab0; color: #ddd; }
+  .sb-detail { color: #aaa; }
+  #relics-mods-panel { background: #1e1e1e; border-color: #444; }
+  #last-play { color: #5dba7d; }
+  .none-label { color: #666; }
+}

@@ -1,6 +1,8 @@
 // src/ui.js
 import { metaShopOffers } from './meta.js';
 import { RELICS } from './relics.js';
+import { getMod } from './tiles.js';
+import { scoreWord } from './scoring.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -32,11 +34,11 @@ function tapTile(tile) {
 function offerLabel(offer) {
   switch (offer.type) {
     case 'buyLetter':        return `Buy ${offer.letter} — ${offer.cost}c`;
-    case 'buyEnchantedTile': return `${offer.letter} ×${offer.modId} — ${offer.cost}c`;
-    case 'enchantTile':      return `Enchant a tile (${offer.modId}) — ${offer.cost}c`;
+    case 'buyEnchantedTile': return `${offer.letter} (${getMod(offer.modId)?.name || offer.modId}) — ${offer.cost}c`;
+    case 'enchantTile':      return `Enchant a tile (${getMod(offer.modId)?.name || offer.modId}) — ${offer.cost}c`;
     case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} — ${offer.cost}c`;
     case 'thinLetter':       return `Thin a tile — ${offer.cost}c`;
-    case 'buyRelic':         return `Relic: ${offer.relicId} — ${offer.cost}c`;
+    case 'buyRelic':         return `Relic: ${RELICS[offer.relicId]?.name || offer.relicId} — ${offer.cost}c`;
     default:                 return `${offer.type} — ${offer.cost}c`;
   }
 }
@@ -65,7 +67,7 @@ function showTilePicker(run, offer) {
   grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:320px;';
 
   run.bag.tiles.forEach(tile => {
-    const modsLabel = tile.mods && tile.mods.length ? ` [${tile.mods.map(m => m.id[0].toUpperCase()).join('')}]` : '';
+    const modsLabel = tile.mods && tile.mods.length ? ` [${tile.mods.map(m => m.name || m.id[0].toUpperCase()).join(', ')}]` : '';
     const btn = document.createElement('button');
     btn.textContent = tile.letter + modsLabel;
     btn.style.cssText = 'padding:10px 14px;font-size:1em;border-radius:6px;cursor:pointer;';
@@ -90,6 +92,62 @@ function showTilePicker(run, offer) {
   document.body.appendChild(overlay);
 }
 
+// Build relics + tile-mods panel HTML (always rendered during play and shop).
+function relicsModsPanelHtml(run) {
+  const relicsText = (run.relics && run.relics.length)
+    ? run.relics.map(r => `<span class="relic-entry" title="${r.desc || ''}">${r.name}</span>`).join(' · ')
+    : '<span class="none-label">none yet</span>';
+
+  // Collect all rack + bag tiles with mods
+  const allTiles = [
+    ...(run.rack || []),
+    ...(run.bag?.tiles || []),
+  ];
+  const moddedTiles = allTiles.filter(t => t.mods && t.mods.length);
+  const modsText = moddedTiles.length
+    ? moddedTiles.map(t => `${t.letter}:${t.mods.map(m => m.name || m.id).join('+')}`)
+        .join(', ')
+    : '<span class="none-label">none yet</span>';
+
+  return `<div id="relics-mods-panel">
+    <div class="rp-row"><span class="rp-label">Relics:</span> ${relicsText}</div>
+    <div class="rp-row"><span class="rp-label">Tile-mods:</span> ${modsText}</div>
+  </div>`;
+}
+
+// Build live scorebug HTML for the current selection (read-only preview).
+function scorePreviewHtml(run, sel) {
+  if (!sel.length) return '';
+  const result = scoreWord(sel, {
+    tileValues: run.tileValues,
+    lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
+    relics: run.relics || [],
+    context: { wordsPlayedThisRound: run.wordsPlayedThisRound },
+  });
+  const bd = result.breakdown;
+
+  // Build itemization string
+  const parts = [];
+  parts.push(`Base ${bd.base}`);
+  if (bd.lengthBonus > 0) parts.push(`+${bd.lengthBonus} length`);
+  for (const p of bd.witParts) parts.push(`+${p.amount} ${p.label}`);
+
+  let multStr = `×${result.mult % 1 === 0 ? result.mult : result.mult.toFixed(2)}`;
+  const multParts = [];
+  if (bd.addMultParts.length) multParts.push(bd.addMultParts.map(p => `+${p.amount} ${p.label}`).join(', '));
+  if (bd.timesMultParts.length) multParts.push(bd.timesMultParts.map(p => `×${p.amount} ${p.label}`).join(', '));
+
+  const witPart = parts.join(' ');
+  const multDetail = multParts.length ? ` (${multParts.join('; ')})` : '';
+  const word = sel.map(s => s.letter).join('');
+
+  return `<div id="scorebug">
+    <span class="sb-word">${word}</span>
+    <span class="sb-formula">${result.wit} Wit ${multStr} Mult${multDetail} = <b>${result.points}</b> pts</span>
+    <span class="sb-detail">${witPart}</span>
+  </div>`;
+}
+
 export function renderRun(run) {
   lastRun = run;
 
@@ -103,15 +161,18 @@ export function renderRun(run) {
   const staged = selection.map(s => s.letter).join('');
   const done = run.status !== 'playing';
 
-  // Active relics row (names only).
-  const relicsHtml = run.relics && run.relics.length
-    ? `<div id="relics">Relics: ${run.relics.map(r => r.name).join(', ')}</div>`
-    : '';
-
   // Coins counter (only in Tier 1; coins field exists on run after Task 10).
   const coinsHtml = (typeof run.coins === 'number')
     ? `<div id="coins">Coins: ${run.coins}</div>`
     : '';
+
+  // Last play result
+  const lastPlayHtml = run.lastPlay
+    ? `<div id="last-play">Last: <b>${run.lastPlay.word}</b> = ${run.lastPlay.points} pts</div>`
+    : '';
+
+  // Live score preview (only when playing and selection non-empty)
+  const preview = (!done && selection.length) ? scorePreviewHtml(run, selection) : '';
 
   app().innerHTML = `
     <div id="hud">
@@ -120,14 +181,17 @@ export function renderRun(run) {
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
     </div>
-    ${relicsHtml}
+    ${relicsModsPanelHtml(run)}
+    ${lastPlayHtml}
     <div id="staging">${staged || '&nbsp;'}</div>
+    ${preview}
     <div id="rack">
       ${run.rack.map(t => {
         const modBadge = t.mods && t.mods.length
-          ? `<span class="mod-badge">${t.mods.map(m => m.id[0].toUpperCase()).join('')}</span>`
+          ? `<span class="mod-badge">${t.mods.map(m => (m.name || m.id)[0].toUpperCase()).join('')}</span>`
           : '';
-        return `<button class="tile ${inRack(t.id) ? 'used' : ''}" data-id="${t.id}">${t.letter}${modBadge}</button>`;
+        const tileVal = t.letter === '*' ? '' : `<span class="tile-val">${(run.tileValues || {})[t.letter] ?? 0}</span>`;
+        return `<button class="tile ${inRack(t.id) ? 'used' : ''}" data-id="${t.id}">${t.letter}${modBadge}${tileVal}</button>`;
       }).join('')}
     </div>
     <div id="msg"></div>
@@ -145,11 +209,41 @@ export function renderRun(run) {
     if (btn && !inRack(t.id)) btn.onclick = () => tapTile(t);
   });
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
-  on('submit', () => { const s = selection; selection = []; handlers.onSubmit?.(s); });
+  on('submit', () => { const s = selection; selection = []; const r = handlers.onSubmit?.(s); });
   on('back', () => { selection.pop(); renderRun(run); });
   on('clear', () => { selection = []; renderRun(run); });
   on('discard', () => { selection = []; handlers.onDiscard?.(); });
   on('new', () => { selection = []; handlers.onRunEnd?.(); });
+}
+
+// Keyboard handler — exported so main.js can wire it.
+// Operates on module-level lastRun + selection.
+// Wilds are still placed by tap only; typing only matches real-letter tiles.
+export function handleRunKey(e) {
+  if (!lastRun || lastRun.status !== 'playing') return;
+
+  if (/^[a-zA-Z]$/.test(e.key)) {
+    const L = e.key.toUpperCase();
+    const tile = lastRun.rack.find(t => t.letter === L && !selection.some(s => s.tile.id === t.id));
+    if (tile) {
+      selection.push({ tile, letter: L });
+      e.preventDefault();
+      renderRun(lastRun);
+    }
+  } else if (e.key === 'Backspace') {
+    e.preventDefault();
+    selection.pop();
+    renderRun(lastRun);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const s = selection;
+    selection = [];
+    handlers.onSubmit?.(s);
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    selection = [];
+    renderRun(lastRun);
+  }
 }
 
 function renderShop(run) {
@@ -165,18 +259,13 @@ function renderShop(run) {
 
   const rerollDisabled = !canAfford(shop.rerollCost) ? 'disabled' : '';
 
-  // Active relics row.
-  const relicsHtml = run.relics && run.relics.length
-    ? `<div id="relics">Relics: ${run.relics.map(r => r.name).join(', ')}</div>`
-    : '';
-
   app().innerHTML = `
     <div id="hud">
       <div>Round ${run.roundIndex + 1}/${run.targets.length} — Shop</div>
       <div><b>${run.roundTotal}</b> / ${run.target} Points ✓</div>
       <div id="coins">Coins: ${coins}</div>
     </div>
-    ${relicsHtml}
+    ${relicsModsPanelHtml(run)}
     <div id="shop">
       <div id="shop-offers">${offersHtml}</div>
       <div id="shop-actions">
@@ -236,8 +325,8 @@ export function renderMeta(meta, config, allRelicIds, allModIds) {
   function metaOfferLabel(offer) {
     switch (offer.type) {
       case 'unlockRelic':  return `Unlock relic: ${RELICS[offer.relicId]?.name || offer.relicId} — ${offer.cost}`;
-      case 'unlockMod':    return `Unlock mod: ${offer.modId} — ${offer.cost}`;
-      case 'unlockDeck':   return `Unlock deck: ${config.DECKS[offer.deckId]?.name || offer.deckId} — ${offer.cost}`;
+      case 'unlockMod':    return `Unlock mod: ${getMod(offer.modId)?.name || offer.modId} — ${offer.cost}`;
+      case 'unlockDeck':   return `Unlock bag: ${config.DECKS[offer.deckId]?.name || offer.deckId} — ${offer.cost}`;
       case 'unlockStake':  return `Unlock stake: ${config.STAKES.find(s => s.id === offer.stakeId)?.name || offer.stakeId} — ${offer.cost}`;
       case 'loadout':      return `${config.LOADOUT[offer.key]?.name || offer.key} — ${offer.cost}`;
       default:             return `${offer.type} — ${offer.cost}`;
@@ -256,7 +345,7 @@ export function renderMeta(meta, config, allRelicIds, allModIds) {
       <h2>Letter Ride</h2>
       <div id="meta-balance">Meta: ${meta.meta}</div>
       <div id="deck-picker">
-        <div><b>Deck:</b></div>
+        <div><b>Bag:</b></div>
         <div id="deck-buttons">${deckButtonsHtml}</div>
       </div>
       <div id="stake-picker">

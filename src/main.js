@@ -7,7 +7,7 @@ import { generateShop, purchase } from './shop.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
-import { renderRun, renderMeta, bindControls, flashInvalid } from './ui.js';
+import { renderRun, renderMeta, bindControls, flashInvalid, handleRunKey } from './ui.js';
 
 try {
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
@@ -39,8 +39,9 @@ try {
 
   bindControls({
     onSubmit(sel) { const r = playWord(run, sel); if (!r.ok) return flashInvalid(r.reason);
+      run.lastPlay = { word: sel.map(s => s.letter).join(''), points: r.scored.points };
       if (run.status === 'roundCleared') run.shop = generateShop(run, run.rng, pool());
-      if (run.status === 'playing') drawRack(run); saveAll(); render(); },
+      if (run.status === 'playing') drawRack(run); saveAll(); render(); return r; },
     onDiscard() { discard(run); saveAll(); render(); },
     onBuy(offer, targetTileId) { const r = purchase(run, offer, { targetTileId }); if (r.ok) run.shop = generateShop(run, run.rng, pool()); saveAll(); render(); return r; },
     onReroll() { if (run.coins >= run.shop.rerollCost) { run.coins -= run.shop.rerollCost; run.shop = generateShop(run, run.rng, pool()); saveAll(); render(); } },
@@ -51,6 +52,7 @@ try {
     onMetaBuy(offer) { const r = purchaseMeta(meta, offer, CONFIG); saveAll(); render(); return r; },
     onStartRun(deckId, stakeId) { startRun(deckId, stakeId); },
   });
+  window.addEventListener('keydown', (e) => { if (view === 'run') handleRunKey(e); });
   render();
 } catch (err) {
   document.getElementById('app').textContent = 'Failed to start Letter Ride: ' + err.message + ' — check that assets/enable1.txt is present and served.';
