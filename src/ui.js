@@ -3,6 +3,7 @@ import { metaShopOffers } from './meta.js';
 import { RELICS } from './relics.js';
 import { getMod } from './tiles.js';
 import { scoreWord } from './scoring.js';
+import { ARCHETYPES } from './archetypes.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -47,6 +48,11 @@ function offerLabel(offer) {
     case 'buyRelic': {
       const relic = RELICS[offer.relicId];
       return `Relic: ${relic?.name || offer.relicId} — ${relic?.desc || ''} — $${offer.cost}`;
+    }
+    case 'hone': {
+      const archetype = ARCHETYPES[offer.archetypeId];
+      const currentLevel = (lastRun?.honeLevels?.[offer.archetypeId] || 0);
+      return `Hone: ${archetype?.name || offer.archetypeId} (Lv ${currentLevel}→${currentLevel + 1}) — $${offer.cost}`;
     }
     default:                 return `${offer.type} — $${offer.cost}`;
   }
@@ -139,9 +145,17 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
         .join(', ')
     : '<span class="none-label">none yet</span>';
 
+  // Hone levels: show only archetypes with level > 0.
+  const honeLevels = run.honeLevels || {};
+  const activeHones = Object.entries(honeLevels).filter(([, lvl]) => lvl > 0);
+  const honeText = activeHones.length
+    ? activeHones.map(([id, lvl]) => `${ARCHETYPES[id]?.name || id} Lv${lvl}`).join(', ')
+    : '<span class="none-label">none yet</span>';
+
   return `<div id="relics-mods-panel">
     <div class="rp-row"><span class="rp-label">Relics:</span> ${relicsText}</div>
     <div class="rp-row"><span class="rp-label">Tile-mods:</span> ${modsText}</div>
+    <div class="rp-row"><span class="rp-label">Hone:</span> ${honeText}</div>
   </div>`;
 }
 
