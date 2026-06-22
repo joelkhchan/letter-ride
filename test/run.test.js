@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { newRun, playWord, nextRound, awardCoins } from '../src/run.js';
+import { honeModifiers } from '../src/archetypes.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
 
@@ -149,4 +150,31 @@ test('newRun applies a stake (plays delta) and loadout (extra discards, start co
   nextRound(run);
   assert.equal(run.playsLeft, config.PLAYS_PER_ROUND - 1);
   assert.equal(run.discardsLeft, config.DISCARDS_PER_ROUND + 1);
+});
+
+test('a hone level adds its archetype bonus to a matching word', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.honeLevels = { shortWord: 2 };           // +2 Mult on <=3-letter words
+  const res = playWord(run, seatCat(run));     // CAT (3 letters): base 5, mult (1+2)=3 -> 15
+  assert.equal(res.scored.score, 15);
+});
+
+test('an enabler relic flag reaches scoring context', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.relics = [{ id: 'wc', enabler: 'wildsAreRare' }];
+  // a relic that scores +7 only when ctx.enablers includes wildsAreRare (proves flow)
+  run.relics.push({ id: 'probe', evaluate: (ctx) => ({ addPoints: ctx.enablers.includes('wildsAreRare') ? 7 : 0 }) });
+  const res = playWord(run, seatCat(run));     // CAT base 5 + 7 = 12
+  assert.equal(res.scored.points, 12);
+});
+
+test('extraPlays is derived from current relics each round (loadout + shop-bought)', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1, loadout: { startRelics: [{ id:'ep', extraPlays: 1, evaluate:()=>({}) }] } });
+  assert.equal(run.playsLeft, config.PLAYS_PER_ROUND + 1);          // loadout Overtime active in round 1
+  run.relics.push({ id:'ep2', extraPlays: 1, evaluate:()=>({}) });  // simulate a shop-bought Overtime
+  nextRound(run);
+  assert.equal(run.playsLeft, config.PLAYS_PER_ROUND + 2);          // BOTH apply next round, no double-count
 });

@@ -3,6 +3,9 @@ import { makeTile } from './tiles.js';
 import { makeRng } from './rng.js';
 import { validate, isLegalSelection } from './word.js';
 import { scoreWord } from './scoring.js';
+import { honeModifiers } from './archetypes.js';
+
+const sumExtraPlays = (relics = []) => relics.reduce((n, r) => n + (r.extraPlays || 0), 0);
 
 export function awardCoins(run) {
   const c = run.config.COINS_ON_CLEAR;
@@ -31,6 +34,7 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
   const letters = (deck && deck.startingBag) || config.STARTING_BAG;
   const playsPerRound = config.PLAYS_PER_ROUND + (stake?.playsDelta || 0);
   const discardsPerRound = config.DISCARDS_PER_ROUND + (stake?.discardsDelta || 0) + (loadout.extraDiscards || 0);
+  const startRelics = [...(loadout.startRelics || [])];
   return {
     config, dictionary,
     seed, rng: makeRng(seed),
@@ -40,13 +44,14 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     roundTotal: 0,
     playsPerRound,
     discardsPerRound,
-    playsLeft: playsPerRound,
+    playsLeft: playsPerRound + sumExtraPlays(startRelics),
     discardsLeft: discardsPerRound,
     bag: makeBag(letters.map(l => makeTile(l))),
     tileValues: { ...config.TILE_VALUES },
-    relics: [...(loadout.startRelics || [])],
+    relics: startRelics,
     coins: loadout.startCoins || 0,
     rack: [],
+    honeLevels: {},
     wordsPlayedThisRound: 0,
     stake, deck,
     status: 'playing',
@@ -62,11 +67,13 @@ export function playWord(run, selection) {
   if (!isLegalSelection(selection, run.rack)) return { ok: false, reason: 'illegal', run };
   const v = validate(selection, run.dictionary, run.config.MIN_WORD_LEN);
   if (!v.ok) return { ok: false, reason: v.reason, run };
+  const enablers = run.relics.filter(r => r.enabler).map(r => r.enabler);
+  const allMods = [...run.relics, ...honeModifiers(run.honeLevels)];
   const scored = scoreWord(selection, {
     tileValues: run.tileValues,
     lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
-    relics: run.relics,
-    context: { wordsPlayedThisRound: run.wordsPlayedThisRound },
+    relics: allMods,
+    context: { wordsPlayedThisRound: run.wordsPlayedThisRound, enablers },
   });
   run.roundTotal += scored.score;
   run.wordsPlayedThisRound += 1;
@@ -87,7 +94,7 @@ export function nextRound(run) {
   run.roundIndex = next;
   run.target = run.targets[next];
   run.roundTotal = 0;
-  run.playsLeft = run.playsPerRound;
+  run.playsLeft = run.playsPerRound + sumExtraPlays(run.relics);
   run.discardsLeft = run.discardsPerRound;
   run.wordsPlayedThisRound = 0;
   run.status = 'playing';
