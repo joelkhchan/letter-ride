@@ -239,7 +239,7 @@ test('extraPlays is derived from current relics each round (loadout + shop-bough
 
 **Files:** Modify `src/storage.js`, `test/storage.test.js`.
 
-- [ ] **Step 1: Failing test** — append two cases: (a) serialize→deserialize a run with `run.honeLevels = { rareLetter: 3 }` preserves it; (b) a run owning an enabler relic survives the round-trip with its flag intact — give the run `wildcardRares`, then `assert.ok(restored.relics.some(r => r.enabler === 'wildsAreRare'))`. This confirms the new `enabler` field survives because relics restore by id from the registry (the field lives on the registry object, not the serialized state).
+- [ ] **Step 1: Failing test** — append: serialize→deserialize a run with `run.honeLevels = { rareLetter: 3 }` preserves it (and a run with no `honeLevels` deserializes to `{}`). (The enabler-relic round-trip assertion lives in **Task 5**, where the `wildcardRares` enabler relic is actually defined — it can't be tested here because that relic doesn't exist yet.)
 - [ ] **Step 2: Run, see fail.**
 - [ ] **Step 3: Implement** — `serializeRun`: add `honeLevels: run.honeLevels || {}`; `deserializeRun`: add `honeLevels: data.honeLevels || {}`.
 - [ ] **Step 4: Run, pass; `npm test`.**
@@ -295,7 +295,8 @@ The `hasRareCtx`/`isDoubledCtx` calls above are the SAME enabler-aware predicate
 import { hasRare as hasRareCtx, isDoubled as isDoubledCtx } from './archetypes.js';
 ```
 
-- [ ] **Step 1: Failing tests** — for each new relic, assert its delta on a fixed word via `scoreWord` (e.g. `rareSurge` on 'QI' → mult ×1.5; `echoChamber` on 'BALL' → ×2; `momentum` with `context.wordsPlayedThisRound:3` → +30 Points; `wildcardRares` sets the enabler so `rareSurge` fires on a wild — test through run.js or by passing `context.enablers:['wildsAreRare']`). Assert `overtime.extraPlays === 1`.
+- [ ] **Step 1: Failing tests** — for each new relic, assert its delta on a fixed word via `scoreWord` (e.g. `rareSurge` on 'QI' → mult ×1.5; `echoChamber` on 'BALL' → ×2; `momentum` with `context.wordsPlayedThisRound:3` → +30 Points; `wildcardRares` sets the enabler so `rareSurge` fires on a wild — test by passing `context.enablers:['wildsAreRare']`). Assert `overtime.extraPlays === 1`.
+- [ ] **Step 1b: Storage round-trip test (moved here from Task 3)** — in `test/storage.test.js`, add a case: a run owning `wildcardRares` deserializes with its enabler flag intact — `assert.ok(restored.relics.some(r => r.enabler === 'wildsAreRare'))`. Confirms the new `enabler` field survives because relics restore by id from the registry (the field lives on the registry object, not the serialized state). This belongs here, not Task 3, because `wildcardRares` is defined in this task.
 - [ ] **Step 2–4:** implement, run, `npm test` green. Ensure `ALL_RELIC_IDS` includes the new ids.
 - [ ] **Step 5: Commit** — `feat: 8 archetype relics (Mult engines, enablers, escalation)`.
 
