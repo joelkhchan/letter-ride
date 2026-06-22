@@ -95,6 +95,44 @@ test('awardCoins sets run.lastAward with correct line items summing to total', (
   assert.equal(res.run.coins, sum, 'run.coins must equal sum of lastAward amounts');
 });
 
+test('interest: holding $20 with INTEREST{per:5,rate:1,cap:5} earns $4 interest on round clear', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.config = {
+    ...config,
+    COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 },
+    INTEREST: { enabled: true, per: 5, rate: 1, cap: 5 },
+  };
+  run.coins = 20;  // set before round clear so interest is computed on held coins
+  const res = playWord(run, seatCat(run));  // CAT=5 clears target 5; playsLeft 2->1, discards 1
+  assert.equal(res.run.status, 'roundCleared');
+  // interest = min(5, floor(20/5)*1) = min(5,4) = 4
+  const award = res.run.lastAward;
+  const interestItem = award.find(x => x.label === 'Interest');
+  assert.ok(interestItem, 'lastAward should include an Interest line item');
+  assert.equal(interestItem.amount, 4, 'Interest should be $4 on $20 held');
+  // total = 20 (held) + base 4 + 1 unused play + 1 unused discard + 4 interest = 30
+  assert.equal(res.run.coins, 20 + 4 + 1 + 1 + 4, 'run.coins should include held + all earnings + interest');
+});
+
+test('interest: INTEREST.enabled=false adds no interest line and no interest coins', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.config = {
+    ...config,
+    COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 },
+    INTEREST: { enabled: false, per: 5, rate: 1, cap: 5 },
+  };
+  run.coins = 20;
+  const res = playWord(run, seatCat(run));
+  assert.equal(res.run.status, 'roundCleared');
+  const award = res.run.lastAward;
+  const interestItem = award.find(x => x.label === 'Interest');
+  assert.equal(interestItem, undefined, 'Interest line should not appear when disabled');
+  // coins = 20 held + base 4 + 1 unused play + 1 unused discard = 26 (no interest)
+  assert.equal(res.run.coins, 20 + 4 + 1 + 1, 'run.coins should not include interest when disabled');
+});
+
 test('newRun applies a stake (plays delta) and loadout (extra discards, start coins, start relic)', () => {
   resetTileIds();
   const relic = { id: 'startTest', evaluate: () => ({}) };

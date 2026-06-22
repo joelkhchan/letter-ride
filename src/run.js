@@ -6,6 +6,8 @@ import { scoreWord } from './scoring.js';
 
 export function awardCoins(run) {
   const c = run.config.COINS_ON_CLEAR;
+  const i = run.config.INTEREST;
+  const interest = (i && i.enabled) ? Math.min(i.cap, Math.floor(run.coins / i.per) * i.rate) : 0;
   const items = [];
   items.push({ label: 'Round clear', amount: c.base });
   if (run.playsLeft > 0) {
@@ -18,6 +20,7 @@ export function awardCoins(run) {
     const amt = r.coinsOnRoundClear?.(run) ?? 0;
     if (amt > 0) items.push({ label: r.name, amount: amt });
   }
+  if (interest > 0) items.push({ label: 'Interest', amount: interest });
   const coins = items.reduce((sum, x) => sum + x.amount, 0);
   run.lastAward = items;
   run.coins += coins;
