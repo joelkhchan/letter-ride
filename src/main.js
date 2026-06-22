@@ -57,7 +57,7 @@ try {
 
   bindControls({
     onSubmit(sel) { const r = playWord(run, sel); if (!r.ok) return flashInvalid(r.reason);
-      recordPlay(telemetry, sel.length);
+      recordPlay(telemetry, { letters: sel.map(s => s.letter.toUpperCase()), word: sel.map(s => s.letter).join('').toUpperCase(), selection: sel, wordsPlayedThisRound: run.wordsPlayedThisRound, enablers: run.relics.filter(rv => rv.enabler).map(rv => rv.enabler) }, r.scored?.score ?? 0);
       run.lastPlay = { word: sel.map(s => s.letter).join(''), score: r.scored.score };
       if (run.status === 'roundCleared') {
         run.shop = generateShop(run, run.rng, pool());

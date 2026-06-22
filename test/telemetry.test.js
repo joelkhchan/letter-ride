@@ -10,9 +10,20 @@ const fakeStorage = () => {
   return { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = v; } };
 };
 
+// Helper: build a minimal ctx from a word string
+function ctx(word, opts = {}) {
+  return {
+    letters: [...word.toUpperCase()],
+    word: word.toUpperCase(),
+    selection: [],
+    wordsPlayedThisRound: opts.wordsPlayedThisRound || 0,
+    enablers: opts.enablers || [],
+  };
+}
+
 test('makeTelemetry returns correct shape with zero values', () => {
   const t = makeTelemetry();
-  assert.deepEqual(t, { items: {}, plays: 0, totalWordLen: 0, runs: 0, wins: 0 });
+  assert.deepEqual(t, { items: {}, plays: 0, totalWordLen: 0, runs: 0, wins: 0, archetypes: {} });
 });
 
 test('loadTelemetry on absent key returns fresh', () => {
@@ -36,6 +47,7 @@ test('saveTelemetry / loadTelemetry round-trip preserves all fields', () => {
   t.runs = 3;
   t.wins = 2;
   t.items['relicA'] = { offered: 4, purchased: 2, runsWith: 2, winsWith: 1 };
+  t.archetypes['shortWord'] = { plays: 2, totalScore: 40 };
   saveTelemetry(t, s);
   const back = loadTelemetry(s);
   assert.equal(back.plays, 5);
@@ -43,6 +55,7 @@ test('saveTelemetry / loadTelemetry round-trip preserves all fields', () => {
   assert.equal(back.runs, 3);
   assert.equal(back.wins, 2);
   assert.deepEqual(back.items['relicA'], { offered: 4, purchased: 2, runsWith: 2, winsWith: 1 });
+  assert.deepEqual(back.archetypes['shortWord'], { plays: 2, totalScore: 40 });
 });
 
 test('recordOffers lazily inits items and increments offered', () => {
@@ -66,14 +79,35 @@ test('recordPurchase increments purchased (lazily inits)', () => {
   assert.equal(t.items['modX'].purchased, 2);
 });
 
-test('recordPlay accumulates plays and totalWordLen', () => {
+test('recordPlay accumulates plays and totalWordLen (ctx signature)', () => {
   const t = makeTelemetry();
-  recordPlay(t, 4);
+  recordPlay(t, ctx('ABCD'), 10);
   assert.equal(t.plays, 1);
   assert.equal(t.totalWordLen, 4);
-  recordPlay(t, 6);
+  recordPlay(t, ctx('ABCDEF'), 20);
   assert.equal(t.plays, 2);
   assert.equal(t.totalWordLen, 10);
+});
+
+test('recordPlay classifies per-archetype: QI hits rareLetter+shortWord+escalation, CAT hits shortWord+escalation', () => {
+  const t = makeTelemetry();
+
+  // QI: 2 letters, uses rare Q → matches shortWord, rareLetter, escalation (always true), NOT vowelHeavy/doubled/longWord
+  const qiCtx = ctx('QI', { wordsPlayedThisRound: 0 });
+  recordPlay(t, qiCtx, 50);
+
+  // CAT: 3 letters, no rare → matches shortWord, escalation; NOT rareLetter/doubled/vowelHeavy/longWord
+  const catCtx = ctx('CAT', { wordsPlayedThisRound: 1 });
+  recordPlay(t, catCtx, 20);
+
+  assert.equal(t.archetypes['shortWord']?.plays, 2, 'shortWord should have 2 plays (QI + CAT)');
+  assert.equal(t.archetypes['rareLetter']?.plays, 1, 'rareLetter should have 1 play (QI only)');
+  assert.equal(t.archetypes['escalation']?.plays, 2, 'escalation matches every play');
+  assert.equal(t.archetypes['longWord']?.plays, undefined, 'longWord should have no plays');
+
+  // Scores: QI→50, CAT→20; shortWord total = 70
+  assert.equal(t.archetypes['shortWord'].totalScore, 70, 'shortWord totalScore = 50+20');
+  assert.equal(t.archetypes['rareLetter'].totalScore, 50, 'rareLetter totalScore = 50');
 });
 
 test('recordRunEnd with won=true increments runs, wins, runsWith, winsWith', () => {
@@ -103,10 +137,10 @@ test('summarize computes correct pickRate, winRate, avgWordLen after a realistic
   recordOffers(t, ['relicA', 'relicB']);
   // Purchase relicA
   recordPurchase(t, 'relicA');
-  // Play word length 4
-  recordPlay(t, 4);
+  // Play word length 4 (ABCD — no special archetypes in vanilla ctx)
+  recordPlay(t, ctx('ABCD'), 10);
   // Play word length 6
-  recordPlay(t, 6);
+  recordPlay(t, ctx('ABCDEF'), 20);
   // endRun won=true, ownedIds=[relicA]
   recordRunEnd(t, { won: true, ownedIds: ['relicA'] });
   // endRun won=false, ownedIds=[relicA, relicB]
@@ -136,4 +170,7 @@ test('summarize computes correct pickRate, winRate, avgWordLen after a realistic
   assert.equal(relicB.pickRate, 0);
   // relicB runsWith=1, winsWith=0 → winRate=0
   assert.equal(relicB.winRate, 0);
+
+  // Archetypes should be in summarize output
+  assert.ok(Array.isArray(s.archetypes), 'summarize should include archetypes array');
 });
