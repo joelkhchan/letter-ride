@@ -6,8 +6,20 @@ import { scoreWord } from './scoring.js';
 
 export function awardCoins(run) {
   const c = run.config.COINS_ON_CLEAR;
-  let coins = c.base + c.perUnusedPlay * run.playsLeft + c.perUnusedDiscard * run.discardsLeft;
-  for (const r of run.relics) coins += r.coinsOnRoundClear?.(run) ?? 0;
+  const items = [];
+  items.push({ label: 'Round clear', amount: c.base });
+  if (run.playsLeft > 0) {
+    items.push({ label: `${run.playsLeft} unused play${run.playsLeft === 1 ? '' : 's'}`, amount: c.perUnusedPlay * run.playsLeft });
+  }
+  if (run.discardsLeft > 0) {
+    items.push({ label: `${run.discardsLeft} unused discard${run.discardsLeft === 1 ? '' : 's'}`, amount: c.perUnusedDiscard * run.discardsLeft });
+  }
+  for (const r of run.relics) {
+    const amt = r.coinsOnRoundClear?.(run) ?? 0;
+    if (amt > 0) items.push({ label: r.name, amount: amt });
+  }
+  const coins = items.reduce((sum, x) => sum + x.amount, 0);
+  run.lastAward = items;
   run.coins += coins;
   return coins;
 }

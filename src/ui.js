@@ -34,11 +34,20 @@ function tapTile(tile) {
 function offerLabel(offer) {
   switch (offer.type) {
     case 'buyLetter':        return `Buy ${offer.letter} — $${offer.cost}`;
-    case 'buyEnchantedTile': return `${offer.letter} (${getMod(offer.modId)?.name || offer.modId}) — $${offer.cost}`;
-    case 'enchantTile':      return `Enchant a tile (${getMod(offer.modId)?.name || offer.modId}) — $${offer.cost}`;
+    case 'buyEnchantedTile': {
+      const mod = getMod(offer.modId);
+      return `${offer.letter} + ${mod?.name || offer.modId} (${mod?.desc || ''}) — $${offer.cost}`;
+    }
+    case 'enchantTile': {
+      const mod = getMod(offer.modId);
+      return `Enchant a tile: ${mod?.name || offer.modId} — ${mod?.desc || ''} — $${offer.cost}`;
+    }
     case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} — $${offer.cost}`;
     case 'thinLetter':       return `Thin a tile — $${offer.cost}`;
-    case 'buyRelic':         return `Relic: ${RELICS[offer.relicId]?.name || offer.relicId} — $${offer.cost}`;
+    case 'buyRelic': {
+      const relic = RELICS[offer.relicId];
+      return `Relic: ${relic?.name || offer.relicId} — ${relic?.desc || ''} — $${offer.cost}`;
+    }
     default:                 return `${offer.type} — $${offer.cost}`;
   }
 }
@@ -70,6 +79,9 @@ function showTilePicker(run, offer) {
     const modsLabel = tile.mods && tile.mods.length ? ` [${tile.mods.map(m => m.name || m.id[0].toUpperCase()).join(', ')}]` : '';
     const btn = document.createElement('button');
     btn.textContent = tile.letter + modsLabel;
+    if (tile.mods && tile.mods.length) {
+      btn.title = tile.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ');
+    }
     btn.style.cssText = 'padding:10px 14px;font-size:1em;border-radius:6px;cursor:pointer;';
     btn.onclick = () => {
       overlay.remove();
@@ -191,7 +203,10 @@ export function renderRun(run) {
           ? `<span class="mod-badge">${t.mods.map(m => (m.name || m.id)[0].toUpperCase()).join('')}</span>`
           : '';
         const tileVal = t.letter === '*' ? '' : `<span class="tile-val">${(run.tileValues || {})[t.letter] ?? 0}</span>`;
-        return `<button class="tile ${inRack(t.id) ? 'used' : ''}" data-id="${t.id}">${t.letter}${modBadge}${tileVal}</button>`;
+        const titleAttr = t.mods && t.mods.length
+          ? ` title="${t.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ')}"`
+          : '';
+        return `<button class="tile ${inRack(t.id) ? 'used' : ''}" data-id="${t.id}"${titleAttr}>${t.letter}${modBadge}${tileVal}</button>`;
       }).join('')}
     </div>
     <div id="msg"></div>
@@ -259,6 +274,13 @@ function renderShop(run) {
 
   const rerollDisabled = !canAfford(shop.rerollCost) ? 'disabled' : '';
 
+  let lastAwardHtml = '';
+  if (run.lastAward && run.lastAward.length) {
+    const total = run.lastAward.reduce((s, x) => s + x.amount, 0);
+    const breakdown = run.lastAward.map(x => `${x.label} $${x.amount}`).join(' · ');
+    lastAwardHtml = `<div id="scorebug">Earned $${total}  ·  ${breakdown}</div>`;
+  }
+
   app().innerHTML = `
     <div id="hud">
       <div>Round ${run.roundIndex + 1}/${run.targets.length} — Shop</div>
@@ -266,6 +288,7 @@ function renderShop(run) {
       <div id="coins">$${coins}</div>
     </div>
     ${relicsModsPanelHtml(run)}
+    ${lastAwardHtml}
     <div id="shop">
       <div id="shop-offers">${offersHtml}</div>
       <div id="shop-actions">
@@ -324,8 +347,14 @@ export function renderMeta(meta, config, allRelicIds, allModIds) {
   // Build meta-shop offers HTML.
   function metaOfferLabel(offer) {
     switch (offer.type) {
-      case 'unlockRelic':  return `Unlock relic: ${RELICS[offer.relicId]?.name || offer.relicId} — ${offer.cost}`;
-      case 'unlockMod':    return `Unlock mod: ${getMod(offer.modId)?.name || offer.modId} — ${offer.cost}`;
+      case 'unlockRelic': {
+        const relic = RELICS[offer.relicId];
+        return `Unlock relic: ${relic?.name || offer.relicId} — ${relic?.desc || ''} — ${offer.cost}`;
+      }
+      case 'unlockMod': {
+        const mod = getMod(offer.modId);
+        return `Unlock mod: ${mod?.name || offer.modId} — ${mod?.desc || ''} — ${offer.cost}`;
+      }
       case 'unlockDeck':   return `Unlock bag: ${config.DECKS[offer.deckId]?.name || offer.deckId} — ${offer.cost}`;
       case 'unlockStake':  return `Unlock stake: ${config.STAKES.find(s => s.id === offer.stakeId)?.name || offer.stakeId} — ${offer.cost}`;
       case 'loadout':      return `${config.LOADOUT[offer.key]?.name || offer.key} — ${offer.cost}`;

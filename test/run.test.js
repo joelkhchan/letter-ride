@@ -1,7 +1,7 @@
 // test/run.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { newRun, playWord, nextRound } from '../src/run.js';
+import { newRun, playWord, nextRound, awardCoins } from '../src/run.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
 
@@ -72,6 +72,27 @@ test('an economy relic with coinsOnRoundClear adds to the award', () => {
   run.relics = [{ id: 'recyclerTest', coinsOnRoundClear: (r) => 2 * r.playsLeft }];
   const res = playWord(run, seatCat(run));        // playsLeft after play = 1 -> +2 coins
   assert.equal(res.run.coins, 6 + 2);             // base award 6 + relic 2*1 = 8
+});
+
+test('awardCoins sets run.lastAward with correct line items summing to total', () => {
+  resetTileIds();
+  const COINS_ON_CLEAR = { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 };
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.config = { ...config, COINS_ON_CLEAR };
+  const res = playWord(run, seatCat(run));  // CAT=5 clears target 5; playsLeft 2->1, discards 1
+  assert.equal(res.run.status, 'roundCleared');
+  const award = res.run.lastAward;
+  assert.ok(Array.isArray(award), 'lastAward should be an array');
+  // Should have: round clear, 1 unused play, 1 unused discard
+  const labels = award.map(x => x.label);
+  assert.ok(labels.includes('Round clear'), 'should include Round clear');
+  assert.ok(labels.some(l => l.includes('unused play')), 'should include unused play entry');
+  assert.ok(labels.some(l => l.includes('unused discard')), 'should include unused discard entry');
+  // Round clear = 4, 1 unused play = 1, 1 unused discard = 1 => total 6
+  const sum = award.reduce((s, x) => s + x.amount, 0);
+  assert.equal(sum, 6, 'lastAward amounts should sum to 6');
+  // sum must equal the coins gained (run starts at 0)
+  assert.equal(res.run.coins, sum, 'run.coins must equal sum of lastAward amounts');
 });
 
 test('newRun applies a stake (plays delta) and loadout (extra discards, start coins, start relic)', () => {
