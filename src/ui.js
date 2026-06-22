@@ -383,7 +383,55 @@ function renderShop(run) {
   on('continue', () => { selection = []; handlers.onContinue?.(); });
 }
 
-export function renderMeta(meta, config, allRelicIds, allModIds) {
+function showStatsOverlay(summary) {
+  const old = document.getElementById('stats-overlay');
+  if (old) { old.remove(); return; }
+  if (!summary) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'stats-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:200;padding:16px;box-sizing:border-box;overflow-y:auto;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:10px;padding:20px 24px;max-width:420px;width:100%;font-size:0.93em;line-height:1.5;max-height:80vh;overflow-y:auto;';
+
+  const pct = (r) => (r * 100).toFixed(1) + '%';
+  const rowsHtml = summary.items.length
+    ? summary.items.map(it =>
+        `<tr>
+          <td>${it.id}</td>
+          <td>${pct(it.pickRate)} (${it.purchased}/${it.offered})</td>
+          <td>${pct(it.winRate)} (${it.winsWith}/${it.runsWith})</td>
+          <td>${it.runsWith}</td>
+        </tr>`
+      ).join('')
+    : '<tr><td colspan="4">(no data yet)</td></tr>';
+
+  box.innerHTML = `
+    <h3 style="margin:0 0 10px;">Balance Stats</h3>
+    <p>Runs: <b>${summary.runs}</b> &nbsp; Wins: <b>${summary.wins}</b> &nbsp; Win rate: <b>${pct(summary.winRate)}</b></p>
+    <p>Avg word length: <b>${summary.avgWordLen.toFixed(1)}</b></p>
+    <table style="width:100%;border-collapse:collapse;font-size:0.9em;">
+      <thead><tr style="border-bottom:1px solid #ccc;">
+        <th style="text-align:left;">Item</th>
+        <th style="text-align:left;">Pick rate</th>
+        <th style="text-align:left;">Win rate</th>
+        <th style="text-align:left;">Runs with</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+  overlay.appendChild(box);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.style.cssText = 'padding:10px 28px;font-size:1em;border-radius:6px;cursor:pointer;';
+  closeBtn.onclick = () => overlay.remove();
+  overlay.appendChild(closeBtn);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
   // Reset selectedStakeId if null or no longer valid.
   if (!selectedStakeId || !meta.unlockedStakes.includes(selectedStakeId)) {
     selectedStakeId = meta.unlockedStakes[0] ?? (config.STAKES[0]?.id || null);
@@ -445,6 +493,7 @@ export function renderMeta(meta, config, allRelicIds, allModIds) {
         <div id="stake-buttons">${stakeButtonsHtml}</div>
       </div>
       <button id="start-run">Start Run</button>
+      <button id="stats-btn">Stats</button>
       <hr>
       <div id="meta-shop">
         <div><b>Meta Shop</b></div>
@@ -454,12 +503,12 @@ export function renderMeta(meta, config, allRelicIds, allModIds) {
 
   // Wire deck picker.
   app().querySelectorAll('.deck-pick').forEach(btn => {
-    btn.onclick = () => { selectedDeckId = btn.dataset.deck; renderMeta(meta, config, allRelicIds, allModIds); };
+    btn.onclick = () => { selectedDeckId = btn.dataset.deck; renderMeta(meta, config, allRelicIds, allModIds, getStats); };
   });
 
   // Wire stake picker.
   app().querySelectorAll('.stake-pick').forEach(btn => {
-    btn.onclick = () => { selectedStakeId = btn.dataset.stake; renderMeta(meta, config, allRelicIds, allModIds); };
+    btn.onclick = () => { selectedStakeId = btn.dataset.stake; renderMeta(meta, config, allRelicIds, allModIds, getStats); };
   });
 
   // Wire Start Run.
@@ -486,4 +535,8 @@ export function renderMeta(meta, config, allRelicIds, allModIds) {
   // Wire help button on meta screen.
   const metaHelpBtn = document.getElementById('meta-help-btn');
   if (metaHelpBtn) metaHelpBtn.onclick = () => showHelpOverlay();
+
+  // Wire stats button on meta screen.
+  const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  on('stats-btn', () => showStatsOverlay(getStats?.()));
 }
