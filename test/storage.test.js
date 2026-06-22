@@ -92,3 +92,20 @@ test('lastAward survives serialize -> deserialize', () => {
   const restored = deserializeRun(serializeRun(run), { config, dictionary: dict });
   assert.deepEqual(restored.lastAward, run.lastAward);
 });
+
+test('honeLevels survives serialize -> deserialize', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.honeLevels = { rareLetter: 3 };
+  const restored = deserializeRun(serializeRun(run), { config, dictionary: dict });
+  assert.deepEqual(restored.honeLevels, { rareLetter: 3 });
+});
+
+test('honeLevels deserializes to {} when missing from save', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  const serialized = serializeRun(run);
+  delete serialized.honeLevels;  // simulate pre-archetype save
+  const restored = deserializeRun(serialized, { config, dictionary: dict });
+  assert.deepEqual(restored.honeLevels, {});
+});

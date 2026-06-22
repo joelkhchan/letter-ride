@@ -29,6 +29,7 @@ export function serializeRun(run) {
     tiles: run.bag.tiles.map(t => ({ id: t.id, letter: t.letter, modIds: t.mods.map(m => m.id) })),
     rackIds: run.rack.map(t => t.id),
     lastAward: run.lastAward || null,
+    honeLevels: run.honeLevels || {},
   };
 }
 
@@ -60,6 +61,7 @@ export function deserializeRun(data, { config, dictionary }) {
     bag: makeBag(tiles),
     rack: data.rackIds.map(id => byId.get(id)).filter(Boolean),
     lastAward: data.lastAward || null,
+    honeLevels: data.honeLevels || {},
   };
 }
 
