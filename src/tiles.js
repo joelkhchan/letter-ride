@@ -5,11 +5,11 @@ let counter = 0;
 const MOD_REGISTRY = {
   resonator: {
     id: 'resonator', name: 'Resonator', desc: '+5 Points if the word has 2+ of this letter',
-    evaluate: (tile, ctx) => ({ addWit: countOf(ctx.letters, tile.letter) >= 2 ? 5 : 0 }),
+    evaluate: (tile, ctx) => ({ addPoints: countOf(ctx.letters, tile.letter) >= 2 ? 5 : 0 }),
   },
   polished: {
     id: 'polished', name: 'Polished', desc: '+4 Points, always',
-    evaluate: () => ({ addWit: 4 }),
+    evaluate: () => ({ addPoints: 4 }),
   },
   catalyst: {
     id: 'catalyst', name: 'Catalyst', desc: '+1 Mult, always',
@@ -17,7 +17,7 @@ const MOD_REGISTRY = {
   },
   anchor: {
     id: 'anchor', name: 'Anchor', desc: '+8 Points if this tile is the first letter',
-    evaluate: (tile, ctx) => ({ addWit: ctx.selection[0]?.tile === tile ? 8 : 0 }),
+    evaluate: (tile, ctx) => ({ addPoints: ctx.selection[0]?.tile === tile ? 8 : 0 }),
   },
 };
 

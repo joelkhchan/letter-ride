@@ -8,11 +8,11 @@ const isVowel = (ch) => VOWELS.has(String(ch).toUpperCase());
 export const RELICS = {
   vowelBonus: {
     id: 'vowelBonus', name: 'Vowel Bonus', desc: '+2 Points per vowel used',
-    evaluate: (ctx) => ({ addWit: 2 * ctx.letters.filter(isVowel).length }),
+    evaluate: (ctx) => ({ addPoints: 2 * ctx.letters.filter(isVowel).length }),
   },
   rareHoarder: {
     id: 'rareHoarder', name: 'Rare Hoarder', desc: '+30 Points if the word uses J, Q, X, or Z',
-    evaluate: (ctx) => ({ addWit: ctx.letters.some(l => RARE.has(l.toUpperCase())) ? 30 : 0 }),
+    evaluate: (ctx) => ({ addPoints: ctx.letters.some(l => RARE.has(l.toUpperCase())) ? 30 : 0 }),
   },
   shortAndSweet: {
     id: 'shortAndSweet', name: 'Short & Sweet', desc: 'Words of 3 letters or fewer: ×3 Mult',
@@ -24,7 +24,7 @@ export const RELICS = {
   },
   doubleTrouble: {
     id: 'doubleTrouble', name: 'Double Trouble', desc: '+40 Points if the word has a doubled letter',
-    evaluate: (ctx) => ({ addWit: hasDoubledLetter(ctx.word) ? 40 : 0 }),
+    evaluate: (ctx) => ({ addPoints: hasDoubledLetter(ctx.word) ? 40 : 0 }),
   },
   freshStart: {
     id: 'freshStart', name: 'Fresh Start', desc: '+2 Mult if the word starts with a vowel',

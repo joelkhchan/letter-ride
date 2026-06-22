@@ -21,7 +21,7 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
 
   const apply = (d, label) => {
     if (!d) return;
-    if (d.addWit) { points += d.addWit; pointParts.push({ label, amount: d.addWit }); }
+    if (d.addPoints) { points += d.addPoints; pointParts.push({ label, amount: d.addPoints }); }
     if (d.addMult) { addMult += d.addMult; addMultParts.push({ label, amount: d.addMult }); }
     if (d.timesMult && d.timesMult !== 1) { timesMult *= d.timesMult; timesMultParts.push({ label, amount: d.timesMult }); }
   };

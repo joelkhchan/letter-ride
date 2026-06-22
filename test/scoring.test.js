@@ -33,7 +33,7 @@ test('wild contributes 0 base points but its resolved letter counts for length',
 test('breakdown: base, pointParts (vowelBonus), timesMultParts (shortAndSweet)', () => {
   resetTileIds();
   const cat = sel([makeTile('C'), 'C'], [makeTile('A'), 'A'], [makeTile('T'), 'T']);
-  // vowelBonus: +2 Points per vowel; CAT has 1 vowel (A) → +2 addWit
+  // vowelBonus: +2 Points per vowel; CAT has 1 vowel (A) → +2 addPoints
   const r1 = scoreWord(cat, { tileValues, lengthBonusPerLetter: 0, relics: [RELICS.vowelBonus] });
   assert.equal(r1.breakdown.base, 5, 'base should be sum of non-wild tile values: C=3 A=1 T=1');
   assert.equal(r1.breakdown.lengthBonus, 0, 'no length bonus with lengthBonusPerLetter=0');
