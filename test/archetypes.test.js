@@ -17,6 +17,7 @@ test('rareLetter matches J/Q/X/Z and honeBonus scales points with level', () => 
 test('wildsAreRare enabler makes a wild count as rare', () => {
   const c = { ...ctx('A'), letters: ['A'], selection: [{ tile: { letter: '*' }, letter: 'A' }], enablers: ['wildsAreRare'] };
   assert.equal(ARCHETYPES.rareLetter.matches(c), true);
+  assert.deepEqual(ARCHETYPES.rareLetter.honeBonus(c, 2), { addPoints: 30 });
 });
 test('shortWord hone adds Mult per level on <=3 letters only', () => {
   assert.deepEqual(ARCHETYPES.shortWord.honeBonus(ctx('CAT'), 3), { addMult: 3 });
@@ -25,9 +26,18 @@ test('shortWord hone adds Mult per level on <=3 letters only', () => {
 test('escalation hone scales Mult with words played this round', () => {
   assert.deepEqual(ARCHETYPES.escalation.honeBonus(ctx('CAT', { wordsPlayedThisRound: 4 }), 1), { addMult: 2 }); // 0.5*1*4
 });
+test('looseDoubled enabler counts a non-adjacent repeat as doubled', () => {
+  assert.equal(ARCHETYPES.doubled.matches(ctx('TOT')), false);                                  // T-O-T: repeat but no adjacent double
+  assert.equal(ARCHETYPES.doubled.matches({ ...ctx('TOT'), enablers: ['looseDoubled'] }), true);
+});
+test('longReach enabler lowers the long-word threshold by one', () => {
+  assert.equal(ARCHETYPES.longWord.matches(ctx('HOUSE')), false);                                 // 5 letters, default threshold 6
+  assert.equal(ARCHETYPES.longWord.matches({ ...ctx('HOUSE'), enablers: ['longReach'] }), true);   // threshold 5
+});
 test('honeModifiers yields one pseudo-relic per leveled archetype', () => {
   const mods = honeModifiers({ rareLetter: 2, shortWord: 0, longWord: 1 });
   assert.deepEqual(mods.map(m => m.id).sort(), ['hone:longWord', 'hone:rareLetter']); // level 0 excluded
   const rare = mods.find(m => m.id === 'hone:rareLetter');
   assert.deepEqual(rare.evaluate(ctx('QI')), { addPoints: 30 });
+  assert.deepEqual(rare.evaluate(ctx('CAT')), {}); // non-rare word -> delegated honeBonus returns {}
 });
