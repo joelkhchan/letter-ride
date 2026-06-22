@@ -28,7 +28,7 @@ export const CONFIG = {
     baseUnlocked: {
       relics: ['vowelBonus','shortAndSweet','lengthy','freshStart','comboCounter','recycler'],
       mods: ['resonator','polished','catalyst','anchor'],
-      decks: ['standard'],
+      decks: ['standard','rareRich','doubled','lean'],
       stakes: [0],
     },
     unlockCost: { relic: 15, mod: 12, deck: 20, stake: 10 },
@@ -37,6 +37,9 @@ export const CONFIG = {
     standard:   { id: 'standard',   name: 'Standard',    startingBag: null },  // null => CONFIG.STARTING_BAG
     vowelHeavy: { id: 'vowelHeavy', name: 'Vowel Heavy', startingBag: ['A','A','A','A','E','E','E','E','I','I','O','O','U','U','R','S','T','L','N','D','C','M','B','P','G','H'] },
     wildcard:   { id: 'wildcard',   name: 'Wildcard',    startingBag: ['A','A','A','E','E','E','I','I','O','O','U','R','S','T','L','N','D','C','M','B','P','G','H','F','*','*'] },
+    rareRich:   { id: 'rareRich',   name: 'Rare Cache',  startingBag: ['A','A','E','E','I','O','U','R','S','T','L','N','D','C','M','B','P','G','H','J','Q','X','Z','*','*','K'] },
+    doubled:    { id: 'doubled',    name: 'Echo Bag',    startingBag: ['A','A','E','E','E','I','I','O','O','S','S','T','T','L','L','N','N','R','R','D','D','C','M','B','P','G'] },
+    lean:       { id: 'lean',       name: 'Lean Bag',    startingBag: ['A','E','I','O','U','R','S','T','N','L','D','C','M','B','P','K','F','H','Y','G'] },
   },
   STAKES: [
     { id: 0, name: 'Stake 0', targetMult: 1.0,  playsDelta: 0,  discardsDelta: 0,  metaMult: 1.0 },
