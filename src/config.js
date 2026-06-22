@@ -48,6 +48,7 @@ export const CONFIG = {
     startCoins:    { name: '+5 starting $',  max: 2, cost: 8 },        // each level = +5 coins
     startRelic:    { name: 'Start with Vowel Bonus', max: 1, cost: 25, relicId: 'vowelBonus' },
   },
+  HONE: { cost: 6 },
   PROFANITY_FILTER: true,
   PROFANITY_BLOCKLIST: [ /* add slurs to reject; author may empty this */ ],
 };

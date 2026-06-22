@@ -2,6 +2,7 @@
 import { shuffle } from './rng.js';
 import { makeTile, getMod, ALL_MOD_IDS } from './tiles.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
+import { ALL_ARCHETYPE_IDS } from './archetypes.js';
 
 // Build the candidate offer list, then sample offersPerShop of them deterministically.
 export function generateShop(run, rng, pool = {}) {
@@ -16,6 +17,7 @@ export function generateShop(run, rng, pool = {}) {
   for (const letter of cfg.buyableLetters) candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: cfg.cost.upgradeLetter });
   candidates.push({ type: 'thinLetter', cost: cfg.cost.thinLetter });
   for (const relicId of relicIds) candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic });
+  for (const archetypeId of ALL_ARCHETYPE_IDS) candidates.push({ type: 'hone', archetypeId, cost: run.config.HONE.cost });
 
   const offers = shuffle(candidates, rng).slice(0, Math.min(cfg.offersPerShop, candidates.length));
   return { offers, rerollCost: cfg.rerollCost };
@@ -41,6 +43,10 @@ export function purchase(run, offer, opts = {}) {
     }
     case 'buyRelic':
       run.relics.push(RELICS[offer.relicId]); break;
+    case 'hone': {
+      if (!run.honeLevels) run.honeLevels = {};
+      run.honeLevels[offer.archetypeId] = (run.honeLevels[offer.archetypeId] || 0) + 1; break;
+    }
     default:
       return { ok: false, reason: 'unknown' };
   }
