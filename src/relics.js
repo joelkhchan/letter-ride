@@ -7,11 +7,11 @@ const isVowel = (ch) => VOWELS.has(String(ch).toUpperCase());
 
 export const RELICS = {
   vowelBonus: {
-    id: 'vowelBonus', name: 'Vowel Bonus', desc: '+2 Wit per vowel used',
+    id: 'vowelBonus', name: 'Vowel Bonus', desc: '+2 Points per vowel used',
     evaluate: (ctx) => ({ addWit: 2 * ctx.letters.filter(isVowel).length }),
   },
   rareHoarder: {
-    id: 'rareHoarder', name: 'Rare Hoarder', desc: '+30 Wit if the word uses J, Q, X, or Z',
+    id: 'rareHoarder', name: 'Rare Hoarder', desc: '+30 Points if the word uses J, Q, X, or Z',
     evaluate: (ctx) => ({ addWit: ctx.letters.some(l => RARE.has(l.toUpperCase())) ? 30 : 0 }),
   },
   shortAndSweet: {
@@ -23,7 +23,7 @@ export const RELICS = {
     evaluate: (ctx) => ({ addMult: Math.max(0, ctx.letters.length - 4) }),
   },
   doubleTrouble: {
-    id: 'doubleTrouble', name: 'Double Trouble', desc: '+40 Wit if the word has a doubled letter',
+    id: 'doubleTrouble', name: 'Double Trouble', desc: '+40 Points if the word has a doubled letter',
     evaluate: (ctx) => ({ addWit: hasDoubledLetter(ctx.word) ? 40 : 0 }),
   },
   freshStart: {
@@ -35,7 +35,7 @@ export const RELICS = {
     evaluate: (ctx) => ({ addMult: ctx.wordsPlayedThisRound || 0 }),
   },
   recycler: {
-    id: 'recycler', name: 'Recycler', desc: '+2 Coins per unused play at round end',
+    id: 'recycler', name: 'Recycler', desc: '+$2 per unused play at round end',
     coinsOnRoundClear: (run) => 2 * run.playsLeft,
   },
 };

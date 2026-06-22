@@ -1,0 +1,23 @@
+- generic [ref=e3]:
+  - heading "Letter Ride" [level=2] [ref=e4]
+  - generic [ref=e5]: "Meta: 0"
+  - generic [ref=e6]:
+    - generic [ref=e7]: "Deck:"
+    - button "Standard" [ref=e9]
+  - generic [ref=e10]:
+    - generic [ref=e11]: "Stake:"
+    - button "Stake 0" [ref=e13]
+  - button "Start Run" [ref=e14]
+  - separator [ref=e15]
+  - generic [ref=e16]:
+    - generic [ref=e17]: Meta Shop
+    - generic [ref=e18]:
+      - 'button "Unlock relic: Rare Hoarder — 15" [disabled] [ref=e19]'
+      - 'button "Unlock relic: Double Trouble — 15" [disabled] [ref=e20]'
+      - 'button "Unlock deck: Vowel Heavy — 20" [disabled] [ref=e21]'
+      - 'button "Unlock deck: Wildcard — 20" [disabled] [ref=e22]'
+      - 'button "Unlock stake: Stake 1 — 10" [disabled] [ref=e23]'
+      - 'button "Unlock stake: Stake 2 — 10" [disabled] [ref=e24]'
+      - button "+1 extraDiscards — 10" [disabled] [ref=e25]
+      - button "+1 startCoins — 8" [disabled] [ref=e26]
+      - button "+1 startRelic — 25" [disabled] [ref=e27]

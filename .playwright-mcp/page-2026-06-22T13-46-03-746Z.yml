@@ -1,0 +1,42 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]: Round 1/8
+    - generic [ref=e5]: 0 / 40 Points
+    - generic [ref=e6]: Plays 4 · Discards 2
+    - generic [ref=e7]: "Coins: 0"
+  - generic [ref=e8]:
+    - generic [ref=e9]: "Relics: none yet"
+    - generic [ref=e10]: "Tile-mods: none yet"
+  - generic [ref=e12]:
+    - button "S 1" [ref=e13]:
+      - text: S
+      - generic [ref=e14]: "1"
+    - button "I 1" [ref=e15]:
+      - text: I
+      - generic [ref=e16]: "1"
+    - button "I 1" [ref=e17]:
+      - text: I
+      - generic [ref=e18]: "1"
+    - button "E 1" [ref=e19]:
+      - text: E
+      - generic [ref=e20]: "1"
+    - button "R 1" [ref=e21]:
+      - text: R
+      - generic [ref=e22]: "1"
+    - button "G 2" [ref=e23]:
+      - text: G
+      - generic [ref=e24]: "2"
+    - button "U 1" [ref=e25]:
+      - text: U
+      - generic [ref=e26]: "1"
+    - button "D 2" [ref=e27]:
+      - text: D
+      - generic [ref=e28]: "2"
+    - button "L 1" [ref=e29]:
+      - text: L
+      - generic [ref=e30]: "1"
+  - generic [ref=e32]:
+    - button "Submit" [ref=e33]
+    - button "⌫" [ref=e34]
+    - button "Clear" [ref=e35]
+    - button "Discard" [ref=e36]

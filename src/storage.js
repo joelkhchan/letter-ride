@@ -28,6 +28,7 @@ export function serializeRun(run) {
     relicIds: run.relics.map(r => r.id),                 // empty in Tier 0
     tiles: run.bag.tiles.map(t => ({ id: t.id, letter: t.letter, modIds: t.mods.map(m => m.id) })),
     rackIds: run.rack.map(t => t.id),
+    lastAward: run.lastAward || null,
   };
 }
 
@@ -58,6 +59,7 @@ export function deserializeRun(data, { config, dictionary }) {
     relics: (data.relicIds || []).map(id => RELICS[id]).filter(Boolean),
     bag: makeBag(tiles),
     rack: data.rackIds.map(id => byId.get(id)).filter(Boolean),
+    lastAward: data.lastAward || null,
   };
 }
 

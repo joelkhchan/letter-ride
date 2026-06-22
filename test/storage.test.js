@@ -84,3 +84,11 @@ test('deserializeRun -> nextRound resets playsLeft/discardsLeft from persisted p
   assert.equal(restored.playsLeft, config.PLAYS_PER_ROUND - 1);
   assert.equal(restored.discardsLeft, config.DISCARDS_PER_ROUND + 1);
 });
+
+test('lastAward survives serialize -> deserialize', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.lastAward = [{ label: 'Base score', amount: 10 }, { label: 'Bonus', amount: 5 }];
+  const restored = deserializeRun(serializeRun(run), { config, dictionary: dict });
+  assert.deepEqual(restored.lastAward, run.lastAward);
+});

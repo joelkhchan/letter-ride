@@ -1,0 +1,17 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]: Round 1/8 — Shop
+    - generic [ref=e5]: 56 / 40 Score ✓
+    - generic [ref=e6]: $7
+  - generic [ref=e7]:
+    - generic [ref=e8]: "Relics: none yet"
+    - generic [ref=e9]: "Tile-mods: none yet"
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - button "A + Catalyst (+1 Mult, always) — $7" [ref=e12]
+      - button "N + Anchor (+8 Wit if this tile is the first letter) — $7" [ref=e13]
+      - button "Buy T — $3" [ref=e14]
+      - button "Buy K — $3" [ref=e15]
+    - generic [ref=e16]:
+      - button "Reroll ($2)" [ref=e17]
+      - button "Continue →" [ref=e18]
