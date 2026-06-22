@@ -18,12 +18,22 @@ function canForm(word, counts) {
   return true;
 }
 function rackCounts(rack) { const c = {}; for (const l of rack) c[l] = (c[l] || 0) + 1; return c; }
-function selOf(word) { return [...word].map(ch => ({ tile: { id: 't', letter: ch, mods: [] }, letter: ch })); }
+function selOf(word, mods = []) { return [...word].map(ch => ({ tile: { id: 't', letter: ch, mods }, letter: ch })); }
 
 const tv = CONFIG.TILE_VALUES, lb = CONFIG.LENGTH_BONUS_PER_LETTER;
 const N = 60;
-let longTotal = 0, shortTotal = 0, shortWins = 0;
 const target5 = CONFIG.ROUND_TARGETS[4];
+
+const variants = {
+  'Short, no relics': { noRelics: true, polishedCount: 0 },
+  'Short + S&S only': { shortAndSweet: true, polishedCount: 0 },
+  'Short + S&S + 1 Polished': { shortAndSweet: true, polishedCount: 1 },
+  'Short + S&S + all Polished': { shortAndSweet: true, polishedCount: 'all' }
+};
+
+const results = {};
+for (const name in variants) results[name] = { total: 0, wins: 0 };
+let longTotal = 0;
 
 for (let i = 0; i < N; i++) {
   const rack = shuffle(CONFIG.STARTING_BAG, makeRng(1000 + i)).slice(0, CONFIG.RACK_SIZE);
@@ -34,21 +44,49 @@ for (let i = 0; i < N; i++) {
   // Best long word, no relics
   let bestLong = 0;
   for (const w of formable) bestLong = Math.max(bestLong, scoreWord(selOf(w), { tileValues: tv, lengthBonusPerLetter: lb }).score);
+  longTotal += bestLong;
 
-  // Best <=3-letter word with a Short&Sweet + Polished-on-every-tile build (proxy for a stacked short build)
-  let bestShort = 0;
-  for (const w of formable.filter(w => w.length <= 3)) {
-    const sel = [...w].map(ch => ({ tile: { id: 't', letter: ch, mods: [getMod('polished')] }, letter: ch }));
-    bestShort = Math.max(bestShort, scoreWord(sel, { tileValues: tv, lengthBonusPerLetter: lb, relics: [RELICS.shortAndSweet] }).score);
+  // Best <=3-letter word for each variant
+  const shortWords = formable.filter(w => w.length <= 3);
+  for (const [variantName, variantCfg] of Object.entries(variants)) {
+    let bestScore = 0;
+    for (const w of shortWords) {
+      let mods = [];
+      let relicsArray = [];
+      let polishedCount = variantCfg.polishedCount;
+
+      if (!variantCfg.noRelics) {
+        relicsArray.push(RELICS.shortAndSweet);
+        if (polishedCount === 'all') {
+          mods = Array(w.length).fill(getMod('polished'));
+        } else if (polishedCount > 0) {
+          mods = Array(w.length).fill(null);
+          for (let j = 0; j < Math.min(polishedCount, w.length); j++) mods[j] = getMod('polished');
+        }
+      }
+
+      const sel = [...w].map((ch, idx) => ({ tile: { id: 't', letter: ch, mods: mods[idx] ? [mods[idx]] : [] }, letter: ch }));
+      const scoreObj = scoreWord(sel, { tileValues: tv, lengthBonusPerLetter: lb, relics: relicsArray.length ? relicsArray : undefined });
+      bestScore = Math.max(bestScore, scoreObj.score);
+    }
+    results[variantName].total += bestScore;
+    if (bestScore >= bestLong) results[variantName].wins++;
   }
-  longTotal += bestLong; shortTotal += bestShort;
-  if (bestShort >= bestLong) shortWins++;
 }
 
-const ratio = shortTotal / longTotal;
-console.log(`Letter Ride — short-vs-long balance over ${N} seeded base-bag racks`);
-console.log(`  median-ish avg best long-word score (no relics): ${(longTotal / N).toFixed(1)}`);
-console.log(`  avg best short build (Short&Sweet + Polished):   ${(shortTotal / N).toFixed(1)}`);
-console.log(`  short/long ratio: ${(ratio * 100).toFixed(0)}%  (Tier 1 gate bar: >= 80%)`);
-console.log(`  racks where short >= long: ${shortWins}/${N}`);
-console.log(`  round 5 target = ${target5}; short build reaches it in one play on ${'<eyeball above>'} racks`);
+const avgLong = longTotal / N;
+console.log(`\nLetter Ride — Short-Build Balance Analysis (${N} seeded racks)\n`);
+console.log(`Baseline: best long word (no relics) avg = ${avgLong.toFixed(1)}\n`);
+console.log('| Short-Build Variant | Avg Score | Ratio to Long | Short ≥ Long |');
+console.log('|---|---|---|---|');
+for (const name of Object.keys(variants)) {
+  const avg = results[name].total / N;
+  const ratio = ((avg / avgLong) * 100).toFixed(0);
+  const wins = results[name].wins;
+  console.log(`| ${name} | ${avg.toFixed(1)} | ${ratio}% | ${wins}/${N} |`);
+}
+
+const ceilingAvg = results['Short + S&S + all Polished'].total / N;
+const reachTarget = results['Short + S&S + all Polished'].wins;
+console.log(`\nRound 5 target: ${target5}`);
+console.log(`Ceiling build reaches target in one play: ${reachTarget}/${N} racks`);
