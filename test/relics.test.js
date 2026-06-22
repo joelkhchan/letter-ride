@@ -48,3 +48,102 @@ test('recycler is an economy relic: no evaluate, has coinsOnRoundClear', () => {
   assert.equal(typeof RELICS.recycler.evaluate, 'undefined');
   assert.equal(RELICS.recycler.coinsOnRoundClear({ playsLeft: 3 }), 6);   // +2 per unused play
 });
+
+// ── Task 5: 8 new relics ─────────────────────────────────────────────────────
+
+// tv covers Q, I, B, A, L, C, S, T, E but not X/Z/J — extend for rare-letter tests
+const tv2 = { ...tv, X: 8, Z: 10, J: 8 };
+const base2 = (word, opts = {}) => scoreWord(sel(word), { tileValues: tv2, lengthBonusPerLetter: 0, ...opts });
+
+test('rareSurge: ×1.5 Mult when word uses a rare letter (Q)', () => {
+  resetTileIds();
+  const withRelic = base2('QI', { relics: [RELICS.rareSurge] });
+  const without   = base2('QI');
+  assert.equal(withRelic.mult / without.mult, 1.5);
+});
+
+test('echoChamber: ×2 Mult when word has a doubled letter (BALL)', () => {
+  resetTileIds();
+  const withRelic = base2('BALL', { relics: [RELICS.echoChamber] });
+  const without   = base2('BALL');
+  assert.equal(withRelic.mult / without.mult, 2);
+});
+
+test('echoChamber: no bonus when no doubled letter (CAT)', () => {
+  resetTileIds();
+  const withRelic = base2('CAT', { relics: [RELICS.echoChamber] });
+  const without   = base2('CAT');
+  assert.equal(withRelic.mult, without.mult);
+});
+
+test('longHaul: ×(1 + 0.25*(len-5)) Mult for 6-letter word', () => {
+  resetTileIds();
+  // CASTLE = 6 letters → 1 + 0.25*(6-5) = 1.25
+  const withRelic = base2('CASTLE', { relics: [RELICS.longHaul] });
+  const without   = base2('CASTLE');
+  assert.equal(withRelic.mult / without.mult, 1.25);
+});
+
+test('longHaul: no bonus for 5-letter word', () => {
+  resetTileIds();
+  // BLAST = 5 letters → no bonus
+  const withRelic = base2('BLAST', { relics: [RELICS.longHaul], tileValues: { ...tv2, B:3 } });
+  const without   = base2('BLAST', { tileValues: { ...tv2, B:3 } });
+  assert.equal(withRelic.mult, without.mult);
+});
+
+test('momentum: +10 Points per word already played this round', () => {
+  resetTileIds();
+  const r = scoreWord(sel('CAT'), {
+    tileValues: tv, lengthBonusPerLetter: 0,
+    relics: [RELICS.momentum],
+    context: { wordsPlayedThisRound: 3 },
+  });
+  const base3 = scoreWord(sel('CAT'), { tileValues: tv, lengthBonusPerLetter: 0 });
+  assert.equal(r.points - base3.points, 30);
+});
+
+test('momentum: +0 Points when no words played yet', () => {
+  resetTileIds();
+  const r = scoreWord(sel('CAT'), {
+    tileValues: tv, lengthBonusPerLetter: 0,
+    relics: [RELICS.momentum],
+  });
+  const base3 = scoreWord(sel('CAT'), { tileValues: tv, lengthBonusPerLetter: 0 });
+  assert.equal(r.points - base3.points, 0);
+});
+
+test('overtime: extraPlays === 1', () => {
+  assert.equal(RELICS.overtime.extraPlays, 1);
+});
+
+test('wildcardRares: enabler flag fires rareSurge on a wild tile', () => {
+  resetTileIds();
+  // Simulate a wild tile used as a rare: selection has a wild tile, enablers includes 'wildsAreRare'
+  const wildSel = [
+    { tile: makeTile('*'), letter: 'Q' },  // wild tile, played as Q
+    { tile: makeTile('I'), letter: 'I' },
+  ];
+  const withBoth = scoreWord(wildSel, {
+    tileValues: tv2, lengthBonusPerLetter: 0,
+    relics: [RELICS.rareSurge],
+    context: { enablers: ['wildsAreRare'] },
+  });
+  const without = scoreWord(wildSel, {
+    tileValues: tv2, lengthBonusPerLetter: 0,
+  });
+  // rareSurge should fire because enablers includes 'wildsAreRare' and selection has a wild
+  assert.equal(withBoth.mult / without.mult, 1.5);
+});
+
+test('wildcardRares: enabler field is set correctly', () => {
+  assert.equal(RELICS.wildcardRares.enabler, 'wildsAreRare');
+});
+
+test('longReach: enabler field is set correctly', () => {
+  assert.equal(RELICS.longReach.enabler, 'longReach');
+});
+
+test('looseDoubles: enabler field is set correctly', () => {
+  assert.equal(RELICS.looseDoubles.enabler, 'looseDoubled');
+});

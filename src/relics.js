@@ -1,5 +1,6 @@
 // src/relics.js — relic content. Magnitudes are tunable here (relic = its effect).
 import { hasDoubledLetter } from './patterns.js';
+import { hasRare as hasRareCtx, isDoubled as isDoubledCtx } from './archetypes.js';
 
 const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 const RARE = new Set(['J', 'Q', 'X', 'Z']);
@@ -37,6 +38,48 @@ export const RELICS = {
   recycler: {
     id: 'recycler', name: 'Recycler', desc: '+$2 per unused play at round end',
     coinsOnRoundClear: (run) => 2 * run.playsLeft,
+  },
+
+  // ── Task 5: Mult engines, enablers, escalation ────────────────────────────
+
+  // Rare-letter
+  rareSurge: {
+    id: 'rareSurge', name: 'Rare Surge', desc: '×1.5 Mult if the word uses a rare letter (J/Q/X/Z)',
+    evaluate: (ctx) => hasRareCtx(ctx) ? { timesMult: 1.5 } : {},
+  },
+  wildcardRares: {
+    id: 'wildcardRares', name: 'Wildcard Rares', desc: 'Wilds count as rare letters (J/Q/X/Z)',
+    enabler: 'wildsAreRare', evaluate: () => ({}),
+  },
+
+  // Long-word
+  longHaul: {
+    id: 'longHaul', name: 'Long Haul', desc: '×Mult grows with length: ×(1 + 0.25 per letter beyond 5)',
+    evaluate: (ctx) => ctx.letters.length > 5 ? { timesMult: 1 + 0.25 * (ctx.letters.length - 5) } : {},
+  },
+  longReach: {
+    id: 'longReach', name: 'Long Reach', desc: 'Long-word bonuses trigger one letter sooner',
+    enabler: 'longReach', evaluate: () => ({}),
+  },
+
+  // Pattern / doubled
+  echoChamber: {
+    id: 'echoChamber', name: 'Echo Chamber', desc: '×2 Mult if the word has a doubled letter',
+    evaluate: (ctx) => isDoubledCtx(ctx) ? { timesMult: 2 } : {},
+  },
+  looseDoubles: {
+    id: 'looseDoubles', name: 'Loose Doubles', desc: 'Any letter appearing 2+ times counts as doubled',
+    enabler: 'looseDoubled', evaluate: () => ({}),
+  },
+
+  // Escalation / combo
+  momentum: {
+    id: 'momentum', name: 'Momentum', desc: '+10 Points per word already played this round',
+    evaluate: (ctx) => ({ addPoints: 10 * (ctx.wordsPlayedThisRound || 0) }),
+  },
+  overtime: {
+    id: 'overtime', name: 'Overtime', desc: '+1 play each round',
+    extraPlays: 1, evaluate: () => ({}),
   },
 };
 

@@ -109,3 +109,12 @@ test('honeLevels deserializes to {} when missing from save', () => {
   const restored = deserializeRun(serialized, { config, dictionary: dict });
   assert.deepEqual(restored.honeLevels, {});
 });
+
+test('wildcardRares enabler field survives serialize -> deserialize', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  drawRack(run);
+  run.relics = [RELICS.wildcardRares];
+  const restored = deserializeRun(serializeRun(run), { config, dictionary: dict });
+  assert.ok(restored.relics.some(r => r.enabler === 'wildsAreRare'));
+});
