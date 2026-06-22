@@ -105,10 +105,28 @@ function showTilePicker(run, offer) {
 }
 
 // Build relics + tile-mods panel HTML (always rendered during play and shop).
-function relicsModsPanelHtml(run) {
-  const relicsText = (run.relics && run.relics.length)
-    ? run.relics.map(r => `<span class="relic-entry" title="${r.desc || ''}">${r.name}</span>`).join(' · ')
-    : '<span class="none-label">none yet</span>';
+// stagedBreakdown: optional breakdown object from scoreWord when a word is staged.
+function relicsModsPanelHtml(run, stagedBreakdown) {
+  let relicsText;
+  if (run.relics && run.relics.length) {
+    if (stagedBreakdown) {
+      // Merge all labeled parts from the breakdown into a lookup.
+      const contributions = {};
+      for (const p of stagedBreakdown.pointParts)    contributions[p.label] = `+${p.amount} Points`;
+      for (const p of stagedBreakdown.addMultParts)  contributions[p.label] = `+${p.amount} Mult`;
+      for (const p of stagedBreakdown.timesMultParts) contributions[p.label] = `×${p.amount} Mult`;
+      relicsText = run.relics.map(r => {
+        const contrib = contributions[r.name] || '—';
+        return `<span class="relic-entry" title="${r.desc || ''}">${r.name}: <b>${contrib}</b></span>`;
+      }).join(' · ');
+    } else {
+      relicsText = run.relics.map(r =>
+        `<span class="relic-entry" title="${r.desc || ''}">${r.name} — ${r.desc || ''}</span>`
+      ).join(' · ');
+    }
+  } else {
+    relicsText = '<span class="none-label">none yet</span>';
+  }
 
   // Collect all rack + bag tiles with mods
   const allTiles = [
@@ -127,15 +145,40 @@ function relicsModsPanelHtml(run) {
   </div>`;
 }
 
-// Build live scorebug HTML for the current selection (read-only preview).
-function scorePreviewHtml(run, sel) {
-  if (!sel.length) return '';
-  const result = scoreWord(sel, {
-    tileValues: run.tileValues,
-    lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
-    relics: run.relics || [],
-    context: { wordsPlayedThisRound: run.wordsPlayedThisRound },
-  });
+// Show the help overlay (Feature 4).
+function showHelpOverlay() {
+  const old = document.getElementById('help-overlay');
+  if (old) { old.remove(); return; }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'help-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:200;padding:16px;box-sizing:border-box;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:10px;padding:20px 24px;max-width:380px;width:100%;font-size:0.97em;line-height:1.5;';
+  box.innerHTML = `
+    <h3 style="margin:0 0 10px;">How it works</h3>
+    <p><b>Score = Points × Mult.</b></p>
+    <p>Each tile is worth <b>Points</b> (shown on the tile). Longer words add bonus Points.</p>
+    <p><b>Relics</b> and <b>tile mods</b> add Points or Mult — buy them in the shop with <b>$</b>.</p>
+    <p>Beat the round's <b>Score target</b> before running out of plays. Discard your rack if you're stuck (limited discards per round).</p>
+    <p>Use the <b>Hint</b> button if you can't see a word — it shows one valid word in your rack.</p>
+  `;
+  overlay.appendChild(box);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.style.cssText = 'padding:10px 28px;font-size:1em;border-radius:6px;cursor:pointer;';
+  closeBtn.onclick = () => overlay.remove();
+  overlay.appendChild(closeBtn);
+
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// Build live scorebug HTML from a pre-computed scoreWord result.
+function scorePreviewHtml(sel, result) {
+  if (!sel.length || !result) return '';
   const bd = result.breakdown;
 
   // Build itemization string
@@ -183,8 +226,20 @@ export function renderRun(run) {
     ? `<div id="last-play">Last: <b>${run.lastPlay.word}</b> = ${run.lastPlay.score} Score</div>`
     : '';
 
-  // Live score preview (only when playing and selection non-empty)
-  const preview = (!done && selection.length) ? scorePreviewHtml(run, selection) : '';
+  // Live score preview (only when playing and selection non-empty).
+  // Also extract the breakdown for per-relic contributions in the relics panel.
+  let preview = '';
+  let stagedBreakdown = null;
+  if (!done && selection.length) {
+    const scored = scoreWord(selection, {
+      tileValues: run.tileValues,
+      lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
+      relics: run.relics || [],
+      context: { wordsPlayedThisRound: run.wordsPlayedThisRound },
+    });
+    stagedBreakdown = scored.breakdown;
+    preview = scorePreviewHtml(selection, scored);
+  }
 
   app().innerHTML = `
     <div id="hud">
@@ -192,8 +247,9 @@ export function renderRun(run) {
       <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
+      <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
     </div>
-    ${relicsModsPanelHtml(run)}
+    ${relicsModsPanelHtml(run, stagedBreakdown)}
     ${lastPlayHtml}
     <div id="staging">${staged || '&nbsp;'}</div>
     ${preview}
@@ -215,6 +271,7 @@ export function renderRun(run) {
       <button id="back" ${done ? 'disabled' : ''}>⌫</button>
       <button id="clear" ${done ? 'disabled' : ''}>Clear</button>
       <button id="discard" ${done || run.discardsLeft <= 0 ? 'disabled' : ''}>Discard</button>
+      <button id="hint" ${done ? 'disabled' : ''}>Hint</button>
       ${run.status === 'won' ? `<div class="end">🎉 Run cleared!${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
       ${run.status === 'lost' ? `<div class="end">💀 Out of plays.${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
     </div>`;
@@ -229,6 +286,12 @@ export function renderRun(run) {
   on('clear', () => { selection = []; renderRun(run); });
   on('discard', () => { selection = []; handlers.onDiscard?.(); });
   on('new', () => { selection = []; handlers.onRunEnd?.(); });
+  on('hint', () => {
+    const word = handlers.onHint?.();
+    const msg = document.getElementById('msg');
+    if (msg) msg.textContent = word ? `Try: ${word.toUpperCase()}` : 'No valid word — discard.';
+  });
+  on('help-btn', () => showHelpOverlay());
 }
 
 // Keyboard handler — exported so main.js can wire it.
@@ -371,7 +434,7 @@ export function renderMeta(meta, config, allRelicIds, allModIds) {
 
   app().innerHTML = `
     <div id="meta-screen">
-      <h2>Letter Ride</h2>
+      <h2>Letter Ride <button id="meta-help-btn" title="How it works" style="font-size:0.6em;padding:2px 8px;border-radius:50%;cursor:pointer;vertical-align:middle;">?</button></h2>
       <div id="meta-balance">Meta: ${meta.meta}</div>
       <div id="deck-picker">
         <div><b>Bag:</b></div>
@@ -419,4 +482,8 @@ export function renderMeta(meta, config, allRelicIds, allModIds) {
       handlers.onMetaBuy?.(offer);
     };
   });
+
+  // Wire help button on meta screen.
+  const metaHelpBtn = document.getElementById('meta-help-btn');
+  if (metaHelpBtn) metaHelpBtn.onclick = () => showHelpOverlay();
 }

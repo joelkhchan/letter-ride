@@ -46,6 +46,10 @@ try {
     onBuy(offer, targetTileId) { const r = purchase(run, offer, { targetTileId }); if (r.ok) run.shop = generateShop(run, run.rng, pool()); saveAll(); render(); return r; },
     onReroll() { if (run.coins >= run.shop.rerollCost) { run.coins -= run.shop.rerollCost; run.shop = generateShop(run, run.rng, pool()); saveAll(); render(); } },
     onContinue() { run.shop = null; nextRound(run); if (run.status === 'playing') drawRack(run); saveAll(); render(); },
+    // Hint: delegate dictionary lookup to main (keeps ui.js rules-free).
+    onHint() {
+      return dictionary.findWord(run.rack.map(t => t.letter), CONFIG.MIN_WORD_LEN);
+    },
     // run-end transitions to the meta screen:
     onRunEnd() { endRun(); },
     // meta screen actions:
