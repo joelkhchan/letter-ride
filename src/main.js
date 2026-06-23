@@ -1,7 +1,7 @@
 // src/main.js
 import { CONFIG } from './config.js';
 import { loadFromFile } from './dictionary.js';
-import { newRun, drawRack, playWord, discard, nextRound } from './run.js';
+import { newRun, playWord, discard, nextRound } from './run.js';
 import { saveRun, loadRun } from './storage.js';
 import { generateShop, purchase } from './shop.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
@@ -36,7 +36,7 @@ try {
     const targets = applyStakeTargets(CONFIG.ROUND_TARGETS, stake);
     const loadout = buildLoadout(meta, CONFIG, RELICS);
     run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets, deck: { startingBag: deck.startingBag }, stake, loadout });
-    drawRack(run); view = 'run'; saveAll(); render();
+    view = 'run'; saveAll(); render();
   }
   function endRun() {
     const earned = Math.round(metaEarned(run, CONFIG) * (run.stake?.metaMult || 1));
@@ -63,8 +63,8 @@ try {
         run.shop = generateShop(run, run.rng, pool());
         recordOffers(telemetry, extractOfferIds(run.shop));
       }
-      if (run.status === 'playing') drawRack(run); saveAll(); render(); return r; },
-    onDiscard() { discard(run); saveAll(); render(); },
+      saveAll(); render(); return r; },
+    onDiscard(sel) { discard(run, sel); saveAll(); render(); },
     onBuy(offer, targetTileId) {
       const r = purchase(run, offer, { targetTileId });
       if (r.ok) {
@@ -76,7 +76,7 @@ try {
       saveAll(); render(); return r;
     },
     onReroll() { if (run.coins >= run.shop.rerollCost) { run.coins -= run.shop.rerollCost; run.shop = generateShop(run, run.rng, pool()); recordOffers(telemetry, extractOfferIds(run.shop)); saveAll(); render(); } },
-    onContinue() { run.shop = null; nextRound(run); if (run.status === 'playing') drawRack(run); saveAll(); render(); },
+    onContinue() { run.shop = null; nextRound(run); saveAll(); render(); },
     // Hint: delegate dictionary lookup to main (keeps ui.js rules-free).
     onHint() {
       return dictionary.findWord(run.rack.map(t => t.letter), CONFIG.MIN_WORD_LEN);

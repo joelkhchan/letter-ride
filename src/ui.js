@@ -284,7 +284,7 @@ export function renderRun(run) {
       <button id="submit" ${done ? 'disabled' : ''}>Submit</button>
       <button id="back" ${done ? 'disabled' : ''}>⌫</button>
       <button id="clear" ${done ? 'disabled' : ''}>Clear</button>
-      <button id="discard" ${done || run.discardsLeft <= 0 ? 'disabled' : ''}>Discard</button>
+      <button id="discard" ${done || run.discardsLeft <= 0 || selection.length === 0 ? 'disabled' : ''}>${`Discard${selection.length ? ' (' + selection.length + ')' : ''}`}</button>
       <button id="hint" ${done ? 'disabled' : ''}>Hint</button>
       ${run.status === 'won' ? `<div class="end">🎉 Run cleared!${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
       ${run.status === 'lost' ? `<div class="end">💀 Out of plays.${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
@@ -298,7 +298,7 @@ export function renderRun(run) {
   on('submit', () => { const s = selection; selection = []; const r = handlers.onSubmit?.(s); });
   on('back', () => { selection.pop(); renderRun(run); });
   on('clear', () => { selection = []; renderRun(run); });
-  on('discard', () => { selection = []; handlers.onDiscard?.(); });
+  on('discard', () => { const sel = selection.slice(); selection = []; handlers.onDiscard?.(sel); });
   on('new', () => { selection = []; handlers.onRunEnd?.(); });
   on('hint', () => {
     const word = handlers.onHint?.();
