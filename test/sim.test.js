@@ -61,11 +61,17 @@ test('bestPlay uses distinct rack instances for duplicate letters (multiset corr
   assert.deepEqual(selIds, [A, D1, D2].map(t => t.id).sort());
 });
 
-import { simulateRun } from '../src/sim.js';
+import { simulateRun, pickTargetOffer, buildPurchasePolicy } from '../src/sim.js';
 import { makeDictionary } from '../src/dictionary.js';
+import { newRun } from '../src/run.js';
+import { CONFIG } from '../src/config.js';
 
 const dictCat = makeDictionary(['cat']);
 const wordsCat = ['CAT'];
+
+// configShop: real CONFIG extended so newRun works fully (COINS_ON_CLEAR + INTEREST needed).
+// We use the real CONFIG directly — it already has SHOP + HONE blocks.
+const configShop = CONFIG;
 
 test('simulateRun wins a winnable config', () => {
   // bag of 3×CAT so the pool refills each round; CAT (C3+A1+T1=5) clears target 3 twice → won
@@ -104,4 +110,46 @@ test('simulateRun terminates when no word is ever formable', () => {
   const r = simulateRun({ config, dictionary: dictCat, words: wordsCat, seed: 1 });
   assert.equal(r.won, false);
   assert.equal(r.hitCap, false);       // terminated via dead-hand / exhaustion, not the cap
+});
+
+// ── v2 purchase policy tests ───────────────────────────────────────────────
+
+test('pickTargetOffer prefers an affordable un-owned target relic, respecting reserve', () => {
+  const run = {
+    coins: 10, relics: [],
+    shop: { offers: [
+      { type: 'buyLetter', letter: 'E', cost: 3 },
+      { type: 'buyRelic', relicId: 'rareHoarder', cost: 6 },
+      { type: 'hone', archetypeId: 'rareLetter', cost: 6 },
+    ] },
+  };
+  const off = pickTargetOffer(run, { targetRelicIds: ['rareHoarder'], targetHoneId: 'rareLetter', reserve: 0 });
+  assert.equal(off.type, 'buyRelic');
+  assert.equal(off.relicId, 'rareHoarder');
+});
+
+test('pickTargetOffer skips an already-owned relic and falls back to the target hone', () => {
+  const run = {
+    coins: 10, relics: [{ id: 'rareHoarder' }],
+    shop: { offers: [
+      { type: 'buyRelic', relicId: 'rareHoarder', cost: 6 },
+      { type: 'hone', archetypeId: 'rareLetter', cost: 6 },
+    ] },
+  };
+  const off = pickTargetOffer(run, { targetRelicIds: ['rareHoarder'], targetHoneId: 'rareLetter', reserve: 0 });
+  assert.equal(off.type, 'hone');
+});
+
+test('pickTargetOffer returns null when nothing affordable stays above reserve', () => {
+  const run = { coins: 8, relics: [], shop: { offers: [{ type: 'buyRelic', relicId: 'rareHoarder', cost: 6 }] } };
+  assert.equal(pickTargetOffer(run, { targetRelicIds: ['rareHoarder'], reserve: 5 }), null); // 8-6=2 < 5
+});
+
+test('buildPurchasePolicy spends toward the target on a real run (buys and/or rerolls)', () => {
+  resetTileIds();
+  const run = newRun({ config: configShop, dictionary: dictCat, seed: 7 });
+  run.coins = 999;
+  buildPurchasePolicy({ targetRelicIds: ['vowelBonus'], targetHoneId: 'vowelHeavy', maxRerolls: 5 })(run);
+  assert.ok(run.coins < 999, 'policy spent coins (bought and/or rerolled)');
+  assert.equal(run.shop, null, 'shop cleared after the turn');
 });
