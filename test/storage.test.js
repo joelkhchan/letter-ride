@@ -135,3 +135,20 @@ test('a version-1 save is treated as no save (fresh start)', () => {
   s.setItem('letterRide.run', JSON.stringify({ version: 1 }));
   assert.equal(loadRun(s, { config, dictionary: dict }), null);
 });
+
+test('relicState round-trips through serialize/deserialize', () => {
+  const run = newRun({ config, dictionary: dict, seed: 7 });
+  run.relicState = { rareAvalanche: { stacks: 4 } };
+  const data = serializeRun(run);
+  assert.equal(data.version, 3);
+  const restored = deserializeRun(data, { config, dictionary: dict });
+  assert.deepEqual(restored.relicState, { rareAvalanche: { stacks: 4 } });
+});
+
+test('a missing relicState deserializes to {}', () => {
+  const run = newRun({ config, dictionary: dict, seed: 7 });
+  const data = serializeRun(run);
+  delete data.relicState;
+  const restored = deserializeRun(data, { config, dictionary: dict });
+  assert.deepEqual(restored.relicState, {});
+});
