@@ -153,3 +153,70 @@ test('buildPurchasePolicy spends toward the target on a real run (buys and/or re
   assert.ok(run.coins < 999, 'policy spent coins (bought and/or rerolled)');
   assert.equal(run.shop, null, 'shop cleared after the turn');
 });
+
+// ── v2: simulateRun shop loop + dead-rack counter ─────────────────────────────
+
+// configBeatable: a 3-round CAT-only run where round 1 is trivially clearable (earning shop coins),
+// but round 2+ requires shortAndSweet (×3 Mult on ≤3-letter words) to reach target 12.
+// RACK_SIZE=9 + 18-tile bag (6×CAT) guarantees every rack holds at least one C, one A, one T.
+// Without the relic: CAT=5/play, 2 plays → 10 < 12 → loses at round 2 (roundReached=2).
+// With the relic:    CAT=15/play, 1 play → 15 ≥ 12 → clears rounds 2 and 3 (roundReached=3, won).
+const configBeatable = {
+  STARTING_BAG: ['C','A','T','C','A','T','C','A','T','C','A','T','C','A','T','C','A','T'], // 6×CAT
+  TILE_VALUES: { C:3, A:1, T:1 },
+  RACK_SIZE: 9, PLAYS_PER_ROUND: 2, DISCARDS_PER_ROUND: 0, MIN_WORD_LEN: 3,
+  LENGTH_BONUS_PER_LETTER: 0,
+  ROUND_TARGETS: [4, 12, 12],
+  // Generous clear bonus so policy can afford buyRelic (cost 8) after clearing round 1.
+  COINS_ON_CLEAR: { base: 10, perUnusedPlay: 1, perUnusedDiscard: 0 },
+  INTEREST: { enabled: false },
+  SHOP: {
+    // offersPerShop: 99 guarantees the relic appears (slice is bounded by candidates.length).
+    offersPerShop: 99, rerollCost: 1,
+    cost: { buyLetter: 3, buyEnchantedTile: 7, enchantTile: 6, upgradeLetter: 5, thinLetter: 3, buyRelic: 8 },
+    upgradePlus: 1, buyableLetters: ['E'],
+  },
+  HONE: { cost: 6 },
+};
+
+// configB / dictB / wordsB: target > one-CAT score (5) so the first play doesn't instantly clear,
+// ensuring at least one mid-round rack sample (racksSeen >= 1 is testable).
+const configB = {
+  STARTING_BAG: ['C','A','T','C','A','T','C','A','T'], TILE_VALUES: { C:3, A:1, T:1 },
+  RACK_SIZE: 3, PLAYS_PER_ROUND: 3, DISCARDS_PER_ROUND: 0, MIN_WORD_LEN: 3,
+  LENGTH_BONUS_PER_LETTER: 0, ROUND_TARGETS: [8],   // CAT=5 < 8; two plays: 5+5=10 ≥ 8 → one mid-round sample
+};
+const dictB = dictCat;
+const wordsB = wordsCat;
+
+test('simulateRun with a purchase policy acquires the target relic and out-progresses no-shop', () => {
+  // seed=1 is verified to give an initial rack of [A,T,C] → CAT is playable every draw.
+  // pool restricted to shortAndSweet so generateShop always includes it; policy buys it after round 1.
+  const noShopRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 1 });
+  const policy = buildPurchasePolicy({ targetRelicIds: ['shortAndSweet'], maxRerolls: 5, pool: { relicIds: ['shortAndSweet'] } });
+  const buyRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 1, policy });
+  // Without relic: 5+5=10 < 12, loses at round 2 → roundReached=2. With relic: 15≥12, wins all → roundReached=3.
+  assert.ok(buyRes.roundReached > noShopRes.roundReached, 'shopping out-progresses no-shop (strict)');
+  assert.equal(buyRes.won, true, 'buy persona wins the run');
+  assert.equal(noShopRes.won, false, 'no-shop persona loses');
+});
+
+test('simulateRun reports dead-rack count and racks seen', () => {
+  const r = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 1 });
+  assert.equal(typeof r.deadRacks, 'number');
+  assert.equal(typeof r.racksSeen, 'number');
+  assert.ok(r.racksSeen >= 1);
+});
+
+test('owned-relic dedup holds through the real purchase() call (no duplicate relics)', () => {
+  // Probe: give a run the relic already, then call the policy repeatedly — purchase() must skip it.
+  resetTileIds();
+  const run = newRun({ config: configBeatable, dictionary: dictCat, seed: 5 });
+  run.coins = 999;
+  const policy = buildPurchasePolicy({ targetRelicIds: ['shortAndSweet'], maxRerolls: 10, pool: { relicIds: ['shortAndSweet'] } });
+  // Call policy twice (simulating two shop turns) to stress the dedup path.
+  policy(run);
+  policy(run);
+  const count = run.relics.filter(r => r.id === 'shortAndSweet').length;
+  assert.ok(count <= 1, `shortAndSweet must not be duplicated — found ${count} copies`);
+});

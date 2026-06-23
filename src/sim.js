@@ -108,9 +108,13 @@ export const noShop = () => {};
 // ── v1: greedy simulator ──────────────────────────────────────────────────────
 
 // Drive one full run with the greedy "best word" policy. Deterministic given seed.
-export function simulateRun({ config, dictionary, words, seed, deck = null, cap = 1000 }) {
+// v2: accepts an optional `policy` (default noShop) called on roundCleared before nextRound.
+//     Returns deadRacks + racksSeen: after each play/discard while still in a round,
+//     samples whether the new hand has any playable word.
+export function simulateRun({ config, dictionary, words, seed, deck = null, cap = 1000, policy = noShop }) {
   const run = newRun({ config, dictionary, seed, deck });
   let iter = 0;
+  let deadRacks = 0, racksSeen = 0;
   while (run.status === 'playing' && iter < cap) {
     iter++;
     const play = bestPlay(run, words);
@@ -121,7 +125,13 @@ export function simulateRun({ config, dictionary, words, seed, deck = null, cap 
     } else {
       break;   // unactionable: no word and no discard (engine dead-hand usually sets 'lost' first)
     }
-    if (run.status === 'roundCleared') nextRound(run);
+    // Dead-rack sampling: while still within a round (not yet cleared), check if
+    // the refreshed hand has any play. Includes 'playing' and 'lost' (dead-hand).
+    if (run.status !== 'roundCleared' && run.status !== 'won') {
+      racksSeen += 1;
+      if (!bestPlay(run, words)) deadRacks += 1;
+    }
+    if (run.status === 'roundCleared') { policy(run); nextRound(run); }
   }
   // If we exited via break with the run still nominally 'playing', the hand is unactionable → loss.
   if (run.status === 'playing') run.status = 'lost';
@@ -130,5 +140,7 @@ export function simulateRun({ config, dictionary, words, seed, deck = null, cap 
     status: run.status,
     roundReached: run.roundIndex + 1,   // 1-based; equals ROUND_TARGETS.length on a win
     hitCap: iter >= cap,
+    deadRacks,
+    racksSeen,
   };
 }
