@@ -22,42 +22,46 @@ export function isDoubled(ctx) {
 // long threshold drops by 1 with the longReach enabler.
 const longThreshold = (ctx) => (ctx.enablers || []).includes('longReach') ? 5 : 6;
 
+// Hone ×Mult kicker: high Hone levels add a multiplicative bonus (the scaling-investment wincon).
+// Starting value is tunable. Applies only when the archetype's condition matches (caller gates it).
+const honeXMult = (lvl) => (lvl >= 3 ? 1 + 0.25 * (lvl - 2) : 1);
+
 export const ARCHETYPES = {
   shortWord: {
     id: 'shortWord', name: 'Short-word',
     desc: 'Score short words big by stacking ×Mult.',
     matches: (ctx) => ctx.letters.length <= 3,
-    honeBonus: (ctx, lvl) => ctx.letters.length <= 3 ? { addMult: lvl } : {},
+    honeBonus: (ctx, lvl) => ctx.letters.length <= 3 ? { addMult: lvl, timesMult: honeXMult(lvl) } : {},
   },
   longWord: {
     id: 'longWord', name: 'Long-word',
     desc: 'Longer words earn bonus points and Mult per letter.',
     matches: (ctx) => ctx.letters.length >= longThreshold(ctx),
-    honeBonus: (ctx, lvl) => ctx.letters.length >= longThreshold(ctx) ? { addPoints: 5 * lvl } : {},
+    honeBonus: (ctx, lvl) => ctx.letters.length >= longThreshold(ctx) ? { addPoints: 5 * lvl, timesMult: honeXMult(lvl) } : {},
   },
   rareLetter: {
     id: 'rareLetter', name: 'Rare-letter',
     desc: 'Cash in on rare letters J, Q, X, Z.',
     matches: (ctx) => hasRare(ctx),
-    honeBonus: (ctx, lvl) => hasRare(ctx) ? { addPoints: 15 * lvl } : {},
+    honeBonus: (ctx, lvl) => hasRare(ctx) ? { addPoints: 15 * lvl, timesMult: honeXMult(lvl) } : {},
   },
   doubled: {
     id: 'doubled', name: 'Doubled-letter',
     desc: 'Words with a doubled letter score extra.',
     matches: (ctx) => isDoubled(ctx),
-    honeBonus: (ctx, lvl) => isDoubled(ctx) ? { addPoints: 12 * lvl } : {},
+    honeBonus: (ctx, lvl) => isDoubled(ctx) ? { addPoints: 12 * lvl, timesMult: honeXMult(lvl) } : {},
   },
   vowelHeavy: {
     id: 'vowelHeavy', name: 'Vowel-heavy',
     desc: 'More vowels, bigger bonus.',
     matches: (ctx) => ctx.letters.filter(isVowel).length >= 3,
-    honeBonus: (ctx, lvl) => { const v = ctx.letters.filter(isVowel).length; return v >= 3 ? { addPoints: 2 * lvl * v } : {}; },
+    honeBonus: (ctx, lvl) => { const v = ctx.letters.filter(isVowel).length; return v >= 3 ? { addPoints: 2 * lvl * v, timesMult: honeXMult(lvl) } : {}; },
   },
   escalation: {
     id: 'escalation', name: 'Escalation',
     desc: 'Each word this round boosts the next.',
     matches: () => true,
-    honeBonus: (ctx, lvl) => { const m = 0.5 * lvl * (ctx.wordsPlayedThisRound || 0); return m ? { addMult: m } : {}; },
+    honeBonus: (ctx, lvl) => { const m = 0.5 * lvl * (ctx.wordsPlayedThisRound || 0); return (m || lvl >= 3) ? { addMult: m, timesMult: honeXMult(lvl) } : {}; },
   },
 };
 
