@@ -1,11 +1,27 @@
 import { makeBag } from './bag.js';
 import { makeTile } from './tiles.js';
-import { makeRng } from './rng.js';
+import { makeRng, shuffle } from './rng.js';
 import { validate, isLegalSelection } from './word.js';
 import { scoreWord } from './scoring.js';
 import { honeModifiers } from './archetypes.js';
 
 const sumExtraPlays = (relics = []) => relics.reduce((n, r) => n + (r.extraPlays || 0), 0);
+
+// Model B: fill the hand up to RACK_SIZE from the depleting draw-pile.
+function refillHand(run) {
+  const need = run.config.RACK_SIZE - run.rack.length;
+  if (need > 0) run.rack.push(...run.drawPile.splice(0, need));
+}
+
+// Start a round: rebuild the depleting draw-pile from the full owned bag, deal a fresh hand.
+export function startRound(run) {
+  run.drawPile = shuffle([...run.bag.tiles], run.rng);
+  run.rack = [];
+  refillHand(run);
+}
+
+// Permanent thin alias: re-deal a fresh hand (used by storage.test.js + the eval harness).
+export function drawRack(run) { startRound(run); return run.rack; }
 
 export function awardCoins(run) {
   const c = run.config.COINS_ON_CLEAR;
@@ -35,7 +51,7 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
   const playsPerRound = config.PLAYS_PER_ROUND + (stake?.playsDelta || 0);
   const discardsPerRound = config.DISCARDS_PER_ROUND + (stake?.discardsDelta || 0) + (loadout.extraDiscards || 0);
   const startRelics = [...(loadout.startRelics || [])];
-  return {
+  const run = {
     config, dictionary,
     seed, rng: makeRng(seed),
     targets,
@@ -51,16 +67,14 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     relics: startRelics,
     coins: loadout.startCoins || 0,
     rack: [],
+    drawPile: [],
     honeLevels: {},
     wordsPlayedThisRound: 0,
     stake, deck,
     status: 'playing',
   };
-}
-
-export function drawRack(run) {
-  run.rack = run.bag.draw(run.config.RACK_SIZE, run.rng);
-  return run.rack;
+  startRound(run);
+  return run;
 }
 
 export function playWord(run, selection) {
@@ -98,5 +112,6 @@ export function nextRound(run) {
   run.discardsLeft = run.discardsPerRound;
   run.wordsPlayedThisRound = 0;
   run.status = 'playing';
+  startRound(run);
   return run;
 }

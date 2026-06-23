@@ -178,3 +178,31 @@ test('extraPlays is derived from current relics each round (loadout + shop-bough
   nextRound(run);
   assert.equal(run.playsLeft, config.PLAYS_PER_ROUND + 2);          // BOTH apply next round, no double-count
 });
+
+// --- Model B fixtures (bag > hand so the draw-pile is observable) ---
+const dictB = makeDictionary(['cat', 'tab', 'bat', 'act']);
+const configB = {
+  STARTING_BAG: ['C','A','T','B','A','T'],          // 6 tiles
+  TILE_VALUES: { C:3, A:1, T:1, B:3 },
+  RACK_SIZE: 3, PLAYS_PER_ROUND: 4, DISCARDS_PER_ROUND: 2, MIN_WORD_LEN: 3,
+  LENGTH_BONUS_PER_LETTER: 5, ROUND_TARGETS: [999, 999],   // high so plays don't auto-clear
+};
+
+test('newRun deals a full hand; the draw-pile holds the rest of the bag', () => {
+  resetTileIds();
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  assert.equal(run.rack.length, 3);
+  assert.equal(run.drawPile.length, 3);                       // 6 - 3
+  const ids = new Set([...run.rack, ...run.drawPile].map(t => t.id));
+  assert.equal(ids.size, 6);                                  // hand ∪ pool = full bag, no dupes
+});
+
+test('nextRound rebuilds the draw-pile from the full bag and deals a fresh hand', () => {
+  resetTileIds();
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  run.status = 'roundCleared';
+  run.drawPile = []; run.rack = [];                           // simulate a depleted round
+  nextRound(run);
+  assert.equal(run.rack.length, 3);
+  assert.equal(run.drawPile.length, 3);                       // pool rebuilt from the 6-tile bag
+});
