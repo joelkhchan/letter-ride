@@ -421,3 +421,17 @@ test('simulateRun defaults to smartDiscard (partial discard on dead rack, not fu
   simulateRun({ config, dictionary: dictCat, words: wordsCat, seed: 1, discardPolicy: spySmart });
   assert.ok(smartCalls > 0, 'smart discard policy was invoked on dead rack');
 });
+
+// ── Task 5: persona snowball relic guard ──────────────────────────────────────
+
+const SNOWBALL_BY_ARCH = {
+  shortWord: 'flywheel', longWord: 'juggernaut', rareLetter: 'rareAvalanche',
+  doubled: 'resonanceEngine', vowelHeavy: 'risingTide', escalation: 'perpetualEngine',
+};
+
+test('each persona targets its archetype snowball relic', () => {
+  for (const p of PERSONAS) {
+    const want = SNOWBALL_BY_ARCH[p.id];
+    assert.ok(p.targetRelicIds.includes(want), `${p.name} (id=${p.id}) should target ${want}`);
+  }
+});

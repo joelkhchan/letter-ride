@@ -202,12 +202,12 @@ export function percentile(values, p) {
 // Each entry: { id, name, bagId, targetRelicIds, targetHoneId }
 // bagId 'standard' is resolved to config.STARTING_BAG in runPersona (DECKS.standard.startingBag is null).
 export const PERSONAS = [
-  { id: 'shortWord',   name: 'Short Word',   bagId: 'lean',     targetRelicIds: ['shortAndSweet'],           targetHoneId: 'shortWord'   },
-  { id: 'longWord',    name: 'Long Word',    bagId: 'standard', targetRelicIds: ['lengthy', 'longHaul'],     targetHoneId: 'longWord'    },
-  { id: 'rareLetter',  name: 'Rare Letter',  bagId: 'rareRich', targetRelicIds: ['rareHoarder', 'rareSurge'],targetHoneId: 'rareLetter'  },
-  { id: 'doubled',     name: 'Doubled',      bagId: 'doubled',  targetRelicIds: ['doubleTrouble', 'echoChamber'], targetHoneId: 'doubled' },
-  { id: 'vowelHeavy',  name: 'Vowel Heavy',  bagId: 'standard', targetRelicIds: ['vowelBonus', 'freshStart'],targetHoneId: 'vowelHeavy'  },
-  { id: 'escalation',  name: 'Escalation',   bagId: 'standard', targetRelicIds: ['comboCounter', 'momentum'],targetHoneId: 'escalation'  },
+  { id: 'shortWord',   name: 'Short Word',   bagId: 'lean',     targetRelicIds: ['shortAndSweet', 'flywheel'],                        targetHoneId: 'shortWord'   },
+  { id: 'longWord',    name: 'Long Word',    bagId: 'standard', targetRelicIds: ['lengthy', 'longHaul', 'juggernaut'],                targetHoneId: 'longWord'    },
+  { id: 'rareLetter',  name: 'Rare Letter',  bagId: 'rareRich', targetRelicIds: ['rareHoarder', 'rareSurge', 'rareAvalanche'],        targetHoneId: 'rareLetter'  },
+  { id: 'doubled',     name: 'Doubled',      bagId: 'doubled',  targetRelicIds: ['doubleTrouble', 'echoChamber', 'resonanceEngine'],  targetHoneId: 'doubled'     },
+  { id: 'vowelHeavy',  name: 'Vowel Heavy',  bagId: 'standard', targetRelicIds: ['vowelBonus', 'freshStart', 'risingTide'],           targetHoneId: 'vowelHeavy'  },
+  { id: 'escalation',  name: 'Escalation',   bagId: 'standard', targetRelicIds: ['comboCounter', 'momentum', 'perpetualEngine'],      targetHoneId: 'escalation'  },
 ];
 
 // runPersona — for each seed, build the persona's deck + policy, simulateRun, then summarizePersona.
