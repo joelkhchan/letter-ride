@@ -1,88 +1,92 @@
 # Letter Ride — Development Roadmap (prototype → substantial game)
 
-**Date:** 2026-06-22 · **Author call:** Joel. **Status:** active strategic roadmap, supersedes the "deferred wishlist" section of the original 4-tier plan (`docs/2026-06-20-letter-ride-plan.md`). Grounded in the design spec, the two genre-research docs, and the archetype framework (`docs/2026-06-22-letter-ride-*.md`).
+**Date:** 2026-06-22 (rev. 2, post spec-review + author discussion) · **Author call:** Joel. **Status:** active strategic roadmap; supersedes the "deferred wishlist" of the original 4-tier plan (`docs/2026-06-20-letter-ride-plan.md`). Grounded in the design spec, the two genre-research docs, and the archetype framework.
 
 ## Where we are
 
-Tiers 0–3 are complete (core loop, meta-progression, Android/Capacitor scaffold) plus a P1 polish pass (telemetry, legibility) and a just-shipped **archetype expansion** (6 archetypes + Hone invest-to-scale + enabler relics + archetype-leaning bags; 127 tests green). The result is a **fun, mechanically deep** word-builder roguelike that is, today: structurally flat (round → shop → round), hard to read (bags/archetypes/Hone have no player-facing descriptions), visually unstyled, and — most importantly — **unvalidated in real play since the archetype layer landed.**
+Tiers 0–3 complete (core loop, meta-progression, Android/Capacitor scaffold) + a P1 polish pass (telemetry, legibility) + a just-shipped **archetype expansion** (6 archetypes + Hone + enabler relics + archetype-leaning bags; 127 tests green). The result is a **fun, mechanically deep** word-builder roguelike that is, today: structurally flat (round → shop → round), hard to read (bags/archetypes/Hone lack player-facing copy), visually unstyled, and **unvalidated in real play since the archetype layer landed.**
+
+## What "substantial" means here (definition of done — author-set 2026-06-22)
+
+**Not breadth.** The finish line is **bosses + events** layered on a **scoring system whose boundaries we actually understand and whose mechanical vocabulary is locked** — so every piece of content is designed coherently inside that system (or *deliberately breaks it* for fun). Co-viable archetypes are a *means*, not a target count; we cut/merge/add archetypes freely. A "done v1" is: a textured run (bosses + events), a bounded-and-understood scoring system with a defined effect/letter/word vocabulary, and enough content to exercise it — playable and fun on the author's phone.
 
 ## The cardinal rule (sequencing principle)
 
-**Depth → legibility → texture → content → feel → longevity, in that order, with gates between.** The genre's classic failure (and the one this roadmap exists to prevent) is adding breadth on top of an unvalidated, illegible core. Slay the Spire built a metrics server at prototype stage to tune *before* expanding; Letter Ride already has the telemetry + harness to do the same — so use them before building more.
+**Validate → know your boundaries → texture → content → feel → longevity, with gates between.** The genre's classic failure (and the scope-creep the author caught) is adding breadth on top of an unvalidated, *un-bounded* core. So: prove it's fun, then *map the system's limits and lock its vocabulary*, then build bosses/events/content inside those limits.
+
+## Balance philosophy (author-set)
+
+**Co-viability, not equality — and breaking the system is part of the fun.** Each archetype should be *able* to win; they need not win at equal rates. Discovering a degenerate synergy that obliterates a target (Balatro-style ×Mult blowup) is a **feature**, not a bug. We do **not** reflexively cap or nerf. We intervene only when an archetype is *dead/unwinnable*, or when a single line is a *zero-decision no-brainer* that removes all choices. The earlier "899% / 1646%" figures are **static peak-score ratios** from one instrument (`analyze-builds.js`, fixed builds, Escalation measured at play #4) — **not win rates**; treat them as curiosities, not nerf targets. The binding balance signal is full-run **win rate** from the eval harness + the author's play.
 
 ## Ambition decision (DEFERRED — revisit before Phase 4)
 
-Chosen 2026-06-22: **decide later.** Phases 0–3 are identical whether this stays a deep personal game or aims for a release; only the Phase 4 (identity/juice/onboarding) bar changes. Revisit the release question at the Phase 3→4 gate. Until then the CLAUDE.md framing holds: optimize for "fun on my phone," not store-readiness.
+Chosen 2026-06-22: **decide later.** Phases 0–3 are identical whether this stays a deep personal game or aims for a release; only the Phase 4 (identity/juice/onboarding) bar changes. Until then: optimize for "fun on the author's phone," **solo** (no outside playtesting — the eval harness carries the objective signal).
 
 ## Phases
 
 | Phase | Theme | Why this slot | Effort |
 |---|---|---|---|
-| **0 — Now** | Legibility quick-wins + validate & tune the core | Can't tune or enjoy what you can't read; everything downstream is wasted if builds aren't fun *and* fair | Low |
-| **1** | Onboarding & game-feel basics | Make it playable without the author present; cut friction | Low–Med |
-| **2** | Run-structure texture (nodes · bosses · events) | The flat loop is the #1 "not substantial yet" gap — but must sit on a *proven* core | Med–High |
-| **3** | Build depth & content volume | Replayability; only worth authoring once the frame is fixed | Med (ongoing) |
-| **4** | Identity, visuals & juice | The "substantial feel" — but juice on an unfun game is lipstick | High |
-| **5** | Longevity & endgame | The long-tail "one more run" | Med |
+| **0 — Now** | Validate & tune the core | Everything downstream is wasted if the core isn't fun and at least co-viable | Low–Med |
+| **1** | **Systems & Boundaries study** *(the spine)* | Can't design bosses/events/content without knowing the scoring system's limits + a locked mechanical vocabulary | Med |
+| **2** | Run texture: bosses + events | The #1 "not substantial yet" gap — the author's headline want; designed *inside* the known boundaries | Med–High |
+| **3** | Mechanics & content (only what Phase 1 greenlit) | Build the in-scope mechanics; content serves texture + vocabulary, not a relic count | Med (ongoing) |
+| **4** | Feel, identity & visuals | The "substantial feel" — but juice on an unproven game is lipstick; revisit ambition here | High |
+| **5** | Longevity & endgame (trimmed) | Long-tail "one more run" — lighter for a solo game | Low–Med |
 
-*Cross-cutting, continuous: **simulated-player evals / actor personas** (see dedicated section — built early, re-run every phase as balance + regression + soft-lock testing); Android APK + on-device touch validation (prove early, keep working); telemetry-driven balance tuning every phase.*
+*Cross-cutting, continuous: **simulated-player eval harness** (built in 0b, re-run as a gate every later phase); Android APK + on-device validation (incl. the 172k-word dictionary load into the WebView); **save-schema versioning** (graceful drop of unknown relic/mod/deck ids so content updates never brick an active save); telemetry of real play.*
 
-### Phase 0 — Prove it's fun *and* fair (validate, don't expand)
-- **0a — Legibility first** (so the playtest is informed): player-facing descriptions for bags, the 6 archetypes, and Hone (the "I dunno what the bags do" gap, and the hone "what it scales" gap). Agent drafts; **author approves the copy.**
-- **0b — Eval harness v1** (see Simulated-player evals below): extend the static `analyze-builds.js` into a full-run simulator driven by a few actor personas, reporting per-archetype win rates, dominant-strategy flags, and soft-locks across many seeds. This *powers* the tuning — far more signal than manual play alone.
-- **0c — Tune to the gate:** author plays committed-archetype runs (the *fun* judgment) while the evals supply the *balance* data; tune the **Long-word (899%) / Escalation (1646%) outliers**, hone increments, and enabler power until every archetype wins at comparable rates and no single line dominates. Protect the "giddy high" of a huge word.
-- **Exit gate:** author can win with 3–4 *distinct* builds; evals show comparable per-archetype win rates with no degenerate dominant line; the core still feels fun with the added depth.
+### Phase 0 — Validate & tune the core
+- **0a — Legibility first** (so play is informed): player-facing descriptions for bags, the 6 archetypes, and Hone. Agent drafts; **author approves copy.** Pull a **thin feel slice** alongside (score-tally/cash-out feedback) so the fun-verdict isn't rendered on an inert build — light, not the Phase 4 art.
+- **0b — Eval harness v1** (test infrastructure — *not* new game breadth, so it doesn't violate "don't expand"): a **new** lean `sim` module that *drives* `run.js` end-to-end (`newRun → {play|discard} → nextRound → generateShop → purchase`), reusing only `canForm` + `scoreWord` from the existing static `analyze-builds.js`. v1 deliverables: a legal-word-move enumerator (promote `canForm`), a `Policy` interface (`chooseWord`, `choosePlayOrDiscard`, `choosePurchase`), the run driver, and win-rate aggregation across seeds. **Personas: the 6 archetype-committers only** (greedy toward their build). Defer solver/chaos/economy/node personas. **Timeboxed with a "fall back to manual tuning if v1 runs long" off-ramp.** Perf: bucket the word list once and reuse across turns; cap seeds×personas for gate re-runs.
+- **0c — Tune to the gate:** author plays (the *fun* judgment) + eval win-rate data (the *balance* signal). Tune hone increments, enabler power, the target ladder. Don't over-balance — preserve the "break it" highs.
+- **Exit gate:** core is fun with the added depth; every archetype is *winnable* (no dead ones); no zero-decision no-brainer line.
+- **Failure branch:** if the core isn't fun, or an archetype can't be made winnable without breaking a pillar → **revise/cut/merge the archetype set** (nothing is locked; the archetype doc lists merge candidates, Escalation first) or revert the expansion — *before* any Phase 1+ work. Don't paper over a design failure.
 
-### Phase 1 — Teachable & responsive
-- First-run tutorial / guided first round; the "a valid word exists" dead-hand affordance (R10); stronger live scoring feedback (why a word scored X — JokerDisplay-style, partly built).
-- **Validate the actual APK on-device** here (touch UX, performance) — first real proof it's the phone game it's meant to be.
-- **Exit gate:** a first-time player completes a run without external explanation, on a phone.
+### Phase 1 — Systems & Boundaries study (the spine)
+Map the scoring system's real limits and **lock the mechanical vocabulary**, so bosses/events/content are designed coherently. Powered by the eval harness (it *measures* the boundaries). Outputs a short **"systems bible"** doc. Covers:
+- **Score-growth curve & ceiling:** with the best legal build, max score per round vs. the target ladder `[40…600]` — headroom or trivialized?
+- **The ×Mult blowup:** how many `×Mult` sources stack and the resulting product. Given "breaking it is fun," the question is *how high we let it go* and *whether targets chase it* — a deliberate dial, not a cap.
+- **Effect vocabulary** *(candidate-IN: all)*: beyond `+Points/+Mult/×Mult` — retriggers, tile transform/destroy, per-word-property effects, and the **negative/warp effects bosses need** (disable / cap / tax / lock).
+- **Letter mechanics** *(candidate-IN)*: tile values, wilds, rares, bag rules; potential tile-upgrade tiers, positional bonuses.
+- **Word-combos / chaining** *(candidate-IN)*: consecutive-word relationships (letter-chain, length-ladder, shared-tile) — bound it as a new scoring dimension.
+- **Word-types** *(candidate-IN)*: suffix/prefix/digraph (`-ING/-ED/-LY/QU/TH`) as POS-lite (true POS stays out — needs a tagged lexicon).
+- **Decision per mechanic:** define its *boundary* (range, cost, interaction with the formula) and whether it's IN for the v1 system. Locking the vocabulary is the gate.
+- **Exit gate:** we can state the system's boundaries (curve, ceiling, dials) and the locked effect/letter/word vocabulary; bosses and events are now designable.
 
-### Phase 2 — Give the run an arc (structural texture)
-- The flat round→shop becomes a shaped run. Sub-projects, designed **one at a time on a tuned core** (each its own spec → plan → build → playtest):
-  - **Node variety:** pick-a-node (shop / event / forge / hone-bench) + skip-with-tag.
-  - **Archetype-antagonist bosses:** periodic boss rounds with rule-warps that attack the player's committed build (e.g. "vowels score 0," "doubled bonuses off," "Mult capped ×3"), forcing pivots/counters — this makes the archetype system *matter*.
-  - (Optional) a light branching path between nodes.
+### Phase 2 — Run texture: bosses + events (headline want)
+Replace the flat round→shop with a shaped run, designed *inside* Phase 1's boundaries. Sub-projects, one at a time (each its own design → build → playtest), eval harness re-run as a gate (run flow changed):
+- **Node variety:** pick-a-node (shop / event / forge / hone-bench) + skip-with-tag.
+- **Archetype-antagonist bosses:** periodic boss rounds whose rule-warps come from the *locked negative-effect vocabulary* (e.g. "vowels score 0," "×Mult capped," "doubled bonuses off") and attack the player's committed build → force pivots/counters.
+- **Events:** small risk/reward choice nodes (trade tiles, anagram challenge, etc.).
 - **Exit gate:** a run has rising tension, meaningful between-round choices, and memorable boss moments.
 
-### Phase 3 — Depth & build variety
-- base→upgrade relic tiers (R-E); affix/digraph synergies (-ING/-ED/-LY/QU/TH) as POS-lite; word-chaining/combo content (deepens Escalation); more tile-mods, enablers, decks; archetype-weighted shop offers (R-F).
-- **Exit gate:** ~20–30 relics, ~6 deep archetypes; runs rarely feel same-y.
+### Phase 3 — Mechanics & content (only what Phase 1 greenlit)
+Build the in-scope mechanics (combos / word-types / affixes / richer effects / letter systems) and the relics/mods/enablers that exercise them. **Breadth de-emphasized** — content serves the texture and the vocabulary, not a relic count.
 
-### Phase 4 — Identity, visuals & juice (revisit ambition first)
-- Art direction + a genuine hook (the scrabble-bag motif is a seed); scoring/chain/boss-reveal animation; sound; the cohesive aesthetic that makes it *its own thing*, not "Balatro with words."
-- **Exit gate:** the game feels good to touch on a phone and has a recognizable identity.
+### Phase 4 — Feel, identity & visuals (revisit ambition first)
+Real art direction + a genuine hook (the scrabble-bag motif is a seed), scoring/chain/boss-reveal animation, sound — the cohesive identity that makes it *its own thing*. **Author wants a staff game-designer perspective here when we arrive.**
+- **Exit gate:** feels good to touch on a phone; recognizable identity.
 
-### Phase 5 — Longevity & endgame
-- Difficulty/stakes ladder (ascension-style); daily-seed & challenge runs; achievements; run history/stats; (optional) local leaderboards.
-- **Exit gate:** there's always a reason for "one more run."
+### Phase 5 — Longevity & endgame (trimmed for solo)
+Optional: difficulty/stakes ladder, daily-seed / challenge runs, run history. Lighter than for a commercial release.
 
 ## Simulated-player evals & actor personas (cross-cutting infrastructure)
 
-**The idea:** scripted "actor personas" that play *full runs* headlessly end-to-end — choosing words, purchases, discards, and (later) nodes by a decision policy — across many seeds, reporting outcomes. Reusable every phase as balance + regression + behavior + soft-lock testing. This is what frees the author's manual playtesting to focus on *fun*, while the machine catches dominant strategies, dead ends, and regressions.
+**The idea:** scripted "actor personas" that play *full runs* headlessly end-to-end via a decision policy, across many seeds, reporting outcomes. Reusable every phase as balance + regression + soft-lock testing — freeing the author's manual play to focus on *fun*, while the machine catches dead archetypes, soft-locks, and regressions. (Distinct from telemetry, which records the author's *real* play; note Escalation's telemetry play-share is 100% by design (`matches: () => true`), so don't naively compare the two sources.)
 
-**Why it's feasible here:** the logic layer is already pure, DOM-free, dependency-injected, and deterministic (seeded RNG) — the engine can be driven headlessly with no UI. The existing `analyze-builds.js` is the seed (it scores best words statically); evals extend it to *full-run simulation with decision policies*. (Distinct from telemetry, which records the author's *real* play.)
+**Honest scoping (per spec-review):** this is a **new `sim` driver on top of `run.js`**, not an extension of the static `analyze-builds.js` — it reuses only `canForm` + `scoreWord`. The decision-policy layer is where the effort lives, so v1 is deliberately minimal: **6 archetype-committer personas, greedy heuristics, win-rate output, timeboxed, with a manual-tuning off-ramp.** Later increments add personas (greedy-best-word + scripted-heuristic-purchase as a "ceiling" probe — *not* a true best-EV solver, which is an unbounded search; chaos/fuzzer for soft-locks; economy) and node-aware play once Phase 2 lands.
 
-**Actor personas (the "several types of users"):**
-- **Novice/casual** — plays the first/short valid word, buys cheap or random, no build plan. ("Is it beatable & fun for non-optimizers?")
-- **Archetype-committers** (one per archetype: short, long, rare, doubled, vowel, escalation) — pursue a coherent build + buy coherent offers. (Per-archetype *full-run* win rate — the real co-viability test, vs. the static harness.)
-- **Economy/greedy-$** — hoards $, leans interest/recycler. (Economy balance.)
-- **Solver/optimal-ish** — approximates best-EV play each turn. (Ceiling + "is there a degenerate dominant strategy?")
-- **Chaos/random** — random legal choices. (Floor + crash/soft-lock fuzzing: dead hands, unwinnable states, edge cases.)
-
-**Outputs:** per-persona win rate by round/stake, where runs end, build/relic distribution, avg word length, economy curves, and **per-archetype co-viability** (StS "win-in-deck rate," simulated rather than waited-for). Flags: any archetype far above/below the pack; any soft-lock; any single dominant line.
-
-**Lifecycle:** lean v1 in Phase 0b (extend `analyze-builds.js`; a few personas). Grow personas/policies as content lands. **Re-run as a gate** at every later phase — especially Phase 2 (nodes/bosses change run flow) and Phase 3 (new content) — so balance and soft-lock safety are re-proven automatically. Gets its own lean spec/plan when built (it's infrastructure, lower-ceremony than gameplay subsystems). **Evals validate balance/behavior/regressions; the author still judges fun — the two are complementary, not substitutes.**
+**Outputs:** per-persona win rate by round/stake, where runs end, build/relic distribution, economy curves, and **per-archetype win-in-deck rate** (the real co-viability signal). Flags: any *dead* archetype; any soft-lock; any zero-decision no-brainer line. (Not "flag anything above the pack" — high ceilings are allowed.)
 
 ## Guardrails (anti-scope-creep)
-- Don't start a phase until the previous phase's gate passes.
-- One subsystem at a time, playtested between (no "build all four at once").
-- Never add a 4th currency or break the one-formula (`Score = Points × Mult`, phase-ordered) or scarcity (letters always from a bag) pillars.
-- Don't style before gameplay is proven. Don't author content before the frame is fixed.
-- AI builds the systems; the **author judges fun/balance and writes player-facing copy** — surface tuning questions, don't silently pick "balanced" numbers.
+- Don't start a phase until the previous gate passes; one subsystem at a time, playtested between.
+- **Never break the pillars:** one formula `Score = Points × Mult`, **phase-ordered** — all `+Mult` sum into `(1 + Σ)` *first*, then all `×Mult` apply, independent of acquisition order (`scoring.js`); three currencies only (Points / $ / Meta); scarcity (letters always drawn from a bag). *(Note: CLAUDE.md still uses pre-rename terms "Wit"/"chips" — update it to Points/Score/$.)*
+- **Breaking the system via synergy is intended fun** — don't reflexively cap; intervene only on dead archetypes or zero-decision no-brainers.
+- Don't author content before Phase 1 locks the vocabulary; don't style before gameplay is proven.
+- AI builds systems + drafts copy for approval; the **author judges fun and owns final balance/copy calls.**
 
 ## Immediate priorities (next moves)
-1. **Phase 0a — descriptions:** agent drafts bag/archetype/Hone player-facing copy → author approves (small, unblocks informed play).
-2. **Phase 0b — eval harness v1:** agent extends `analyze-builds.js` into a full-run persona simulator (a few actor personas, per-archetype win rates + soft-lock flags across seeds). Gets a lean spec first.
-3. **Phase 0c — tune to gate:** author plays committed-archetype runs (fun) + eval data (balance) → tune Long/Escalation outliers + hone/enabler power until the Phase 0 gate passes.
-4. Then Phase 1 (onboarding + on-device APK validation).
+1. **Phase 0a — descriptions + thin feel slice:** agent drafts bag/archetype/Hone copy + adds light score-tally feedback → author approves.
+2. **Phase 0b — eval harness v1:** new `sim` module (committer personas, win-rate, timeboxed). Gets a lean spec first.
+3. **Phase 0c — tune to gate:** author play + eval data; preserve the "break it" highs.
+4. **Phase 1 — Systems & Boundaries study:** map curve/ceiling/vocabulary; lock the mechanical vocabulary (combos, word-types, effects, letters all candidate-IN); produce the systems bible. *This is the spine — bosses/events wait on it.*
