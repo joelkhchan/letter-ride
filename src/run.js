@@ -13,6 +13,16 @@ function refillHand(run) {
   if (need > 0) run.rack.push(...run.drawPile.splice(0, need));
 }
 
+// Dead-hand: a player's turn they can't act on — no legal word and no discard to escape with.
+function checkDeadHand(run) {
+  if (run.status !== 'playing' || run.discardsLeft > 0) return;
+  // A wild ('*') can substitute for any letter, but dictionary.findWord matches literally and
+  // can't see wilds — so a hand holding any wild is never declared dead (conservative: wild rescues).
+  if (run.rack.some(t => t.letter === '*')) return;
+  const word = run.dictionary.findWord(run.rack.map(t => t.letter), run.config.MIN_WORD_LEN);
+  if (!word) run.status = 'lost';
+}
+
 // Start a round: rebuild the depleting draw-pile from the full owned bag, deal a fresh hand.
 export function startRound(run) {
   run.drawPile = shuffle([...run.bag.tiles], run.rng);
@@ -98,6 +108,7 @@ export function playWord(run, selection) {
   refillHand(run);
   if (run.roundTotal >= run.target) { run.status = 'roundCleared'; if (run.config.COINS_ON_CLEAR) awardCoins(run); }
   else if (run.playsLeft <= 0) run.status = 'lost';
+  else checkDeadHand(run);
   return { ok: true, scored, run };
 }
 
@@ -107,6 +118,7 @@ export function discard(run, selection = []) {
   const dropIds = new Set(selection.map(s => s.tile.id));
   run.rack = run.rack.filter(t => !dropIds.has(t.id));
   refillHand(run);
+  checkDeadHand(run);
   return run;
 }
 

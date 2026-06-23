@@ -252,3 +252,34 @@ test('discard is a no-op with no discards left or an empty selection', () => {
   discard(run, []);                                             // empty selection → no spend
   assert.equal(run.discardsLeft, 1);
 });
+
+test('a play refilling into an unplayable hand with no discards loses', () => {
+  resetTileIds();
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  run.discardsLeft = 0; run.target = 999;                       // don't clear by score
+  const C = makeTile('C'), A = makeTile('A'), T = makeTile('T');
+  run.rack = [C, A, T]; run.drawPile = [makeTile('X'), makeTile('Q'), makeTile('Z')]; // refill → unplayable
+  const res = playWord(run, [{tile:C,letter:'C'},{tile:A,letter:'A'},{tile:T,letter:'T'}]);
+  assert.equal(res.run.status, 'lost');                         // XQZ has no legal word, no discards
+});
+
+test('an unplayable hand does NOT lose while discards remain', () => {
+  resetTileIds();
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  run.discardsLeft = 1; run.target = 999;
+  const C = makeTile('C'), A = makeTile('A'), T = makeTile('T');
+  run.rack = [C, A, T]; run.drawPile = [makeTile('X'), makeTile('Q'), makeTile('Z')];
+  const res = playWord(run, [{tile:C,letter:'C'},{tile:A,letter:'A'},{tile:T,letter:'T'}]);
+  assert.equal(res.run.status, 'playing');                      // can still discard out of it
+});
+
+test('a hand holding a wild is never dead, even with no discards', () => {
+  resetTileIds();
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  run.discardsLeft = 0; run.target = 999;
+  const C = makeTile('C'), A = makeTile('A'), T = makeTile('T');
+  run.rack = [C, A, T];
+  run.drawPile = [makeTile('*'), makeTile('Q'), makeTile('Z')];  // refill → hand holds a wild
+  const res = playWord(run, [{tile:C,letter:'C'},{tile:A,letter:'A'},{tile:T,letter:'T'}]);
+  assert.equal(res.run.status, 'playing');                      // wild rescues; no false loss
+});
