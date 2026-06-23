@@ -8,7 +8,7 @@ const KEY = 'letterRide.run';
 
 export function serializeRun(run) {
   return {
-    version: 1,                                          // bump when the schema changes
+    version: 2,                                          // bump when the schema changes
     seed: run.seed,
     rngState: run.rng.getState(),
     targets: run.targets,
@@ -28,6 +28,7 @@ export function serializeRun(run) {
     relicIds: run.relics.map(r => r.id),                 // empty in Tier 0
     tiles: run.bag.tiles.map(t => ({ id: t.id, letter: t.letter, modIds: t.mods.map(m => m.id) })),
     rackIds: run.rack.map(t => t.id),
+    drawPileIds: run.drawPile.map(t => t.id),
     lastAward: run.lastAward || null,
     honeLevels: run.honeLevels || {},
   };
@@ -60,6 +61,7 @@ export function deserializeRun(data, { config, dictionary }) {
     relics: (data.relicIds || []).map(id => RELICS[id]).filter(Boolean),
     bag: makeBag(tiles),
     rack: data.rackIds.map(id => byId.get(id)).filter(Boolean),
+    drawPile: (data.drawPileIds || []).map(id => byId.get(id)).filter(Boolean),
     lastAward: data.lastAward || null,
     honeLevels: data.honeLevels || {},
   };
@@ -74,7 +76,7 @@ export function loadRun(storage, deps) {
   if (!raw) return null;
   try {
     const data = JSON.parse(raw);
-    if (data.version !== 1) return null;     // schema changed → treat as no save
+    if (data.version !== 2) return null;     // schema changed → treat as no save
     return deserializeRun(data, deps);
   } catch {
     return null;                             // corrupt save → start fresh, never brick the page

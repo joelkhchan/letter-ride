@@ -118,3 +118,20 @@ test('wildcardRares enabler field survives serialize -> deserialize', () => {
   const restored = deserializeRun(serializeRun(run), { config, dictionary: dict });
   assert.ok(restored.relics.some(r => r.enabler === 'wildsAreRare'));
 });
+
+test('serialize/deserialize round-trips the draw-pile by id', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });   // 5-tile bag, RACK_SIZE 3 → drawPile length 2
+  const ids = run.drawPile.map(t => t.id);
+  assert.ok(ids.length >= 1, 'pool should hold the undealt tiles');
+  const back = deserializeRun(serializeRun(run), { config, dictionary: dict });
+  assert.deepEqual(back.drawPile.map(t => t.id), ids);
+  const bagIds = new Set(back.bag.tiles.map(t => t.id));
+  assert.ok(back.drawPile.every(t => bagIds.has(t.id)), 'pool tiles are the restored bag instances');
+});
+
+test('a version-1 save is treated as no save (fresh start)', () => {
+  const s = fakeStorage();
+  s.setItem('letterRide.run', JSON.stringify({ version: 1 }));
+  assert.equal(loadRun(s, { config, dictionary: dict }), null);
+});
