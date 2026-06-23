@@ -1,0 +1,45 @@
+// test/sim.test.js
+import { test } from 'node:test';
+import assert from 'node:assert';
+import { legalWords, bestPlay } from '../src/sim.js';
+import { makeTile, resetTileIds } from '../src/tiles.js';
+
+const WORDS = ['CAT', 'ACT', 'AT', 'CATS', 'DOG'];
+
+test('legalWords returns words formable from the letters within [minLen, len]', () => {
+  // letters C,A,T ; minLen 3 → CAT, ACT (AT too short; CATS needs S; DOG not formable)
+  assert.deepEqual(legalWords(['C', 'A', 'T'], WORDS, 3).sort(), ['ACT', 'CAT']);
+});
+
+test('legalWords excludes words longer than the hand', () => {
+  assert.deepEqual(legalWords(['C', 'A', 'T'], WORDS, 3).includes('CATS'), false);
+});
+
+test('bestPlay picks the highest-scoring legal play built from real rack tiles', () => {
+  resetTileIds();
+  const C = makeTile('C'), A = makeTile('A'), T = makeTile('T');
+  // minimal run-like object: rack + the fields scoring reads
+  const run = {
+    rack: [C, A, T],
+    tileValues: { C: 3, A: 1, T: 1 },
+    relics: [], honeLevels: {}, wordsPlayedThisRound: 0,
+    config: { MIN_WORD_LEN: 3, LENGTH_BONUS_PER_LETTER: 0 },
+  };
+  const play = bestPlay(run, WORDS);
+  assert.ok(play, 'a play exists');
+  assert.ok(['CAT', 'ACT'].includes(play.word));
+  // selection tiles are the REAL rack instances (consume-by-id depends on this)
+  const ids = play.selection.map(s => s.tile.id).sort();
+  assert.deepEqual(ids, [C, A, T].map(t => t.id).sort());
+  assert.equal(play.score, 5); // C3+A1+T1, mult 1, no length bonus
+});
+
+test('bestPlay returns null when nothing is formable', () => {
+  resetTileIds();
+  const run = {
+    rack: [makeTile('X'), makeTile('Q'), makeTile('Z')],
+    tileValues: { X: 8, Q: 10, Z: 10 }, relics: [], honeLevels: {}, wordsPlayedThisRound: 0,
+    config: { MIN_WORD_LEN: 3, LENGTH_BONUS_PER_LETTER: 0 },
+  };
+  assert.equal(bestPlay(run, WORDS), null);
+});
