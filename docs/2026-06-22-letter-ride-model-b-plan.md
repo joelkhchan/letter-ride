@@ -4,7 +4,7 @@
 
 **Goal:** Replace Letter Ride's fresh-rack-every-play loop (Model A) with a **persistent hand, consume-and-draw** loop (Model B): you hold a hand, a played word consumes its tiles, the hand refills from a depleting draw-pile, unused tiles persist, and discard is selective.
 
-**Architecture:** A new per-round **draw-pile** (`run.drawPile: Tile[]`) is built once per round from the canonical owned bag (`run.bag`, shuffled via the seeded RNG) and depletes as you draw. The canonical bag is unchanged — shop purchases still use `bag.add`/`bag.remove`; the draw-pile is separate, round-scoped state managed entirely in `run.js`. `bag.js` needs no change. Played/discarded tiles do **not** return to the pool until the round ends; each round rebuilds the pool from the full bag.
+**Architecture:** A new per-round **draw-pile** (`run.drawPile: Tile[]`) is built once per round from the canonical owned bag (`run.bag`, shuffled via the seeded RNG) and depletes as you draw. The canonical bag is unchanged — shop purchases still use `bag.add`/`bag.remove`; the draw-pile is separate, round-scoped state managed entirely in `run.js`. `bag.js` needs no change. Played/discarded tiles do **not** return to the pool until the round ends; each round rebuilds the pool from the full bag. **Shop→pool flow:** the shop runs *between* rounds, so a bought/enchanted tile mutates `run.bag`, and the next `nextRound → startRound` rebuilds the draw-pile from the updated bag — i.e. a purchase enters play next round. There is no mid-round shop, so the bag is immutable within a round and the draw-pile is the only depleting state.
 
 **Tech Stack:** Vanilla JS ESM, `node --test`, no build step.
 
@@ -15,8 +15,9 @@
 - **Scarcity pillar:** letters still come only from the bag (now even more so — the round depletes a pool).
 - **Logic/UI split:** all rack/draw/discard rules live in `run.js` (pure, DOM-free, DI). `ui.js` only renders the hand and emits the selection; `main.js` wires events.
 - **Hand size = `config.RACK_SIZE`** (currently 9). The hand refills *up to* RACK_SIZE; if the pool is short, the hand simply shrinks (no error).
-- **Dead-hand rule (author-confirmed default):** after a play or discard, if `status === 'playing'` AND `discardsLeft === 0` AND no legal word is formable from the hand → `status = 'lost'`. If discards remain, a dead hand does **not** lose (you can discard).
-- **Schema bump:** persisting the draw-pile changes the save schema → `version: 2`. A `version !== 2` save loads as `null` (fresh start) — acceptable for this dev-stage foundational change.
+- **Dead-hand rule (author-confirmed default):** after a play or discard, if `status === 'playing'` AND `discardsLeft === 0` AND no legal word is formable from the hand → `status = 'lost'`. If discards remain, a dead hand does **not** lose (you can discard). **Wild exception:** a hand containing any wild tile (`letter === '*'`) is **never** dead — a wild can stand in for any letter, and `dictionary.findWord` does literal matching so it cannot see wilds (`rareRich`, a wild-bearing deck, is unlocked on the first run, so this case is reachable day-one).
+- **Round feasibility (watch-item for Phase 0c):** depletion + a losable dead-hand together can, in principle, strand a round (pool empties into an unspellable remnant). The intended invariant is **bag size ≫ RACK_SIZE + a few plays' worth of consumption** so a round stays survivable; whether depletion-into-deadhand feels too punishing with the real bag/RACK_SIZE/PLAYS numbers is a **named Phase 0c tuning watch-item**, not tuned here.
+- **Schema bump:** persisting the draw-pile changes the save schema → `version: 2`. A `version !== 2` save loads as `null` (fresh start). At this dev stage that's acceptable — but note the rollback implication: **reverting Model B means wiping the active save** (a v2 save is unreadable by v1 code, and the v1 save is already gone). No precious save exists now, so this is fine; revisit if a real save needs to survive a revert.
 
 ## File Structure
 
@@ -38,7 +39,7 @@
 - `startRound(run)` (exported) — sets `run.drawPile = shuffle([...run.bag.tiles], run.rng)`, clears `run.rack`, deals up to `RACK_SIZE`.
 - `run.drawPile: Tile[]` — new per-round depleting state.
 - `newRun(...)` and `nextRound(run)` now produce a dealt hand (engine-side, no UI deal needed).
-- `drawRack(run)` is kept as a thin alias to `startRound` (compat shim; removed in Task 6).
+- `drawRack(run)` is **kept permanently** as a thin alias to `startRound` (re-deals a fresh hand). Not removed — `test/storage.test.js` and the future eval harness call it, and the roadmap never asked to remove it. (During Tasks 1–5 `main.js` still calls it after `newRun`/`nextRound`, causing a harmless transient double-deal; Task 6 drops those redundant calls.)
 
 - [ ] **Step 1: Write the failing tests** (append to `test/run.test.js`). Add a Model-B fixture (bag larger than the hand so depletion is observable):
 
@@ -92,7 +93,7 @@ export function startRound(run) {
   refillHand(run);
 }
 
-// Compat shim (removed in the UI-wiring task): old callers said drawRack to (re)deal a hand.
+// Permanent thin alias: re-deal a fresh hand (used by storage.test.js + the eval harness).
 export function drawRack(run) { startRound(run); return run.rack; }
 ```
   - In `newRun`, change the end so it builds the object, then deals. Replace `rack: [],` with `rack: [], drawPile: [],` and change the `return { ... };` to assign-then-deal:
@@ -162,7 +163,13 @@ test('unused tiles persist across a play; empty pool just shrinks the hand', () 
 
 - [ ] **Step 2: Run to verify it fails** — `node --test test/run.test.js` — FAIL (tiles not consumed).
 
-- [ ] **Step 3: Implement** — in `src/run.js` `playWord`, after the three lines `run.roundTotal += scored.score; run.wordsPlayedThisRound += 1; run.playsLeft -= 1;` and **before** the `if (run.roundTotal >= run.target)` status block, insert:
+- [ ] **Step 3: Implement** — in `src/run.js` `playWord`: these are three separate lines in the file (`run.js:78-80`):
+```
+  run.roundTotal += scored.score;
+  run.wordsPlayedThisRound += 1;
+  run.playsLeft -= 1;
+```
+  Immediately after the last of them (`run.playsLeft -= 1;`) and **before** the `if (run.roundTotal >= run.target)` status block, insert:
 
 ```javascript
   // Model B: consume the played tiles from the hand, then refill from the draw-pile.
@@ -257,9 +264,20 @@ test('an unplayable hand does NOT lose while discards remain', () => {
   const res = playWord(run, [{tile:C,letter:'C'},{tile:A,letter:'A'},{tile:T,letter:'T'}]);
   assert.equal(res.run.status, 'playing');                      // can still discard out of it
 });
+
+test('a hand holding a wild is never dead, even with no discards', () => {
+  resetTileIds();
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  run.discardsLeft = 0; run.target = 999;
+  const C = makeTile('C'), A = makeTile('A'), T = makeTile('T');
+  run.rack = [C, A, T];
+  run.drawPile = [makeTile('*'), makeTile('Q'), makeTile('Z')];  // refill → hand holds a wild
+  const res = playWord(run, [{tile:C,letter:'C'},{tile:A,letter:'A'},{tile:T,letter:'T'}]);
+  assert.equal(res.run.status, 'playing');                      // wild rescues; no false loss
+});
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `node --test test/run.test.js` — FAIL (status `'playing'` in the first test).
+- [ ] **Step 2: Run to verify it fails** — `node --test test/run.test.js` — FAIL (status `'playing'` in the first test; the wild test would FAIL without the wild guard).
 
 - [ ] **Step 3: Implement** — in `src/run.js`, add the helper (below `refillHand`):
 
@@ -267,6 +285,9 @@ test('an unplayable hand does NOT lose while discards remain', () => {
 // Dead-hand: a player's turn they can't act on — no legal word and no discard to escape with.
 function checkDeadHand(run) {
   if (run.status !== 'playing' || run.discardsLeft > 0) return;
+  // A wild ('*') can substitute for any letter, but dictionary.findWord matches literally and
+  // can't see wilds — so a hand holding any wild is never declared dead (conservative: wild rescues).
+  if (run.rack.some(t => t.letter === '*')) return;
   const word = run.dictionary.findWord(run.rack.map(t => t.letter), run.config.MIN_WORD_LEN);
   if (!word) run.status = 'lost';
 }
@@ -289,26 +310,26 @@ function checkDeadHand(run) {
 **Files:** Modify `src/storage.js`; Test `test/storage.test.js`.
 **Interfaces — Produces:** `serializeRun` writes `drawPileIds` + `version: 2`; `deserializeRun` restores `run.drawPile`; `loadRun` treats `version !== 2` as no save.
 
-- [ ] **Step 1: Write the failing test** (append to `test/storage.test.js`, matching its existing style): build a run with a known `run.drawPile`, serialize→deserialize, assert `drawPile` ids round-trip and reference the same tile instances as the bag. Also assert a `version: 1` blob → `loadRun` returns `null`.
+- [ ] **Step 1: Write the failing test** — append to `test/storage.test.js`, **reusing the fixtures that file already defines** (`config` = 5-tile bag `['C','A','T','E','S']` with `RACK_SIZE: 3` → a draw-pile of 2 after dealing; `dict`; `fakeStorage()`; and the already-imported `newRun`, `serializeRun`, `deserializeRun`, `loadRun`, `resetTileIds`). Do **NOT** reference `configB`/`dictB` — those are module-scoped in `run.test.js` and are not in scope here.
 
 ```javascript
 test('serialize/deserialize round-trips the draw-pile by id', () => {
   resetTileIds();
-  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });   // reuse a Model-B fixture
+  const run = newRun({ config, dictionary: dict, seed: 1 });   // 5-tile bag, RACK_SIZE 3 → drawPile length 2
   const ids = run.drawPile.map(t => t.id);
-  const back = deserializeRun(serializeRun(run), { config: configB, dictionary: dictB });
+  assert.ok(ids.length >= 1, 'pool should hold the undealt tiles');
+  const back = deserializeRun(serializeRun(run), { config, dictionary: dict });
   assert.deepEqual(back.drawPile.map(t => t.id), ids);
-  // restored draw-pile tiles are the same instances held in the restored bag (consume-by-id works)
   const bagIds = new Set(back.bag.tiles.map(t => t.id));
-  assert.ok(back.drawPile.every(t => bagIds.has(t.id)));
+  assert.ok(back.drawPile.every(t => bagIds.has(t.id)), 'pool tiles are the restored bag instances');
 });
 
 test('a version-1 save is treated as no save (fresh start)', () => {
-  const store = { _v: JSON.stringify({ version: 1 }), getItem(k){ return this._v; }, setItem(){}, removeItem(){} };
-  assert.equal(loadRun(store, { config: configB, dictionary: dictB }), null);
+  const s = fakeStorage();
+  s.setItem('letterRide.run', JSON.stringify({ version: 1 }));
+  assert.equal(loadRun(s, { config, dictionary: dict }), null);
 });
 ```
-(Ensure `test/storage.test.js` imports `newRun` from `../src/run.js` and the Model-B `configB`/`dictB` fixtures — or define small local ones if the file doesn't already build runs via `newRun`.)
 
 - [ ] **Step 2: Run to verify it fails** — `node --test test/storage.test.js` — FAIL.
 
@@ -322,30 +343,33 @@ test('a version-1 save is treated as no save (fresh start)', () => {
 
 ---
 
-### Task 6: Wire Model B into the UI + remove the compat shim (manual-verify)
+### Task 6: Wire Model B into the UI — go live (manual-verify)
 
-**Files:** Modify `src/main.js`, `src/ui.js`. (No new unit tests — UI is verified by `node --check` + a browser smoke. The engine is already covered by Tasks 1–5.)
+**Files:** Modify `src/main.js`, `src/ui.js`. (No new unit tests — UI is verified by `node --check` + a browser smoke. The engine is already covered by Tasks 1–5.) Note: `drawRack` is **kept** in `run.js` (permanent alias) — this task just stops `main.js` from calling it.
 
 - [ ] **Step 1: `main.js` — stop dealing in the wiring** (the engine now deals): 
-  - Remove `drawRack` from the import on line 4 (`import { newRun, playWord, discard, nextRound } from './run.js';`).
+  - Remove `drawRack` from the import on line 4 (it's no longer called from `main.js`): `import { newRun, playWord, discard, nextRound } from './run.js';`
   - `startRun`: delete the `drawRack(run);` call (newRun already dealt). The line becomes `run = newRun({...}); view = 'run'; saveAll(); render();`
   - `onSubmit`: delete the trailing `if (run.status === 'playing') drawRack(run);` (playWord now consumes+refills). Keep the rest.
   - `onContinue`: delete `if (run.status === 'playing') drawRack(run);` (nextRound now deals).
-- [ ] **Step 2: `main.js` — `onDiscard` passes the selection:** change `onDiscard() { discard(run); saveAll(); render(); }` to accept and forward the current selection: `onDiscard(sel) { discard(run, sel); saveAll(); render(); }`.
-- [ ] **Step 3: `run.js` — remove the compat shim:** delete the `export function drawRack(run) { ... }` added in Task 1 (no remaining callers).
-- [ ] **Step 4: `ui.js` — discard emits the selection.** Read `ui.js`: find where the discard button's handler calls the bound `onDiscard`, and where the in-progress tile selection is held (the same selection used to build/submit a word). Pass that selection array (the `[{tile, letter}]` objects) to `onDiscard(selection)`. Confirm the rack renders `run.rack` (the persistent hand) — it already does; no change needed beyond the discard wiring.
-- [ ] **Step 5: Verify** — `node --check src/run.js src/main.js src/ui.js`; `grep -rn "drawRack" src/` returns nothing. `npm test` — full suite green.
-- [ ] **Step 6: Browser smoke** (`npm run serve`): start a run; play a word and confirm **only the used tiles are replaced** (unused tiles stay); select 1–2 tiles and Discard and confirm **only those** are swapped and a discard is spent; clear a round and confirm a fresh full hand next round. No console errors.
-- [ ] **Step 7: Commit** — `git add src/main.js src/ui.js src/run.js && git commit -m "feat: wire Model B persistent hand + selective discard into UI"`
+- [ ] **Step 2: `main.js` — `onDiscard` forwards the selection:** change `onDiscard() { discard(run); saveAll(); render(); }` to `onDiscard(sel) { discard(run, sel); saveAll(); render(); }`.
+- [ ] **Step 3: `ui.js` — discard emits the selection, and the button gates on it.** Read `ui.js` and make three changes (the discard handler currently *zeroes the selection before* invoking the callback, so it must be captured first):
+  - The discard handler (currently `on('discard', () => { selection = []; handlers.onDiscard?.(); })`): capture the selection before clearing it, and pass it — `on('discard', () => { const sel = selection.slice(); selection = []; handlers.onDiscard?.(sel); })`.
+  - The Discard button's `disabled` condition (currently `done || run.discardsLeft <= 0`): also disable when nothing is selected — `done || run.discardsLeft <= 0 || selection.length === 0`. (Selective discard with an empty selection is a no-op in the engine; the button must not look active when it would do nothing.)
+  - Relabel the button to show the count, e.g. `` `Discard${selection.length ? ' (' + selection.length + ')' : ''}` `` so the player sees what will be swapped. (Button enablement/label re-evaluate on each `renderRun`, which already fires on tile tap.)
+  - Confirm the rack renders `run.rack` (the persistent hand) — it already does; no other change.
+- [ ] **Step 4: Verify** — `node --check src/run.js src/main.js src/ui.js`; confirm `main.js` no longer calls `drawRack` (`grep -n "drawRack" src/main.js` returns nothing — `drawRack` still exists in `run.js` and `test/storage.test.js`, which is expected). `npm test` — full suite green (drawRack-using storage tests still pass via the permanent alias).
+- [ ] **Step 5: Browser smoke** (`npm run serve`): start a run; (a) play a word → **only the used tiles are replaced**, unused tiles stay; (b) with **nothing selected the Discard button is disabled**; select 1–2 tiles → it reads `Discard (N)` and discarding swaps **only those** and spends one discard; (c) clear a round → a fresh full hand next round. No console errors.
+- [ ] **Step 6: Commit** — `git add src/main.js src/ui.js && git commit -m "feat: wire Model B persistent hand + selective discard into UI"`
 
 ---
 
 ## Self-Review (plan author)
 
-- **Design coverage:** persistent hand + consume (Task 2); depleting draw-pile + per-round refill (Tasks 1–2); selective discard (Task 3); dead-hand (Task 4); persistence (Task 5); UI wiring incl. the discard-bug fix (Task 6). Bag depletion = the draw-pile splices and played/discarded tiles are filtered out of the hand without returning to the pool; the pool rebuilds only in `startRound` (round boundary). ✓
-- **Type/signature consistency:** `startRound(run)`, `refillHand(run)` (internal), `checkDeadHand(run)` (internal), `discard(run, selection)`, `run.drawPile`, `drawPileIds` are used consistently across tasks. `selection` is `[{tile, letter}]` in both `playWord` and `discard`. `drawRack` shim added in Task 1, removed in Task 6 (no dangling callers — Task 6 greps).
-- **Determinism:** `shuffle(arr, run.rng)` only; no `Math.random`. Draw-pile depletes via `splice`; refill is deterministic given the shuffle + RNG state. Persisted via `rngState` + `drawPileIds`.
+- **Design coverage:** persistent hand + consume (Task 2); depleting draw-pile + per-round refill (Tasks 1–2); selective discard (Task 3); dead-hand incl. the **wild exception** (Task 4); persistence + v2 (Task 5); UI wiring + discard-button gating, incl. the discard-bug fix (Task 6). Bag depletion = the draw-pile splices and played/discarded tiles are filtered out of the hand without returning to the pool; the pool rebuilds only in `startRound` (round boundary). **Shop→pool flow** stated in Architecture (purchase mutates `run.bag`; next `startRound` rebuilds the pool; no mid-round bag mutation). **Feasibility** (depletion-into-deadhand) is stated as an invariant + handed to Phase 0c as a watch-item. ✓
+- **Type/signature consistency:** `startRound(run)`, `refillHand(run)` (internal), `checkDeadHand(run)` (internal), `discard(run, selection)`, `drawRack(run)` (permanent alias), `run.drawPile`, `drawPileIds` used consistently across tasks. `selection` is `[{tile, letter}]` in `playWord`, `discard`, and the `ui.js` handler.
+- **Determinism:** `shuffle(arr, run.rng)` only; no `Math.random`. Draw-pile depletes via `splice`; refill deterministic given the shuffle + RNG state. Persisted via `rngState` + `drawPileIds`.
 - **No scoring change:** Task 2 inserts consume/refill *after* the unchanged `scoreWord` call; `scoring.js` untouched.
-- **Intermediate states stay green/playable:** the Task 1 `drawRack` shim keeps `main.js` working (Model-A-ish) through Tasks 1–5; Model B goes live in Task 6. The unit suite validates Model B engine behavior in Tasks 1–4 independent of the UI.
-- **Placeholder scan:** Tasks 1–5 have complete code; Task 6 (UI) is spec'd against the real wiring with `node --check` + a concrete browser smoke, per the project's manual-UI-verify convention.
-- **Migration:** existing `run.test.js` asserts score/status/coins (not hand contents) and uses `seatCat` (overrides `run.rack`) → survives. `storage.test.js` gets the v2 + draw-pile update (Task 5). Task 6 greps for stray `drawRack`.
+- **Intermediate states stay green/playable:** `drawRack` is kept as a permanent alias, so `main.js` keeps working (Model-A-ish, with a harmless transient double-deal) through Tasks 1–5; Model B goes live in Task 6. The unit suite validates Model B engine behavior in Tasks 1–4 independent of the UI.
+- **Placeholder scan:** Tasks 1–5 have complete code (incl. the wild-tile test); Task 6 (UI) is spec'd against the real `ui.js` wiring (handler + button condition cited) with `node --check` + a concrete browser smoke, per the project's manual-UI-verify convention.
+- **Per-file test-survival audit:** `test/run.test.js` — survives: uses `seatCat` (overrides `run.rack`) and asserts score/status/coins, not hand contents; new Model-B tests appended. `test/storage.test.js` — survives: keeps calling `drawRack` (now the permanent alias → re-deals, round-trip assertions still hold); gets the v2 + draw-pile tests (Task 5) using its own `config`/`dict`/`fakeStorage`. No existing test hard-codes `version: 1` (only `version: 999`/stale-version, which still → `null` under v2). No other test imports `drawRack` or calls `discard(run)` with the old no-arg signature.
