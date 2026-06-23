@@ -466,7 +466,8 @@ export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
     const desc = deck?.desc || '';
     const active = id === selectedDeckId ? ' style="font-weight:bold;outline:2px solid #333;"' : '';
     const titleAttr = desc ? ` title="${desc}"` : '';
-    return `<button class="deck-pick" data-deck="${id}"${active}${titleAttr}>${name}</button>`;
+    const descHtml = desc ? `<div class="bag-desc">${desc}</div>` : '';
+    return `<button class="deck-pick" data-deck="${id}"${active}${titleAttr}>${name}${descHtml}</button>`;
   }).join(' ');
 
   // Build stake picker buttons HTML.
