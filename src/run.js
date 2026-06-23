@@ -101,8 +101,12 @@ export function playWord(run, selection) {
   return { ok: true, scored, run };
 }
 
-export function discard(run) {
-  if (run.discardsLeft > 0) { run.discardsLeft -= 1; drawRack(run); }
+export function discard(run, selection = []) {
+  if (run.discardsLeft <= 0 || selection.length === 0) return run;
+  run.discardsLeft -= 1;
+  const dropIds = new Set(selection.map(s => s.tile.id));
+  run.rack = run.rack.filter(t => !dropIds.has(t.id));
+  refillHand(run);
   return run;
 }
 

@@ -1,7 +1,7 @@
 // test/run.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { newRun, playWord, nextRound, awardCoins } from '../src/run.js';
+import { newRun, playWord, discard, nextRound, awardCoins } from '../src/run.js';
 import { honeModifiers } from '../src/archetypes.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
@@ -226,4 +226,29 @@ test('unused tiles persist across a play; empty pool just shrinks the hand', () 
   run.rack = [C, A, T, B]; run.drawPile = [];                     // empty pool → no refill
   playWord(run, [{tile:C,letter:'C'},{tile:A,letter:'A'},{tile:T,letter:'T'}]); // CAT, B unused
   assert.deepEqual(run.rack.map(t => t.id), [B.id]);             // B persists; no refill from empty pool
+});
+
+test('discard removes only the selected tiles, refills, and costs one discard', () => {
+  resetTileIds();
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  const C = makeTile('C'), A = makeTile('A'), T = makeTile('T');
+  const x = makeTile('B'), y = makeTile('A');
+  run.rack = [C, A, T]; run.drawPile = [x, y];
+  const before = run.discardsLeft;
+  discard(run, [{tile:A,letter:'A'}]);                          // drop only A
+  assert.equal(run.discardsLeft, before - 1);
+  assert.deepEqual(run.rack.map(t => t.id), [C.id, T.id, x.id]); // A gone; C,T kept; refilled with x
+  assert.deepEqual(run.drawPile.map(t => t.id), [y.id]);
+});
+
+test('discard is a no-op with no discards left or an empty selection', () => {
+  resetTileIds();
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  const before = run.rack.map(t => t.id);
+  run.discardsLeft = 0;
+  discard(run, [{ tile: run.rack[0], letter: run.rack[0].letter }]);
+  assert.deepEqual(run.rack.map(t => t.id), before);            // no discards → unchanged
+  run.discardsLeft = 1;
+  discard(run, []);                                             // empty selection → no spend
+  assert.equal(run.discardsLeft, 1);
 });
