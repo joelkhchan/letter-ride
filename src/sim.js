@@ -7,6 +7,9 @@
 //   pickTargetOffer    — pure: pick the best advancing offer from run.shop, or null
 //   buildPurchasePolicy — factory: returns a shop(run) fn that buys/rerolls toward targets
 //   noShop             — v1 default (no-op policy)
+// Exports (v2 aggregation):
+//   percentile — p-th percentile (0–100) of a numeric array (linear interpolation)
+//   summarizePersona — aggregate simulateRun results → { n, winRate, roundReached, deadRackRate }
 // v1 limits (documented): wilds ('*') treated as non-letters in enumeration; greedy single-word
 // policy; no shop purchases; standard deck. Personas/purchases/wild-substitution = v2.
 // No Math.random — randomness is the seeded RNG inside `run`.
@@ -142,5 +145,44 @@ export function simulateRun({ config, dictionary, words, seed, deck = null, cap 
     hitCap: iter >= cap,
     deadRacks,
     racksSeen,
+  };
+}
+
+// ── v2: aggregation helpers ──────────────────────────────────────────────────
+
+// Pure: compute the p-th percentile (0–100) of a numeric array.
+// Sorts a copy (non-mutating). Uses linear interpolation between closest ranks.
+// Empty array → 0.
+export function percentile(values, p) {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const n = sorted.length;
+  const index = (p / 100) * (n - 1);
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sorted[lower];
+  const frac = index - lower;
+  return sorted[lower] * (1 - frac) + sorted[upper] * frac;
+}
+
+// Pure: aggregate an array of simulateRun result objects into a summary.
+// Returns { n, winRate, roundReached: {p10,p50,p90,mean}, deadRackRate }
+export function summarizePersona(results) {
+  const n = results.length;
+  const wins = results.filter(r => r.won).length;
+  const roundsReached = results.map(r => r.roundReached);
+  const totalDeadRacks = results.reduce((sum, r) => sum + r.deadRacks, 0);
+  const totalRacksSeen = results.reduce((sum, r) => sum + r.racksSeen, 0);
+
+  return {
+    n,
+    winRate: wins / n,
+    roundReached: {
+      p10: percentile(roundsReached, 10),
+      p50: percentile(roundsReached, 50),
+      p90: percentile(roundsReached, 90),
+      mean: roundsReached.reduce((a, b) => a + b, 0) / n,
+    },
+    deadRackRate: totalRacksSeen > 0 ? totalDeadRacks / totalRacksSeen : 0,
   };
 }

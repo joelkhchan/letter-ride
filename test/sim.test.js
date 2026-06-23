@@ -220,3 +220,28 @@ test('owned-relic dedup holds through the real purchase() call (no duplicate rel
   const count = run.relics.filter(r => r.id === 'shortAndSweet').length;
   assert.ok(count <= 1, `shortAndSweet must not be duplicated — found ${count} copies`);
 });
+
+// ── v2: pure aggregation helpers ───────────────────────────────────────────
+
+import { percentile, summarizePersona } from '../src/sim.js';
+
+test('percentile returns boundaries and the median', () => {
+  const v = [10, 20, 30, 40, 50];
+  assert.equal(percentile(v, 50), 30);
+  assert.equal(percentile(v, 0), 10);
+  assert.equal(percentile(v, 100), 50);
+  assert.equal(percentile([], 50), 0);
+});
+
+test('summarizePersona aggregates win-rate, round percentiles, and dead-rack rate', () => {
+  const results = [
+    { won: true,  roundReached: 8, deadRacks: 0, racksSeen: 10 },
+    { won: false, roundReached: 4, deadRacks: 1, racksSeen: 9 },
+    { won: false, roundReached: 6, deadRacks: 0, racksSeen: 11 },
+  ];
+  const s = summarizePersona(results);
+  assert.equal(s.n, 3);
+  assert.equal(Number(s.winRate.toFixed(3)), 0.333);
+  assert.equal(s.roundReached.p50, 6);
+  assert.equal(Number(s.deadRackRate.toFixed(4)), Number((1 / 30).toFixed(4))); // 1 dead / 30 racks
+});
