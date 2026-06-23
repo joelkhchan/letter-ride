@@ -7,6 +7,11 @@
 //   pickTargetOffer    — pure: pick the best advancing offer from run.shop, or null
 //   buildPurchasePolicy — factory: returns a shop(run) fn that buys/rerolls toward targets
 //   noShop             — v1 default (no-op policy)
+// Exports (v2 discard policies):
+//   smartDiscard   — heuristic: sort rack by tileValue descending, discard rarest floor(n/2).
+//                    Keeps common/cheap half (vowels + common consonants), dumps rare clog.
+//                    NOT optimal — a real player could do better — but more realistic than dump-all.
+//   dumpAllDiscard — original behavior: discard the entire rack (kept for A/B comparison)
 // Exports (v2 aggregation):
 //   percentile — p-th percentile (0–100) of a numeric array (linear interpolation)
 //   summarizePersona — aggregate simulateRun results → { n, winRate, roundReached, deadRackRate }
@@ -111,13 +116,36 @@ export function buildPurchasePolicy({ targetRelicIds = [], targetHoneId = null, 
 // v1 default: no shopping.
 export const noShop = () => {};
 
+// ── v2: pluggable discard policies ───────────────────────────────────────────
+
+// smartDiscard(run) → selection [{tile, letter}]
+// Heuristic: sort the current rack by tileValues[letter] descending (rarest first),
+// discard the rarest Math.max(1, floor(n/2)) tiles.  This keeps the common/cheap core
+// (vowels + common consonants) and dumps the rare clog that blocks playable words.
+// NOT optimal — a real player could do better — but far more realistic than dump-all.
+// Deterministic: sort order is by tile value only (no Math.random).
+export function smartDiscard(run) {
+  const n = run.rack.length;
+  const dropCount = Math.max(1, Math.floor(n / 2));
+  const sorted = [...run.rack].sort((a, b) => (run.tileValues[b.letter] || 0) - (run.tileValues[a.letter] || 0));
+  return sorted.slice(0, dropCount).map(t => ({ tile: t, letter: t.letter }));
+}
+
+// dumpAllDiscard(run) → selection [{tile, letter}]
+// Original behavior: discard the entire rack. Kept for A/B comparison against smartDiscard.
+export function dumpAllDiscard(run) {
+  return run.rack.map(t => ({ tile: t, letter: t.letter }));
+}
+
 // ── v1: greedy simulator ──────────────────────────────────────────────────────
 
 // Drive one full run with the greedy "best word" policy. Deterministic given seed.
 // v2: accepts an optional `policy` (default noShop) called on roundCleared before nextRound.
+//     accepts an optional `discardPolicy` (default smartDiscard) called when no word is playable
+//     and discards remain — smartDiscard keeps the playable core, dumps the rare clog.
 //     Returns deadRacks + racksSeen: after each play/discard while still in a round,
 //     samples whether the new hand has any playable word.
-export function simulateRun({ config, dictionary, words, seed, deck = null, cap = 1000, policy = noShop }) {
+export function simulateRun({ config, dictionary, words, seed, deck = null, cap = 1000, policy = noShop, discardPolicy = smartDiscard }) {
   const run = newRun({ config, dictionary, seed, deck });
   let iter = 0;
   let deadRacks = 0, racksSeen = 0;
@@ -127,7 +155,7 @@ export function simulateRun({ config, dictionary, words, seed, deck = null, cap 
     if (play) {
       playWord(run, play.selection);
     } else if (run.discardsLeft > 0 && run.rack.length > 0) {
-      discard(run, run.rack.map(t => ({ tile: t, letter: t.letter })));   // dump the hand, redraw
+      discard(run, discardPolicy(run));   // selective discard: keep the playable core, dump the rare clog
     } else {
       break;   // unactionable: no word and no discard (engine dead-hand usually sets 'lost' first)
     }
@@ -185,8 +213,9 @@ export const PERSONAS = [
 // runPersona — for each seed, build the persona's deck + policy, simulateRun, then summarizePersona.
 // deck: bagId === 'standard' (or config.DECKS[bagId].startingBag is null) → { startingBag: config.STARTING_BAG }
 //       otherwise                                                          → config.DECKS[bagId]
+// discardPolicy: optional discard function (default smartDiscard); pass dumpAllDiscard for BEFORE comparison.
 // Returns the summarizePersona summary over all seeds.
-export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3 }) {
+export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard }) {
   const { bagId, targetRelicIds, targetHoneId } = persona;
   // Resolve deck: 'standard' explicitly uses config.STARTING_BAG.
   // Any other bagId must be a real DECKS entry with a non-null startingBag; throw if missing.
@@ -202,7 +231,7 @@ export function runPersona({ config, dictionary, words, persona, seeds, pool = {
   const policy = buildPurchasePolicy({ targetRelicIds, targetHoneId, reserve, maxRerolls, pool });
 
   const results = seeds.map(seed =>
-    simulateRun({ config, dictionary, words, seed, deck, policy })
+    simulateRun({ config, dictionary, words, seed, deck, policy, discardPolicy })
   );
 
   return summarizePersona(results);

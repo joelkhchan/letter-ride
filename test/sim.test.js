@@ -337,3 +337,87 @@ test('runPersona throws for an unknown non-standard bagId', () => {
     'should throw with a descriptive error for an unrecognised bagId',
   );
 });
+
+// ── smartDiscard + dumpAllDiscard policy tests ────────────────────────────────
+
+import { smartDiscard, dumpAllDiscard } from '../src/sim.js';
+
+test('smartDiscard returns the rarest half (floor(n/2)) of the hand, never the whole hand', () => {
+  resetTileIds();
+  // rack: A(1), E(1), R(1), Q(10), Z(10), X(8) — n=6, floor(6/2)=3 dropped
+  const A = makeTile('A'), E = makeTile('E'), R = makeTile('R');
+  const Q = makeTile('Q'), Z = makeTile('Z'), X = makeTile('X');
+  const run = {
+    rack: [A, E, R, Q, Z, X],
+    tileValues: { A: 1, E: 1, R: 1, Q: 10, Z: 10, X: 8 },
+  };
+  const sel = smartDiscard(run);
+  assert.equal(sel.length, 3, 'drops exactly floor(6/2)=3 tiles');
+  // Must drop the 3 highest-value tiles: Q(10), Z(10), X(8)
+  const droppedLetters = sel.map(s => s.letter).sort();
+  assert.deepEqual(droppedLetters, ['Q', 'X', 'Z'], 'drops Q, X, Z (rarest)');
+  // Each entry has the correct shape
+  for (const s of sel) {
+    assert.ok(s.tile && s.letter, 'each selection entry has {tile, letter}');
+    assert.equal(s.tile.letter, s.letter, 'tile.letter matches letter');
+  }
+});
+
+test('smartDiscard never returns the whole hand for n >= 2', () => {
+  resetTileIds();
+  const Q = makeTile('Q'), Z = makeTile('Z');
+  const run = {
+    rack: [Q, Z],
+    tileValues: { Q: 10, Z: 10 },
+  };
+  const sel = smartDiscard(run);
+  assert.equal(sel.length, 1, 'for n=2, drops exactly 1 (floor(2/2)=1)');
+  assert.ok(sel.length < 2, 'never dumps whole hand for n=2');
+});
+
+test('smartDiscard returns at least 1 tile for n=1', () => {
+  resetTileIds();
+  const Q = makeTile('Q');
+  const run = { rack: [Q], tileValues: { Q: 10 } };
+  const sel = smartDiscard(run);
+  assert.equal(sel.length, 1, 'Math.max(1,...) ensures at least 1 for n=1');
+});
+
+test('dumpAllDiscard returns the entire rack', () => {
+  resetTileIds();
+  const A = makeTile('A'), B = makeTile('B'), C = makeTile('C');
+  const run = { rack: [A, B, C], tileValues: {} };
+  const sel = dumpAllDiscard(run);
+  assert.equal(sel.length, 3, 'dumpAllDiscard returns all 3 tiles');
+  const ids = sel.map(s => s.tile.id).sort();
+  assert.deepEqual(ids, [A, B, C].map(t => t.id).sort());
+});
+
+test('simulateRun accepts discardPolicy and uses dumpAllDiscard to discard whole hand on dead rack', () => {
+  // rack of X,Q,Z only — no word is ever playable; with 2 discards, dumpAllDiscard fires each time
+  const config = {
+    STARTING_BAG: ['X','Q','Z','X','Q','Z'], TILE_VALUES: { X:8, Q:10, Z:10 },
+    RACK_SIZE: 3, PLAYS_PER_ROUND: 2, DISCARDS_PER_ROUND: 2, MIN_WORD_LEN: 3,
+    LENGTH_BONUS_PER_LETTER: 0, ROUND_TARGETS: [50],
+  };
+  // Track discard calls to verify the policy was invoked
+  let dumpAllCalls = 0;
+  const spyDumpAll = (run) => { dumpAllCalls++; return dumpAllDiscard(run); };
+  const r = simulateRun({ config, dictionary: dictCat, words: wordsCat, seed: 1, discardPolicy: spyDumpAll });
+  assert.equal(r.won, false, 'unplayable config loses');
+  assert.ok(dumpAllCalls > 0, 'dumpAll discard policy was invoked on dead rack');
+  assert.equal(r.hitCap, false, 'terminates without hitting cap');
+});
+
+test('simulateRun defaults to smartDiscard (partial discard on dead rack, not full dump)', () => {
+  // rack of X,Q,Z only — no word playable; with smartDiscard, only half is discarded each time
+  const config = {
+    STARTING_BAG: ['X','Q','Z','X','Q','Z','X','Q','Z'], TILE_VALUES: { X:8, Q:10, Z:10 },
+    RACK_SIZE: 3, PLAYS_PER_ROUND: 2, DISCARDS_PER_ROUND: 3, MIN_WORD_LEN: 3,
+    LENGTH_BONUS_PER_LETTER: 0, ROUND_TARGETS: [50],
+  };
+  let smartCalls = 0;
+  const spySmart = (run) => { smartCalls++; return smartDiscard(run); };
+  simulateRun({ config, dictionary: dictCat, words: wordsCat, seed: 1, discardPolicy: spySmart });
+  assert.ok(smartCalls > 0, 'smart discard policy was invoked on dead rack');
+});
