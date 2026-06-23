@@ -5,6 +5,7 @@ import { newRun, playWord, discard, nextRound, awardCoins } from '../src/run.js'
 import { honeModifiers } from '../src/archetypes.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
+import { RELICS } from '../src/relics.js';
 
 const dict = makeDictionary(['cat']);
 const config = {
@@ -282,4 +283,26 @@ test('a hand holding a wild is never dead, even with no discards', () => {
   run.drawPile = [makeTile('*'), makeTile('Q'), makeTile('Z')];  // refill → hand holds a wild
   const res = playWord(run, [{tile:C,letter:'C'},{tile:A,letter:'A'},{tile:T,letter:'T'}]);
   assert.equal(res.run.status, 'playing');                      // wild rescues; no false loss
+});
+
+// ── Task 1: Snowball infrastructure + Avalanche ──────────────────────────────
+
+const configSnowball = {
+  STARTING_BAG: ['J', 'A', 'R', 'A', 'R', 'E', 'E', 'T', 'O'],
+  TILE_VALUES: { J: 8, A: 1, R: 1, E: 1, T: 1, O: 1 },
+  RACK_SIZE: 9, PLAYS_PER_ROUND: 4, DISCARDS_PER_ROUND: 2, MIN_WORD_LEN: 3,
+  LENGTH_BONUS_PER_LETTER: 5, ROUND_TARGETS: [999], COINS_ON_CLEAR: null,
+};
+const dictSnowball = makeDictionary(['jar', 'rat']);
+
+test('newRun initializes relicState; snowball ratchets on a qualifying play', () => {
+  resetTileIds();
+  const run = newRun({ config: configSnowball, dictionary: dictSnowball, seed: 1 });
+  assert.deepEqual(run.relicState, {});
+  run.relics.push(RELICS.rareAvalanche);
+  // force a known rack so we can play JAR
+  run.rack = ['J', 'A', 'R'].map((l, i) => ({ id: 'x' + i, letter: l, mods: [] }));
+  const selection = run.rack.map(t => ({ tile: t, letter: t.letter }));
+  playWord(run, selection);
+  assert.equal(run.relicState.rareAvalanche.stacks, 1); // ratcheted once (JAR has a rare letter)
 });

@@ -147,3 +147,19 @@ test('longReach: enabler field is set correctly', () => {
 test('looseDoubles: enabler field is set correctly', () => {
   assert.equal(RELICS.looseDoubles.enabler, 'looseDoubled');
 });
+
+// ── Task 1: Snowball infrastructure + Avalanche ──────────────────────────────
+
+test('rareAvalanche: ×Mult grows with its stacks, applies to every word', () => {
+  const av = RELICS.rareAvalanche;
+  // 0 stacks → timesMult 1 (no-op)
+  assert.deepEqual(av.evaluate({ relicState: {} }), { timesMult: 1 });
+  // 3 stacks → timesMult 1 + 0.2*3 = 1.6, regardless of the current word
+  assert.deepEqual(av.evaluate({ relicState: { rareAvalanche: { stacks: 3 } } }), { timesMult: 1 + 0.2 * 3 });
+});
+
+test('rareAvalanche: condition is "word uses a rare letter"', () => {
+  const av = RELICS.rareAvalanche;
+  assert.equal(av.snowball.condition({ letters: ['J', 'A', 'R'] }), true);
+  assert.equal(av.snowball.condition({ letters: ['R', 'A', 'T'] }), false);
+});

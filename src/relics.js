@@ -6,6 +6,20 @@ const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 const RARE = new Set(['J', 'Q', 'X', 'Z']);
 const isVowel = (ch) => VOWELS.has(String(ch).toUpperCase());
 
+// ── Scaling / snowball relics ─────────────────────────────────────────────
+// A snowball ratchets its OWN ×Mult as you play qualifying words. Per-relic state lives on
+// run.relicState[id] = { stacks }. playWord increments stacks on each qualifying play (before
+// scoring); evaluate reads the current stacks. timesMult = 1 + perStack*stacks, so the accumulated
+// multiplier applies to EVERY word and only GROWS on a qualifying play (Balatro scaling-joker model).
+// perStack values are tunable starting points.
+function snowball({ id, name, desc, perStack, condition }) {
+  return {
+    id, name, desc,
+    snowball: { condition },
+    evaluate: (ctx) => ({ timesMult: 1 + perStack * (ctx.relicState?.[id]?.stacks || 0) }),
+  };
+}
+
 export const RELICS = {
   vowelBonus: {
     id: 'vowelBonus', name: 'Vowel Bonus', desc: '+2 Points per vowel used',
@@ -81,6 +95,13 @@ export const RELICS = {
     id: 'overtime', name: 'Overtime', desc: '+1 play each round',
     extraPlays: 1, evaluate: () => ({}),
   },
+
+  // ── Task 1: Snowball relics ───────────────────────────────────────────────
+  rareAvalanche: snowball({
+    id: 'rareAvalanche', name: 'Avalanche',
+    desc: 'Grows +0.2 Mult every time you play a rare letter (this run)',
+    perStack: 0.2, condition: (ctx) => hasRareCtx(ctx),
+  }),
 };
 
 export const ALL_RELIC_IDS = Object.keys(RELICS);

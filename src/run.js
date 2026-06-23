@@ -79,6 +79,7 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     rack: [],
     drawPile: [],
     honeLevels: {},
+    relicState: {},
     wordsPlayedThisRound: 0,
     stake, deck,
     status: 'playing',
@@ -92,12 +93,22 @@ export function playWord(run, selection) {
   const v = validate(selection, run.dictionary, run.config.MIN_WORD_LEN);
   if (!v.ok) return { ok: false, reason: v.reason, run };
   const enablers = run.relics.filter(r => r.enabler).map(r => r.enabler);
+  // Snowball relics ratchet BEFORE scoring so a qualifying word benefits from the stack it just earned.
+  run.relicState = run.relicState || {};
+  const ratchetLetters = selection.map(s => s.letter.toUpperCase());
+  const ratchetCtx = { word: ratchetLetters.join(''), letters: ratchetLetters, selection, wordsPlayedThisRound: run.wordsPlayedThisRound, enablers };
+  for (const r of run.relics) {
+    if (r.snowball && r.snowball.condition(ratchetCtx)) {
+      const st = run.relicState[r.id] || (run.relicState[r.id] = { stacks: 0 });
+      st.stacks += 1;
+    }
+  }
   const allMods = [...run.relics, ...honeModifiers(run.honeLevels)];
   const scored = scoreWord(selection, {
     tileValues: run.tileValues,
     lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
     relics: allMods,
-    context: { wordsPlayedThisRound: run.wordsPlayedThisRound, enablers },
+    context: { wordsPlayedThisRound: run.wordsPlayedThisRound, enablers, relicState: run.relicState },
   });
   run.roundTotal += scored.score;
   run.wordsPlayedThisRound += 1;
