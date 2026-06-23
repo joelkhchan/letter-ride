@@ -245,3 +245,67 @@ test('summarizePersona aggregates win-rate, round percentiles, and dead-rack rat
   assert.equal(s.roundReached.p50, 6);
   assert.equal(Number(s.deadRackRate.toFixed(4)), Number((1 / 30).toFixed(4))); // 1 dead / 30 racks
 });
+
+// ── v2: PERSONAS + runPersona ─────────────────────────────────────────────────
+
+import { PERSONAS, runPersona } from '../src/sim.js';
+
+// configPersona: tiny beatable config — CAT bag, target 3 (trivially clearable in 1 play of CAT=5).
+// One round so run completes quickly over multiple seeds.
+const configPersona = {
+  STARTING_BAG: ['C','A','T','C','A','T','C','A','T','C','A','T','C','A','T','C','A','T'],
+  TILE_VALUES: { C:3, A:1, T:1 },
+  RACK_SIZE: 9, PLAYS_PER_ROUND: 2, DISCARDS_PER_ROUND: 0, MIN_WORD_LEN: 3,
+  LENGTH_BONUS_PER_LETTER: 0,
+  ROUND_TARGETS: [3],
+  COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 0 },
+  INTEREST: { enabled: false },
+  SHOP: {
+    offersPerShop: 4, rerollCost: 1,
+    cost: { buyLetter: 3, buyEnchantedTile: 7, enchantTile: 6, upgradeLetter: 5, thinLetter: 3, buyRelic: 8 },
+    upgradePlus: 1, buyableLetters: ['E'],
+  },
+  HONE: { cost: 6 },
+  DECKS: {
+    standard: { id: 'standard', name: 'Standard', startingBag: null },
+  },
+};
+
+const personaShortWord = {
+  id: 'shortWord', name: 'Short Word', bagId: 'lean',
+  targetRelicIds: ['shortAndSweet'], targetHoneId: 'shortWord',
+};
+
+test('PERSONAS is an array of 6 archetype descriptors with required shape', () => {
+  assert.ok(Array.isArray(PERSONAS));
+  assert.equal(PERSONAS.length, 6);
+  for (const p of PERSONAS) {
+    assert.ok(typeof p.id === 'string', `persona ${p.id} missing id`);
+    assert.ok(typeof p.name === 'string', `persona ${p.id} missing name`);
+    assert.ok(typeof p.bagId === 'string', `persona ${p.id} missing bagId`);
+    assert.ok(Array.isArray(p.targetRelicIds), `persona ${p.id} targetRelicIds must be array`);
+    assert.ok(typeof p.targetHoneId === 'string', `persona ${p.id} missing targetHoneId`);
+  }
+});
+
+test('PERSONAS contains the 6 expected archetype ids', () => {
+  const ids = PERSONAS.map(p => p.id).sort();
+  assert.deepEqual(ids, ['doubled', 'escalation', 'longWord', 'rareLetter', 'shortWord', 'vowelHeavy']);
+});
+
+test('runPersona returns a summary with n === seeds.length, numeric winRate, and roundReached.p50', () => {
+  // Use a tiny config + a persona whose bagId maps to STARTING_BAG via the standard fallback.
+  // Provide a persona with bagId 'lean' — configPersona.DECKS doesn't have 'lean',
+  // so we use a persona with bagId 'standard' for simplicity.
+  const persona = { id: 'shortWord', name: 'Short Word', bagId: 'standard', targetRelicIds: ['shortAndSweet'], targetHoneId: 'shortWord' };
+  const seeds = [1, 2, 3];
+  const summary = runPersona({
+    config: configPersona, dictionary: dictCat, words: wordsCat,
+    persona, seeds,
+    pool: { relicIds: ['shortAndSweet'] },
+  });
+  assert.equal(summary.n, seeds.length, 'n equals number of seeds');
+  assert.equal(typeof summary.winRate, 'number', 'winRate is a number');
+  assert.ok(summary.winRate >= 0 && summary.winRate <= 1, 'winRate in [0,1]');
+  assert.ok(typeof summary.roundReached.p50 === 'number', 'roundReached.p50 is present and numeric');
+});

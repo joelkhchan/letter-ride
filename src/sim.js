@@ -10,6 +10,9 @@
 // Exports (v2 aggregation):
 //   percentile — p-th percentile (0–100) of a numeric array (linear interpolation)
 //   summarizePersona — aggregate simulateRun results → { n, winRate, roundReached, deadRackRate }
+// Exports (v2 personas):
+//   PERSONAS  — array of { id, name, bagId, targetRelicIds, targetHoneId }, one per archetype
+//   runPersona — run simulateRun for each seed, aggregate → summarizePersona summary
 // v1 limits (documented): wilds ('*') treated as non-letters in enumeration; greedy single-word
 // policy; no shop purchases; standard deck. Personas/purchases/wild-substitution = v2.
 // No Math.random — randomness is the seeded RNG inside `run`.
@@ -163,6 +166,41 @@ export function percentile(values, p) {
   if (lower === upper) return sorted[lower];
   const frac = index - lower;
   return sorted[lower] * (1 - frac) + sorted[upper] * frac;
+}
+
+// ── v2: per-archetype persona descriptors ────────────────────────────────────
+
+// PERSONAS mirrors the archetype fixture mapping in scripts/analyze-builds.js.
+// Each entry: { id, name, bagId, targetRelicIds, targetHoneId }
+// bagId 'standard' is resolved to config.STARTING_BAG in runPersona (DECKS.standard.startingBag is null).
+export const PERSONAS = [
+  { id: 'shortWord',   name: 'Short Word',   bagId: 'lean',     targetRelicIds: ['shortAndSweet'],           targetHoneId: 'shortWord'   },
+  { id: 'longWord',    name: 'Long Word',    bagId: 'standard', targetRelicIds: ['lengthy', 'longHaul'],     targetHoneId: 'longWord'    },
+  { id: 'rareLetter',  name: 'Rare Letter',  bagId: 'rareRich', targetRelicIds: ['rareHoarder', 'rareSurge'],targetHoneId: 'rareLetter'  },
+  { id: 'doubled',     name: 'Doubled',      bagId: 'doubled',  targetRelicIds: ['doubleTrouble', 'echoChamber'], targetHoneId: 'doubled' },
+  { id: 'vowelHeavy',  name: 'Vowel Heavy',  bagId: 'standard', targetRelicIds: ['vowelBonus', 'freshStart'],targetHoneId: 'vowelHeavy'  },
+  { id: 'escalation',  name: 'Escalation',   bagId: 'standard', targetRelicIds: ['comboCounter', 'momentum'],targetHoneId: 'escalation'  },
+];
+
+// runPersona — for each seed, build the persona's deck + policy, simulateRun, then summarizePersona.
+// deck: bagId === 'standard' (or config.DECKS[bagId].startingBag is null) → { startingBag: config.STARTING_BAG }
+//       otherwise                                                          → config.DECKS[bagId]
+// Returns the summarizePersona summary over all seeds.
+export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3 }) {
+  const { bagId, targetRelicIds, targetHoneId } = persona;
+  // Resolve deck: if DECKS entry exists and has a non-null startingBag, use it; otherwise fall back to STARTING_BAG.
+  const deckEntry = config.DECKS && config.DECKS[bagId];
+  const deck = (deckEntry && deckEntry.startingBag != null)
+    ? deckEntry
+    : { startingBag: config.STARTING_BAG };
+
+  const policy = buildPurchasePolicy({ targetRelicIds, targetHoneId, reserve, maxRerolls, pool });
+
+  const results = seeds.map(seed =>
+    simulateRun({ config, dictionary, words, seed, deck, policy })
+  );
+
+  return summarizePersona(results);
 }
 
 // Pure: aggregate an array of simulateRun result objects into a summary.
