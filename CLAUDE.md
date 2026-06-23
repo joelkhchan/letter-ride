@@ -3,7 +3,7 @@
 A single-player, turn-based **word-builder roguelike** in the Balatro mould. You build a
 **bag of letter tiles** (your "deck") — tiles are *enchantable instances*, not bare letters —
 draw a rack each turn, **tap tiles** to spell the best word you can, and beat a rising
-**Points** target each round (`Points = Wit × Mult`). Between rounds you spend **Coins** in a
+**Score** target each round (`Score = Points × Mult`). Between rounds you spend **$** in a
 shop on letters, enchantments, upgrades, and **relics** that warp scoring. Across runs you earn
 **Meta** currency and spend it in a between-runs meta-shop (unlocks, decks, stakes, loadout).
 No opponent — you play against a number, then against your own mastery. Ships as an Android APK.
@@ -24,17 +24,17 @@ No opponent — you play against a number, then against your own mastery. Ships 
   alphabet — it kills the entire economy. The bag's composition *is* the deckbuilding.
 - **Tiles are instances, not strings:** a tile is `{ id, letter, mods }`. The bag holds
   `Tile[]`. This is what makes purchases (enchant/upgrade/thin) meaningful.
-- **One scoring formula:** `Points = Wit × Mult`. All scoring goes through `scoreWord` in
+- **One scoring formula:** `Score = Points × Mult`. All scoring goes through `scoreWord` in
   `src/scoring.js`. The engine *currently* sums all `+Mult` into `(1 + ΣaddMult)`, then applies
   **all** `×Mult` — a **position-independent phase order** enforced by the engine, not by relic
   ordering. **Correction (2026-06-23):** this is *not* how Balatro actually scores — Balatro is a
   strict left-to-right running total where joker *position* changes the result; our model is a
   deliberate simplification (verified in the competitive research). **Under active exploration,
   NOT yet locked into the spec:** reintroducing tile/relic *position* as a skill lever (the author
-  likes it). See `docs/2026-06-23-letter-ride-competitive-research.md`. (Term note: "Wit" is the
-  additive base, formerly "chips".)
-- **Three currencies, no others:** **Points** (in-round score vs target), **Coins** (in-run
-  shop), **Meta** (persistent, between-runs meta-shop). No hint/XP/energy currencies.
+  likes it). See `docs/2026-06-23-letter-ride-competitive-research.md`. (Term note: **Points** is
+  the additive base — formerly "Wit"/"chips"; **Score** is the round result it produces.)
+- **Three currencies, no others:** **Score** (the in-round total vs target), **$** (in-run
+  shop; internal field still `coins`), **Meta** (persistent, between-runs meta-shop). No hint/XP/energy currencies.
 - **Relics + tile-mods are the skill expression**, not vocabulary. Success comes from building a
   letter economy + modifier engine, NOT from knowing big words. **Build diversity is the goal:**
   multiple strategies — short-word stacks, long words, rare letters, vowels, patterns — must all
