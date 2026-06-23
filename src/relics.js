@@ -102,6 +102,33 @@ export const RELICS = {
     desc: 'Grows +0.2 Mult every time you play a rare letter (this run)',
     perStack: 0.2, condition: (ctx) => hasRareCtx(ctx),
   }),
+
+  // ── Task 2: Five more snowball relics ──────────────────────────────────────
+  flywheel: snowball({
+    id: 'flywheel', name: 'Flywheel',
+    desc: 'Grows +0.3 Mult every time you play a word of 3 letters or fewer (this run)',
+    perStack: 0.3, condition: (ctx) => ctx.letters.length <= 3,
+  }),
+  juggernaut: snowball({
+    id: 'juggernaut', name: 'Juggernaut',
+    desc: 'Grows +0.15 Mult every time you play a word of 6+ letters (this run)',
+    perStack: 0.15, condition: (ctx) => ctx.letters.length >= 6,
+  }),
+  resonanceEngine: snowball({
+    id: 'resonanceEngine', name: 'Resonance',
+    desc: 'Grows +0.2 Mult every time you play a word with a doubled letter (this run)',
+    perStack: 0.2, condition: (ctx) => isDoubledCtx(ctx),
+  }),
+  risingTide: snowball({
+    id: 'risingTide', name: 'Rising Tide',
+    desc: 'Grows +0.12 Mult every time you play a word with 3+ vowels (this run)',
+    perStack: 0.12, condition: (ctx) => ctx.letters.filter(isVowel).length >= 3,
+  }),
+  perpetualEngine: snowball({
+    id: 'perpetualEngine', name: 'Perpetual Engine',
+    desc: 'Grows +0.1 Mult every word you play (this run)',
+    perStack: 0.1, condition: () => true,
+  }),
 };
 
 export const ALL_RELIC_IDS = Object.keys(RELICS);

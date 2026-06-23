@@ -163,3 +163,20 @@ test('rareAvalanche: condition is "word uses a rare letter"', () => {
   assert.equal(av.snowball.condition({ letters: ['J', 'A', 'R'] }), true);
   assert.equal(av.snowball.condition({ letters: ['R', 'A', 'T'] }), false);
 });
+
+test('all six snowball relics: condition + ×Mult-from-stacks', () => {
+  const cases = [
+    ['flywheel',        { letters: ['C','A','T'] },             { letters: ['C','A','T','S'] }],          // short ≤3 vs not
+    ['juggernaut',      { letters: ['A','B','C','D','E','F'] },  { letters: ['C','A','T'] }],              // long ≥6 vs not
+    ['resonanceEngine', { word: 'BOOK', letters: ['B','O','O','K'] }, { word: 'CAT', letters: ['C','A','T'] }], // doubled vs not
+    ['risingTide',      { letters: ['A','E','I','T'] },          { letters: ['C','A','T'] }],              // ≥3 vowels vs not
+  ];
+  for (const [id, yes, no] of cases) {
+    assert.equal(RELICS[id].snowball.condition({ enablers: [], selection: [], ...yes }), true, `${id} yes`);
+    assert.equal(RELICS[id].snowball.condition({ enablers: [], selection: [], ...no }), false, `${id} no`);
+  }
+  // perpetualEngine fires on every word
+  assert.equal(RELICS.perpetualEngine.snowball.condition({ letters: ['C','A','T'] }), true);
+  // stacks read (flywheel perStack 0.3)
+  assert.deepEqual(RELICS.flywheel.evaluate({ relicState: { flywheel: { stacks: 2 } } }), { timesMult: 1 + 0.3 * 2 });
+});
