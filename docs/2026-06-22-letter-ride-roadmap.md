@@ -89,9 +89,14 @@ Optional: difficulty/stakes ladder, daily-seed / challenge runs, run history. Li
 - Don't author content before Phase 1 locks the vocabulary; don't style before gameplay is proven.
 - AI builds systems + drafts copy for approval; the **author judges fun and owns final balance/copy calls.**
 
-## Immediate priorities (next moves)
-1. **Rack model → Model B (DECIDED; do first — it gates tuning):** spec + build the persistent-hand / consume-and-draw loop (playWord consumes used tiles + draws back to hand size; selective discard; bag refills each round). Open sub-decision before the spec: **does the bag deplete within a round** (played/discarded tiles leave the round's pool, refill next round — adds "running low" tension; *recommended*) **or not** (drawn-back tiles can reappear)? Subagent-driven build after the spec.
-2. **Phase 0a — descriptions + thin feel slice:** agent drafts bag/archetype/Hone copy + adds light score-tally feedback → author approves.
-3. **Phase 0b — eval harness v1:** new `sim` module (committer personas, win-rate, timeboxed) — built against the Model B loop. Gets a lean spec first.
-4. **Phase 0c — tune to gate:** author play + eval data; preserve the "break it" highs.
-5. **Phase 1 — Systems & Boundaries study:** map curve/ceiling/vocabulary; lock the mechanical vocabulary (combos, word-types, effects, letters all candidate-IN); produce the systems bible. *This is the spine — bosses/events wait on it.*
+## Immediate priorities (next moves) — updated 2026-06-23
+
+**Done this session (on `main`):** Model B persistent-hand/consume-and-draw loop (live, browser-smoked) · archetype expansion (6 + Hone + enablers + bags) · eval harness **v1 + v2** (the skill-vs-luck instrument) · CLAUDE.md terminology synced to code (`Score = Points × Mult`, `$`) · harness **smartDiscard** (honest dead-rack measurement) · two project skills (balance-analysis, browser-smoke). 166 tests green.
+
+**Harness v2 verdict (the evidence base for tuning):** even *skilled* shopping personas win **~0%** (Long-word 2% the lone survivor), p50 round 3–4 → **the curve (`ROUND_TARGETS`) is too steep even for skilled play — the #1 tuning target.** Post-smartDiscard dead-rack%: rareRich 17% (clog handled), **lean 37% (a real vowel-drought → the discard-count / lean-composition lever, NOT a vowel floor)**. Re-run `npm run analyze:sim-v2` after any tuning.
+
+1. **Phase 0a — descriptions + thin feel slice** *(buildable now):* agent drafts bag / 6-archetype / Hone player-facing copy → **author approves**; light score-tally feedback (the UX doc's rolling counter + tap-to-skip from the first animation).
+2. **Phase 0c — tune to the gate (AUTHOR):** pull `ROUND_TARGETS` down so a **skilled line clears the median draw**; compress the archetype spread toward co-viability; tune discard for the lean drought. Re-run the harness as the gate. **Don't silently pick numbers** — author playtest call.
+3. **Phase 1 — Systems & Boundaries study (the spine):** map curve/ceiling + **lock the mechanical vocabulary** incl. the **negative/warp effects bosses need**; lean into true ×Mult (the Spellatro-weakness moat); favor relics that change *which words you want to spell*. Produce the systems bible. *Bosses/events (Phase 2) wait on it.*
+
+**Deferred author decisions** (none block 0a): the **curve target** (0c) · the **scarcity pillar** (contested by the appendix data — recommend keep; decide before Phase 4) · **position-as-skill-lever** (Phase 1; author leans yes) · **infinite-combo cap-or-embrace** (Phase 1) · a **distinctive/thematic base-points name** vs generic "Points" (Phase 4 identity).
