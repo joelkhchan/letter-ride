@@ -6,6 +6,7 @@
     "test": "node --test",
     "serve": "npx --yes serve .",
     "analyze": "node scripts/analyze-builds.js",
+    "analyze:sim": "node scripts/analyze-sim.js",
     "cap:copy": "node scripts/build-www.js",
     "cap:sync": "npm run cap:copy && npx cap sync"
   },
