@@ -92,6 +92,10 @@ export function playWord(run, selection) {
   run.roundTotal += scored.score;
   run.wordsPlayedThisRound += 1;
   run.playsLeft -= 1;
+  // Model B: consume the played tiles from the hand, then refill from the draw-pile.
+  const usedIds = new Set(selection.map(s => s.tile.id));
+  run.rack = run.rack.filter(t => !usedIds.has(t.id));
+  refillHand(run);
   if (run.roundTotal >= run.target) { run.status = 'roundCleared'; if (run.config.COINS_ON_CLEAR) awardCoins(run); }
   else if (run.playsLeft <= 0) run.status = 'lost';
   return { ok: true, scored, run };

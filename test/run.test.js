@@ -206,3 +206,24 @@ test('nextRound rebuilds the draw-pile from the full bag and deals a fresh hand'
   assert.equal(run.rack.length, 3);
   assert.equal(run.drawPile.length, 3);                       // pool rebuilt from the 6-tile bag
 });
+
+test('playWord consumes the used tiles and refills the hand from the draw-pile', () => {
+  resetTileIds();
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  const C = makeTile('C'), A = makeTile('A'), T = makeTile('T');
+  const x = makeTile('B'), y = makeTile('A'), z = makeTile('T');
+  run.rack = [C, A, T]; run.drawPile = [x, y, z];
+  const res = playWord(run, [{tile:C,letter:'C'},{tile:A,letter:'A'},{tile:T,letter:'T'}]); // CAT
+  assert.equal(res.ok, true);
+  assert.deepEqual(run.rack.map(t => t.id), [x.id, y.id, z.id]);  // C,A,T consumed; refilled from pool
+  assert.equal(run.drawPile.length, 0);                          // pool depleted
+});
+
+test('unused tiles persist across a play; empty pool just shrinks the hand', () => {
+  resetTileIds();
+  const run = newRun({ config: { ...configB, RACK_SIZE: 4 }, dictionary: dictB, seed: 1 });
+  const C = makeTile('C'), A = makeTile('A'), T = makeTile('T'), B = makeTile('B');
+  run.rack = [C, A, T, B]; run.drawPile = [];                     // empty pool → no refill
+  playWord(run, [{tile:C,letter:'C'},{tile:A,letter:'A'},{tile:T,letter:'T'}]); // CAT, B unused
+  assert.deepEqual(run.rack.map(t => t.id), [B.id]);             // B persists; no refill from empty pool
+});
