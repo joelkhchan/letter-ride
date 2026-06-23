@@ -25,31 +25,37 @@ const longThreshold = (ctx) => (ctx.enablers || []).includes('longReach') ? 5 : 
 export const ARCHETYPES = {
   shortWord: {
     id: 'shortWord', name: 'Short-word',
+    desc: 'Tiny words, big multipliers — stack ×Mult so a 2–3 letter word out-punches a long one.',
     matches: (ctx) => ctx.letters.length <= 3,
     honeBonus: (ctx, lvl) => ctx.letters.length <= 3 ? { addMult: lvl } : {},
   },
   longWord: {
     id: 'longWord', name: 'Long-word',
+    desc: 'Go long — bonus points and +Mult for every letter past four.',
     matches: (ctx) => ctx.letters.length >= longThreshold(ctx),
     honeBonus: (ctx, lvl) => ctx.letters.length >= longThreshold(ctx) ? { addPoints: 5 * lvl } : {},
   },
   rareLetter: {
     id: 'rareLetter', name: 'Rare-letter',
+    desc: 'Cash in J, Q, X, Z — rare letters pay out big.',
     matches: (ctx) => hasRare(ctx),
     honeBonus: (ctx, lvl) => hasRare(ctx) ? { addPoints: 15 * lvl } : {},
   },
   doubled: {
     id: 'doubled', name: 'Doubled-letter',
+    desc: 'Double up — words with a repeated letter (LL, SS, EE) score extra.',
     matches: (ctx) => isDoubled(ctx),
     honeBonus: (ctx, lvl) => isDoubled(ctx) ? { addPoints: 12 * lvl } : {},
   },
   vowelHeavy: {
     id: 'vowelHeavy', name: 'Vowel-heavy',
+    desc: 'Vowel power — the more A/E/I/O/U in a word, the bigger the bonus.',
     matches: (ctx) => ctx.letters.filter(isVowel).length >= 3,
     honeBonus: (ctx, lvl) => { const v = ctx.letters.filter(isVowel).length; return v >= 3 ? { addPoints: 2 * lvl * v } : {}; },
   },
   escalation: {
     id: 'escalation', name: 'Escalation',
+    desc: 'Snowball — each word you play this round makes the next worth more.',
     matches: () => true,
     honeBonus: (ctx, lvl) => { const m = 0.5 * lvl * (ctx.wordsPlayedThisRound || 0); return m ? { addMult: m } : {}; },
   },

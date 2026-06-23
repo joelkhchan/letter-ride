@@ -52,7 +52,8 @@ function offerLabel(offer) {
     case 'hone': {
       const archetype = ARCHETYPES[offer.archetypeId];
       const currentLevel = (lastRun?.honeLevels?.[offer.archetypeId] || 0);
-      return `Hone: ${archetype?.name || offer.archetypeId} (Lv ${currentLevel}→${currentLevel + 1}) — $${offer.cost}`;
+      const archetypeDesc = archetype?.desc ? ` — ${archetype.desc}` : '';
+      return `Hone: ${archetype?.name || offer.archetypeId} (Lv ${currentLevel}→${currentLevel + 1})${archetypeDesc} — $${offer.cost}`;
     }
     default:                 return `${offer.type} — $${offer.cost}`;
   }
@@ -149,7 +150,11 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
   const honeLevels = run.honeLevels || {};
   const activeHones = Object.entries(honeLevels).filter(([, lvl]) => lvl > 0);
   const honeText = activeHones.length
-    ? activeHones.map(([id, lvl]) => `${ARCHETYPES[id]?.name || id} Lv${lvl}`).join(', ')
+    ? activeHones.map(([id, lvl]) => {
+        const a = ARCHETYPES[id];
+        const titleAttr = a?.desc ? ` title="${a.desc}"` : '';
+        return `<span class="hone-entry"${titleAttr}>${a?.name || id} Lv${lvl}</span>`;
+      }).join(', ')
     : '<span class="none-label">none yet</span>';
 
   return `<div id="relics-mods-panel">
@@ -456,9 +461,12 @@ export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
 
   // Build deck picker buttons HTML.
   const deckButtonsHtml = meta.unlockedDecks.map(id => {
-    const name = config.DECKS[id]?.name || id;
+    const deck = config.DECKS[id];
+    const name = deck?.name || id;
+    const desc = deck?.desc || '';
     const active = id === selectedDeckId ? ' style="font-weight:bold;outline:2px solid #333;"' : '';
-    return `<button class="deck-pick" data-deck="${id}"${active}>${name}</button>`;
+    const titleAttr = desc ? ` title="${desc}"` : '';
+    return `<button class="deck-pick" data-deck="${id}"${active}${titleAttr}>${name}</button>`;
   }).join(' ');
 
   // Build stake picker buttons HTML.
