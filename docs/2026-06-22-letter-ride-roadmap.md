@@ -18,6 +18,10 @@ Tiers 0–3 complete (core loop, meta-progression, Android/Capacitor scaffold) +
 
 **Co-viability, not equality — and breaking the system is part of the fun.** Each archetype should be *able* to win; they need not win at equal rates. Discovering a degenerate synergy that obliterates a target (Balatro-style ×Mult blowup) is a **feature**, not a bug. We do **not** reflexively cap or nerf. We intervene only when an archetype is *dead/unwinnable*, or when a single line is a *zero-decision no-brainer* that removes all choices. The earlier "899% / 1646%" figures are **static peak-score ratios** from one instrument (`analyze-builds.js`, fixed builds, Escalation measured at play #4) — **not win rates**; treat them as curiosities, not nerf targets. The binding balance signal is full-run **win rate** from the eval harness + the author's play.
 
+## Core play-loop decision (author-set 2026-06-22)
+
+**Moving from Model A (fresh rack every play) → Model B (persistent hand, consume-and-draw).** Today the engine fully redraws the 9-tile rack after every play (`main.js` calls `drawRack` on each `onSubmit`), so the bag is only a draw distribution and discard is a full reroll. Model B: you hold a hand, a played word *consumes* its tiles, you *draw back up*, unused tiles persist, and discard becomes *selective*. This makes the deckbuilding + tiles-as-instances pillars into actual hand-management skill and is the substrate for chaining/combos. **It is the highest-priority change — it gates Phase 0 balance tuning** (tuning under Model A would be wasted), so it lands *before* 0c. (The reported "discard nukes all tiles" bug is a symptom of this model mismatch; selective discard falls out of Model B.) Open sub-decision: bag depletion semantics (see immediate priorities).
+
 ## Ambition decision (DEFERRED — revisit before Phase 4)
 
 Chosen 2026-06-22: **decide later.** Phases 0–3 are identical whether this stays a deep personal game or aims for a release; only the Phase 4 (identity/juice/onboarding) bar changes. Until then: optimize for "fun on the author's phone," **solo** (no outside playtesting — the eval harness carries the objective signal).
@@ -86,7 +90,8 @@ Optional: difficulty/stakes ladder, daily-seed / challenge runs, run history. Li
 - AI builds systems + drafts copy for approval; the **author judges fun and owns final balance/copy calls.**
 
 ## Immediate priorities (next moves)
-1. **Phase 0a — descriptions + thin feel slice:** agent drafts bag/archetype/Hone copy + adds light score-tally feedback → author approves.
-2. **Phase 0b — eval harness v1:** new `sim` module (committer personas, win-rate, timeboxed). Gets a lean spec first.
-3. **Phase 0c — tune to gate:** author play + eval data; preserve the "break it" highs.
-4. **Phase 1 — Systems & Boundaries study:** map curve/ceiling/vocabulary; lock the mechanical vocabulary (combos, word-types, effects, letters all candidate-IN); produce the systems bible. *This is the spine — bosses/events wait on it.*
+1. **Rack model → Model B (DECIDED; do first — it gates tuning):** spec + build the persistent-hand / consume-and-draw loop (playWord consumes used tiles + draws back to hand size; selective discard; bag refills each round). Open sub-decision before the spec: **does the bag deplete within a round** (played/discarded tiles leave the round's pool, refill next round — adds "running low" tension; *recommended*) **or not** (drawn-back tiles can reappear)? Subagent-driven build after the spec.
+2. **Phase 0a — descriptions + thin feel slice:** agent drafts bag/archetype/Hone copy + adds light score-tally feedback → author approves.
+3. **Phase 0b — eval harness v1:** new `sim` module (committer personas, win-rate, timeboxed) — built against the Model B loop. Gets a lean spec first.
+4. **Phase 0c — tune to gate:** author play + eval data; preserve the "break it" highs.
+5. **Phase 1 — Systems & Boundaries study:** map curve/ceiling/vocabulary; lock the mechanical vocabulary (combos, word-types, effects, letters all candidate-IN); produce the systems bible. *This is the spine — bosses/events wait on it.*
