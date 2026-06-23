@@ -24,14 +24,29 @@ No opponent — you play against a number, then against your own mastery. Ships 
   alphabet — it kills the entire economy. The bag's composition *is* the deckbuilding.
 - **Tiles are instances, not strings:** a tile is `{ id, letter, mods }`. The bag holds
   `Tile[]`. This is what makes purchases (enchant/upgrade/thin) meaningful.
-- **One scoring formula, phase-ordered:** `Points = Wit × Mult`. The engine sums all `+Mult`
-  into `(1 + ΣaddMult)`, then applies **all** `×Mult` — regardless of acquisition order
-  (Balatro order, enforced by the engine, not by relic ordering). All scoring goes through
-  `scoreWord` in `src/scoring.js`. (Term note: "Wit" is the additive base, formerly "chips".)
+- **One scoring formula:** `Points = Wit × Mult`. All scoring goes through `scoreWord` in
+  `src/scoring.js`. The engine *currently* sums all `+Mult` into `(1 + ΣaddMult)`, then applies
+  **all** `×Mult` — a **position-independent phase order** enforced by the engine, not by relic
+  ordering. **Correction (2026-06-23):** this is *not* how Balatro actually scores — Balatro is a
+  strict left-to-right running total where joker *position* changes the result; our model is a
+  deliberate simplification (verified in the competitive research). **Under active exploration,
+  NOT yet locked into the spec:** reintroducing tile/relic *position* as a skill lever (the author
+  likes it). See `docs/2026-06-23-letter-ride-competitive-research.md`. (Term note: "Wit" is the
+  additive base, formerly "chips".)
 - **Three currencies, no others:** **Points** (in-round score vs target), **Coins** (in-run
   shop), **Meta** (persistent, between-runs meta-shop). No hint/XP/energy currencies.
-- **Relics + tile-mods are the skill expression**, not vocabulary. A clever *short* word with
-  the right modifiers must be able to out-score a long word without them. When tuning, protect this.
+- **Relics + tile-mods are the skill expression**, not vocabulary. Success comes from building a
+  letter economy + modifier engine, NOT from knowing big words. **Build diversity is the goal:**
+  multiple strategies — short-word stacks, long words, rare letters, vowels, patterns — must all
+  be *viable*. A clever short word with the right modifiers should be *competitive* with a long
+  word (longer words still carry their own bonuses); short words need **not** strictly out-score
+  long ones. When tuning, protect viable-build diversity, not a single archetype's supremacy.
+- **Skill must be able to beat luck — but luck stays fun:** the genre's #1 failure mode (per the
+  competitive research) is runs decided by pure RNG. The player needs real levers — bag-shaping,
+  selective discard/reroll, hand management, mod placement — to overcome a bad draw through skill.
+  Never let pure chance decide a run. *But* preserve the joy of chance: surprising draws and lucky
+  combos should still delight. Tune toward "a skilled line clears the **median** draw," not the
+  lucky tail, and make boss/round modifiers legible *before* the player commits.
 - **Tier discipline:** meta-progression (Tier 2) and the Capacitor/Android build (Tier 3) ARE
   in scope now — but built **last**, each only after the previous tier is playtested as fun.
   Do NOT build anything from the spec's "Deferred wishlist" (Tier 4+: leveled alphabet/letter
