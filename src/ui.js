@@ -11,6 +11,8 @@ let selection = [];      // [{ tile, letter }]
 let lastRun = null;
 let selectedDeckId = 'standard';
 let selectedStakeId = null;  // will be set to config.STAKES[0].id on first render
+let lastShownScore = null;   // for score count-up animation
+let _scoreRafId = null;      // active rAF handle (cancel on skip)
 
 export function bindControls(h) { handlers = h; }
 
@@ -222,6 +224,57 @@ function scorePreviewHtml(sel, result) {
   </div>`;
 }
 
+// Animate the score element's displayed number from `from` to `to` over ~500ms (ease-out).
+// A tap/click anywhere during the roll skips to the final value immediately.
+function animateScoreCountUp(from, to) {
+  // Cancel any in-flight animation first.
+  if (_scoreRafId !== null) {
+    cancelAnimationFrame(_scoreRafId);
+    _scoreRafId = null;
+  }
+
+  const el = document.getElementById('score-total');
+  if (!el) return;
+  if (from === to) { lastShownScore = to; return; }
+
+  const DURATION = 500; // ms
+  const start = performance.now();
+
+  function skip() {
+    if (_scoreRafId !== null) {
+      cancelAnimationFrame(_scoreRafId);
+      _scoreRafId = null;
+    }
+    const scoreEl = document.getElementById('score-total');
+    if (scoreEl) scoreEl.textContent = to;
+    lastShownScore = to;
+    document.removeEventListener('click', skip, { capture: true });
+  }
+
+  document.addEventListener('click', skip, { capture: true, once: true });
+
+  function frame(now) {
+    const elapsed = now - start;
+    const t = Math.min(elapsed / DURATION, 1);
+    // Ease-out: decelerate as t → 1
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = Math.round(from + (to - from) * eased);
+
+    const scoreEl = document.getElementById('score-total');
+    if (scoreEl) scoreEl.textContent = current;
+
+    if (t < 1) {
+      _scoreRafId = requestAnimationFrame(frame);
+    } else {
+      _scoreRafId = null;
+      lastShownScore = to;
+      document.removeEventListener('click', skip, { capture: true });
+    }
+  }
+
+  _scoreRafId = requestAnimationFrame(frame);
+}
+
 export function renderRun(run) {
   lastRun = run;
 
@@ -263,7 +316,7 @@ export function renderRun(run) {
   app().innerHTML = `
     <div id="hud">
       <div>Round ${run.roundIndex + 1}/${run.targets.length}</div>
-      <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
+      <div><span id="score-total">${run.roundTotal}</span> / ${run.target} Score</div>
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
       <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
@@ -295,6 +348,16 @@ export function renderRun(run) {
       ${run.status === 'lost' ? `<div class="end">💀 Out of plays.${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
     </div>`;
 
+  // Score count-up: animate from lastShownScore to run.roundTotal after each render.
+  // Reset lastShownScore when starting fresh (null = first render ever, or round reset to 0).
+  if (lastShownScore === null || run.roundTotal < lastShownScore) {
+    // First render of a run, or round advanced (total resets to 0 for next round).
+    lastShownScore = run.roundTotal;
+  }
+  if (run.roundTotal !== lastShownScore) {
+    animateScoreCountUp(lastShownScore, run.roundTotal);
+  }
+
   run.rack.forEach(t => {
     const btn = app().querySelector(`.tile[data-id="${t.id}"]`);
     if (btn && !inRack(t.id)) btn.onclick = () => tapTile(t);
@@ -304,7 +367,7 @@ export function renderRun(run) {
   on('back', () => { selection.pop(); renderRun(run); });
   on('clear', () => { selection = []; renderRun(run); });
   on('discard', () => { const sel = selection.slice(); selection = []; handlers.onDiscard?.(sel); });
-  on('new', () => { selection = []; handlers.onRunEnd?.(); });
+  on('new', () => { selection = []; lastShownScore = null; handlers.onRunEnd?.(); });
   on('hint', () => {
     const word = handlers.onHint?.();
     const msg = document.getElementById('msg');
