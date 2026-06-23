@@ -183,7 +183,7 @@ function showHelpOverlay() {
     <p>Each tile is worth <b>Points</b> (shown on the tile). Longer words add bonus Points.</p>
     <p><b>Relics</b> and <b>tile mods</b> add Points or Mult. Buy them in the shop with <b>$</b>.</p>
     <p>Beat the round's <b>Score target</b> before running out of plays. Discard your rack if you're stuck (limited discards per round).</p>
-    <p>Use the <b>Hint</b> button if you can't see a word. It shows one valid word in your rack.</p>
+    <p>Use the <b>Shuffle</b> button to rearrange your rack tiles if you can't spot a word.</p>
   `;
   overlay.appendChild(box);
 
@@ -343,7 +343,7 @@ export function renderRun(run) {
       <button id="back" ${done ? 'disabled' : ''}>⌫</button>
       <button id="clear" ${done ? 'disabled' : ''}>Clear</button>
       <button id="discard" ${done || run.discardsLeft <= 0 || selection.length === 0 ? 'disabled' : ''}>${`Discard${selection.length ? ' (' + selection.length + ')' : ''}`}</button>
-      <button id="hint" ${done ? 'disabled' : ''}>Hint</button>
+      <button id="shuffle" ${done || run.rack.length === 0 ? 'disabled' : ''}>🔀 Shuffle</button>
       ${run.status === 'won' ? `<div class="end">🎉 Run cleared!${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
       ${run.status === 'lost' ? `<div class="end">💀 Out of plays.${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
     </div>`;
@@ -368,11 +368,7 @@ export function renderRun(run) {
   on('clear', () => { selection = []; renderRun(run); });
   on('discard', () => { const sel = selection.slice(); selection = []; handlers.onDiscard?.(sel); });
   on('new', () => { selection = []; lastShownScore = null; handlers.onRunEnd?.(); });
-  on('hint', () => {
-    const word = handlers.onHint?.();
-    const msg = document.getElementById('msg');
-    if (msg) msg.textContent = word ? `Try: ${word.toUpperCase()}` : 'No valid word. Discard.';
-  });
+  on('shuffle', () => { handlers.onShuffle?.(); });
   on('help-btn', () => showHelpOverlay());
 }
 

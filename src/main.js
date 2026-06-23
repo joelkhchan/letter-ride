@@ -77,9 +77,17 @@ try {
     },
     onReroll() { if (run.coins >= run.shop.rerollCost) { run.coins -= run.shop.rerollCost; run.shop = generateShop(run, run.rng, pool()); recordOffers(telemetry, extractOfferIds(run.shop)); saveAll(); render(); } },
     onContinue() { run.shop = null; nextRound(run); saveAll(); render(); },
-    // Hint: delegate dictionary lookup to main (keeps ui.js rules-free).
-    onHint() {
-      return dictionary.findWord(run.rack.map(t => t.letter), CONFIG.MIN_WORD_LEN);
+    // Shuffle: cosmetically reorder the rack using Math.random (not run.rng).
+    // Rack order has no effect on scoring or future draws, so this is purely visual.
+    // Using run.rng here would desync the seeded RNG stream and make a run's outcome
+    // depend on how often the player shuffled — Math.random is the correct choice.
+    onShuffle() {
+      const rack = run.rack;
+      for (let i = rack.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [rack[i], rack[j]] = [rack[j], rack[i]];
+      }
+      saveAll(); render();
     },
     // run-end transitions to the meta screen:
     onRunEnd() { endRun(); },
