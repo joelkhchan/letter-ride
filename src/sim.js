@@ -188,11 +188,16 @@ export const PERSONAS = [
 // Returns the summarizePersona summary over all seeds.
 export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3 }) {
   const { bagId, targetRelicIds, targetHoneId } = persona;
-  // Resolve deck: if DECKS entry exists and has a non-null startingBag, use it; otherwise fall back to STARTING_BAG.
-  const deckEntry = config.DECKS && config.DECKS[bagId];
-  const deck = (deckEntry && deckEntry.startingBag != null)
-    ? deckEntry
-    : { startingBag: config.STARTING_BAG };
+  // Resolve deck: 'standard' explicitly uses config.STARTING_BAG.
+  // Any other bagId must be a real DECKS entry with a non-null startingBag; throw if missing.
+  let deck;
+  if (bagId === 'standard') {
+    deck = { startingBag: config.STARTING_BAG };
+  } else {
+    const d = config.DECKS && config.DECKS[bagId];
+    if (!d || d.startingBag == null) throw new Error(`runPersona: unknown or empty deck '${bagId}'`);
+    deck = d;
+  }
 
   const policy = buildPurchasePolicy({ targetRelicIds, targetHoneId, reserve, maxRerolls, pool });
 

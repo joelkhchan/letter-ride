@@ -271,10 +271,7 @@ const configPersona = {
   },
 };
 
-const personaShortWord = {
-  id: 'shortWord', name: 'Short Word', bagId: 'lean',
-  targetRelicIds: ['shortAndSweet'], targetHoneId: 'shortWord',
-};
+// personaShortWord removed — was unused dead code.
 
 test('PERSONAS is an array of 6 archetype descriptors with required shape', () => {
   assert.ok(Array.isArray(PERSONAS));
@@ -308,4 +305,35 @@ test('runPersona returns a summary with n === seeds.length, numeric winRate, and
   assert.equal(typeof summary.winRate, 'number', 'winRate is a number');
   assert.ok(summary.winRate >= 0 && summary.winRate <= 1, 'winRate in [0,1]');
   assert.ok(typeof summary.roundReached.p50 === 'number', 'roundReached.p50 is present and numeric');
+});
+
+test('runPersona resolves a real non-standard deck (rareRich) and returns a valid summary', () => {
+  // configRareRich has DECKS.rareRich with a distinctive bag (only X, Q, Z — can't form CAT).
+  // This proves runPersona used the rareRich bag, not the standard bag: no CAT can be formed,
+  // so every seed loses quickly (runPersona still returns a valid summary with n === seeds.length).
+  const configRareRich = {
+    ...configPersona,
+    DECKS: {
+      standard: { id: 'standard', name: 'Standard', startingBag: null },
+      rareRich: { id: 'rareRich', name: 'Rare Rich', startingBag: ['X','Q','Z','X','Q','Z','X','Q','Z'] },
+    },
+  };
+  const persona = { id: 'rareLetter', name: 'Rare Letter', bagId: 'rareRich', targetRelicIds: ['rareHoarder'], targetHoneId: 'rareLetter' };
+  const seeds = [1, 2, 3];
+  const summary = runPersona({
+    config: configRareRich, dictionary: dictCat, words: wordsCat,
+    persona, seeds,
+  });
+  assert.equal(summary.n, seeds.length, 'n equals number of seeds');
+  // rareRich bag has only X/Q/Z — no word in wordsCat (["CAT"]) is formable → always loses
+  assert.equal(summary.winRate, 0, 'rareRich bag cannot form CAT → all seeds lose');
+});
+
+test('runPersona throws for an unknown non-standard bagId', () => {
+  const persona = { id: 'ghost', name: 'Ghost', bagId: 'nope', targetRelicIds: [], targetHoneId: 'ghost' };
+  assert.throws(
+    () => runPersona({ config: configPersona, dictionary: dictCat, words: wordsCat, persona, seeds: [1] }),
+    /unknown or empty deck 'nope'/,
+    'should throw with a descriptive error for an unrecognised bagId',
+  );
 });
