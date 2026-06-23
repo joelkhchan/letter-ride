@@ -25,7 +25,7 @@ function tapTile(tile) {
   if (selection.some(s => s.tile.id === tile.id)) return;   // each rack tile once
   let letter = tile.letter;
   if (letter === '*') {
-    const choice = (window.prompt('Wild — choose a letter:') || '').toUpperCase().slice(0, 1);
+    const choice = (window.prompt('Wild: choose a letter') || '').toUpperCase().slice(0, 1);
     if (!/[A-Z]/.test(choice)) return;
     letter = choice;
   }
@@ -36,28 +36,28 @@ function tapTile(tile) {
 // Return a short display label for an offer.
 function offerLabel(offer) {
   switch (offer.type) {
-    case 'buyLetter':        return `Buy ${offer.letter} — $${offer.cost}`;
+    case 'buyLetter':        return `Buy ${offer.letter} · $${offer.cost}`;
     case 'buyEnchantedTile': {
       const mod = getMod(offer.modId);
-      return `${offer.letter} + ${mod?.name || offer.modId} (${mod?.desc || ''}) — $${offer.cost}`;
+      return `${offer.letter} + ${mod?.name || offer.modId} (${mod?.desc || ''}) · $${offer.cost}`;
     }
     case 'enchantTile': {
       const mod = getMod(offer.modId);
-      return `Enchant a tile: ${mod?.name || offer.modId} — ${mod?.desc || ''} — $${offer.cost}`;
+      return `Enchant a tile: ${mod?.name || offer.modId} · ${mod?.desc || ''} · $${offer.cost}`;
     }
-    case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} — $${offer.cost}`;
-    case 'thinLetter':       return `Thin a tile — $${offer.cost}`;
+    case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} · $${offer.cost}`;
+    case 'thinLetter':       return `Thin a tile · $${offer.cost}`;
     case 'buyRelic': {
       const relic = RELICS[offer.relicId];
-      return `Relic: ${relic?.name || offer.relicId} — ${relic?.desc || ''} — $${offer.cost}`;
+      return `Relic: ${relic?.name || offer.relicId} · ${relic?.desc || ''} · $${offer.cost}`;
     }
     case 'hone': {
       const archetype = ARCHETYPES[offer.archetypeId];
       const currentLevel = (lastRun?.honeLevels?.[offer.archetypeId] || 0);
-      const archetypeDesc = archetype?.desc ? ` — ${archetype.desc}` : '';
-      return `Hone: ${archetype?.name || offer.archetypeId} (Lv ${currentLevel}→${currentLevel + 1})${archetypeDesc} — $${offer.cost}`;
+      const archetypeDesc = archetype?.desc ? ` · ${archetype.desc}` : '';
+      return `Hone: ${archetype?.name || offer.archetypeId} (Lv ${currentLevel}→${currentLevel + 1})${archetypeDesc} · $${offer.cost}`;
     }
-    default:                 return `${offer.type} — $${offer.cost}`;
+    default:                 return `${offer.type} · $${offer.cost}`;
   }
 }
 
@@ -125,12 +125,12 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
       for (const p of stagedBreakdown.addMultParts)  contributions[p.label] = `+${p.amount} Mult`;
       for (const p of stagedBreakdown.timesMultParts) contributions[p.label] = `×${p.amount} Mult`;
       relicsText = run.relics.map(r => {
-        const contrib = contributions[r.name] || '—';
+        const contrib = contributions[r.name] || '·';
         return `<span class="relic-entry" title="${r.desc || ''}">${r.name}: <b>${contrib}</b></span>`;
       }).join(' · ');
     } else {
       relicsText = run.relics.map(r =>
-        `<span class="relic-entry" title="${r.desc || ''}">${r.name} — ${r.desc || ''}</span>`
+        `<span class="relic-entry" title="${r.desc || ''}">${r.name} · ${r.desc || ''}</span>`
       ).join(' · ');
     }
   } else {
@@ -181,9 +181,9 @@ function showHelpOverlay() {
     <h3 style="margin:0 0 10px;">How it works</h3>
     <p><b>Score = Points × Mult.</b></p>
     <p>Each tile is worth <b>Points</b> (shown on the tile). Longer words add bonus Points.</p>
-    <p><b>Relics</b> and <b>tile mods</b> add Points or Mult — buy them in the shop with <b>$</b>.</p>
+    <p><b>Relics</b> and <b>tile mods</b> add Points or Mult. Buy them in the shop with <b>$</b>.</p>
     <p>Beat the round's <b>Score target</b> before running out of plays. Discard your rack if you're stuck (limited discards per round).</p>
-    <p>Use the <b>Hint</b> button if you can't see a word — it shows one valid word in your rack.</p>
+    <p>Use the <b>Hint</b> button if you can't see a word. It shows one valid word in your rack.</p>
   `;
   overlay.appendChild(box);
 
@@ -371,7 +371,7 @@ export function renderRun(run) {
   on('hint', () => {
     const word = handlers.onHint?.();
     const msg = document.getElementById('msg');
-    if (msg) msg.textContent = word ? `Try: ${word.toUpperCase()}` : 'No valid word — discard.';
+    if (msg) msg.textContent = word ? `Try: ${word.toUpperCase()}` : 'No valid word. Discard.';
   });
   on('help-btn', () => showHelpOverlay());
 }
@@ -428,7 +428,7 @@ function renderShop(run) {
 
   app().innerHTML = `
     <div id="hud">
-      <div>Round ${run.roundIndex + 1}/${run.targets.length} — Shop</div>
+      <div>Round ${run.roundIndex + 1}/${run.targets.length} · Shop</div>
       <div><b>${run.roundTotal}</b> / ${run.target} Score ✓</div>
       <div id="coins">$${coins}</div>
     </div>
@@ -546,16 +546,16 @@ export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
     switch (offer.type) {
       case 'unlockRelic': {
         const relic = RELICS[offer.relicId];
-        return `Unlock relic: ${relic?.name || offer.relicId} — ${relic?.desc || ''} — ${offer.cost}`;
+        return `Unlock relic: ${relic?.name || offer.relicId} · ${relic?.desc || ''} · ${offer.cost}`;
       }
       case 'unlockMod': {
         const mod = getMod(offer.modId);
-        return `Unlock mod: ${mod?.name || offer.modId} — ${mod?.desc || ''} — ${offer.cost}`;
+        return `Unlock mod: ${mod?.name || offer.modId} · ${mod?.desc || ''} · ${offer.cost}`;
       }
-      case 'unlockDeck':   return `Unlock bag: ${config.DECKS[offer.deckId]?.name || offer.deckId} — ${offer.cost}`;
-      case 'unlockStake':  return `Unlock stake: ${config.STAKES.find(s => s.id === offer.stakeId)?.name || offer.stakeId} — ${offer.cost}`;
-      case 'loadout':      return `${config.LOADOUT[offer.key]?.name || offer.key} — ${offer.cost}`;
-      default:             return `${offer.type} — ${offer.cost}`;
+      case 'unlockDeck':   return `Unlock bag: ${config.DECKS[offer.deckId]?.name || offer.deckId} · ${offer.cost}`;
+      case 'unlockStake':  return `Unlock stake: ${config.STAKES.find(s => s.id === offer.stakeId)?.name || offer.stakeId} · ${offer.cost}`;
+      case 'loadout':      return `${config.LOADOUT[offer.key]?.name || offer.key} · ${offer.cost}`;
+      default:             return `${offer.type} · ${offer.cost}`;
     }
   }
 
