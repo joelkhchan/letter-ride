@@ -25,10 +25,12 @@ Each event states its concrete effect + cost in the option label (legibility, §
 | Event (proposed name) | Effect | Intrinsic risk/reward | `canOffer` guard |
 |---|---|---|---|
 | **The Blank** | Swap 3 random bag tiles for 1 Wild | Gain a flexible wild; bag shrinks by 2 and you lose 3 specific tiles (chosen via `run.rng`) | bag size > `RACK_SIZE + 3` (avoid under-fill) |
-| **Lucky Letter** | Pay $3: 50/50 (seeded) for +$8 or nothing | Pure economy gamble | `run.coins >= 3` |
+| **The Press** *(push-your-luck)* | Draw letters one at a time; each adds its tile value (as $) to a pot. After each draw: **Bank** (take the pot) or **Press** (draw again). **Bust** (lose the pot) if you draw a letter already drawn this event. | Escalating-tension gamble with real agency (when to walk away); rare letters spike the pot, bust odds climb with each press. Interactive, not one-shot. | always (no ante; the risk is the pot you've built) |
 | **Wordsmith** | Gain a free Hone level (you pick the archetype) | A free Hone (~$6 value) vs the Shop's flexibility; commits you to one archetype's scaling | always |
 | **Redaction** | Remove 2 tiles of your choice from the bag | Free, targeted thinning vs a Shop screen (no $ sweetener — the trade is "focus the bag vs shop") | bag size > `RACK_SIZE + 2` |
 | **Ink Merchant** | Pay $5: gain a random relic you don't own | A random un-owned relic for $5 vs a chosen Shop purchase | `run.coins >= 5` AND an un-owned relic exists |
+
+**Note — events come in two shapes.** Four events are **one-shot** (`options: [{ label, apply(run) }]`, resolve on pick). **The Press** is **interactive** (a small Draw -> pot updates -> Bank/Press loop, bust on a duplicate letter), so `events.js` + the event UI must support both an one-shot and an interactive event. Pot formula / bust rule / draw source are tunable; randomness via `run.rng`.
 
 **Fixes baked in (from the review):**
 - **No zero-decision no-brainers:** dropped the "+$2" sweetener on Redaction; every event now has an intrinsic cost/risk on top of the shop opportunity cost.
@@ -73,7 +75,7 @@ Done = in author play: (1) the **Event node is chosen over the Shop a non-trivia
 |---|---|---|
 | N1 | Node model | 2-way choice (Shop vs Event) after each cleared encounter; mandatory pick |
 | N2 | forge/hone-bench | Fold into the Shop (no redundant nodes) |
-| N3 | Event set | 5 (The Blank / Lucky Letter / Wordsmith / Redaction / Ink Merchant); each a real tradeoff; **names = author confirms copy** |
+| N3 | Event set | 5 (The Blank / The Press / Wordsmith / Redaction / Ink Merchant); 4 one-shot + The Press interactive; each a real tradeoff; **names = author confirms copy** |
 | N4 | Skip-with-tag | Defer |
 | N5 | Harness | Bot always picks Shop; events validated by author play + unit tests |
 | N6 | Persistence | Persist ONLY `run.nodeEventId`; shop regenerates from RNG; verify current schema (4) then bump to 5 |
