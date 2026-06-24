@@ -42,6 +42,10 @@ export function forcedBossOrder(forceBoss) {
 // run.boss is set per Sentence encounter by run.js, so this is LIVE on boss rounds.
 export function scoreFor(run, selection) {
   const boss = run.boss ? BOSSES[run.boss] : null;
+  // Prospective chain length if THIS word is played now (mirrors run.js playWord), so chain relics
+  // (Chain Reaction / Through-Line) are valued by bestPlay + the lookahead agent.
+  const first = selection[0]?.letter?.toUpperCase();
+  const chainLength = (run.lastWord && run.lastWord.lastLetter === first) ? (run.chainLength || 0) + 1 : 1;
   const scored = scoreWord(selection, {
     tileValues: bossTileValues(run.tileValues, boss),
     lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
@@ -50,6 +54,7 @@ export function scoreFor(run, selection) {
       wordsPlayedThisRound: run.wordsPlayedThisRound,
       enablers: run.relics.filter(r => r.enabler).map(r => r.enabler),
       relicState: run.relicState,
+      chainLength,
     },
   });
   return applyBossToScore(scored, boss);
@@ -84,9 +89,26 @@ export function bestPlay(run, wordList) {
 
 // ── v2: pluggable purchase policy ────────────────────────────────────────────
 
-// Pure: choose the best advancing offer from run.shop, or null.
-// Priority: an affordable, un-owned target relic; then the target hone. Keeps coins >= reserve.
-export function pickTargetOffer(run, { targetRelicIds = [], targetHoneId = null, reserve = 0 }) {
+// Common (high-frequency) letters the bot plays often — worth upgrading + enchanting.
+const COMMON_LETTERS = new Set(['A', 'E', 'I', 'O', 'U', 'R', 'S', 'T', 'N', 'L']);
+
+// Is there a bag tile that can receive this mod (not a wild, not already carrying it)?
+function enchantTargetExists(run, modId) {
+  return (run.bag?.tiles || []).some(t => t.letter !== '*' && !t.mods.some(m => m.id === modId));
+}
+
+// Pick the cheapest (= most frequent, most-played) un-modded bag tile to enchant; null if none.
+export function pickEnchantTarget(run, modId) {
+  const cands = (run.bag?.tiles || []).filter(t => t.letter !== '*' && !t.mods.some(m => m.id === modId));
+  if (!cands.length) return null;
+  cands.sort((a, b) => (run.tileValues[a.letter] || 0) - (run.tileValues[b.letter] || 0));
+  return cands[0].id;
+}
+
+// Pure: choose the best advancing offer from run.shop, or null. Priority (keeps coins >= reserve):
+// target relic > target hone > target-mod tile (pre-enchanted, then enchant an existing tile) >
+// upgrade a common letter. The relic/hone priority is unchanged from v2.
+export function pickTargetOffer(run, { targetRelicIds = [], targetHoneId = null, targetModIds = [], reserve = 0 }) {
   const offers = (run.shop && run.shop.offers) || [];
   const owned = new Set(run.relics.map(r => r.id));
   const affordable = (o) => run.coins - o.cost >= reserve;
@@ -94,19 +116,30 @@ export function pickTargetOffer(run, { targetRelicIds = [], targetHoneId = null,
   if (relic) return relic;
   const hone = offers.find(o => o.type === 'hone' && o.archetypeId === targetHoneId && affordable(o));
   if (hone) return hone;
+  const boughtEnch = offers.find(o => o.type === 'buyEnchantedTile' && targetModIds.includes(o.modId) && affordable(o));
+  if (boughtEnch) return boughtEnch;
+  const enchant = offers.find(o => o.type === 'enchantTile' && targetModIds.includes(o.modId) && affordable(o) && enchantTargetExists(run, o.modId));
+  if (enchant) return enchant;
+  const upgrade = offers.find(o => o.type === 'upgradeLetter' && COMMON_LETTERS.has(o.letter) && affordable(o));
+  if (upgrade) return upgrade;
   return null;
 }
 
 // Factory: returns a shop(run) function that drives generate→buy→reroll toward targets,
 // bounded by maxRerolls + reserve, then clears run.shop. Mirrors UI regen-after-buy behaviour.
-export function buildPurchasePolicy({ targetRelicIds = [], targetHoneId = null, reserve = 0, maxRerolls = 3, pool = {} } = {}) {
-  const opts = { targetRelicIds, targetHoneId, reserve };
+export function buildPurchasePolicy({ targetRelicIds = [], targetHoneId = null, targetModIds = [], reserve = 0, maxRerolls = 3, pool = {} } = {}) {
+  const opts = { targetRelicIds, targetHoneId, targetModIds, reserve };
   return function shopPolicy(run) {
     run.shop = generateShop(run, run.rng, pool);
     let rerolls = 0;
     for (;;) {
       const offer = pickTargetOffer(run, opts);
-      if (offer) { purchase(run, offer); run.shop = generateShop(run, run.rng, pool); continue; }
+      if (offer) {
+        const buyOpts = offer.type === 'enchantTile' ? { targetTileId: pickEnchantTarget(run, offer.modId) } : {};
+        const res = purchase(run, offer, buyOpts);
+        if (res.ok) { run.shop = generateShop(run, run.rng, pool); continue; }
+        // a failed buy (e.g. no enchant target) falls through to reroll/break — never loops
+      }
       const rc = run.shop.rerollCost;
       if (rerolls < maxRerolls && run.coins - rc >= reserve) {
         run.coins -= rc; rerolls += 1; run.shop = generateShop(run, run.rng, pool); continue;
@@ -229,13 +262,16 @@ export function percentile(values, p) {
 // PERSONAS mirrors the archetype fixture mapping in scripts/analyze-builds.js.
 // Each entry: { id, name, bagId, targetRelicIds, targetHoneId }
 // bagId 'standard' is resolved to config.STARTING_BAG in runPersona (DECKS.standard.startingBag is null).
+// targetModIds = tile enchantments the persona buys/applies (the passive toolkit the v2 bot ignored).
+// New Phase-3 relics are folded into targetRelicIds where archetype-fitting: pressLead/rareReprint
+// (retrigger, passive) and chainReaction/throughLine (chaining, valued via scoreFor's prospective chainLength).
 export const PERSONAS = [
-  { id: 'shortWord',   name: 'Short Word',   bagId: 'lean',     targetRelicIds: ['shortAndSweet', 'flywheel'],                        targetHoneId: 'shortWord'   },
-  { id: 'longWord',    name: 'Long Word',    bagId: 'standard', targetRelicIds: ['lengthy', 'longHaul', 'juggernaut'],                targetHoneId: 'longWord'    },
-  { id: 'rareLetter',  name: 'Rare Letter',  bagId: 'rareRich', targetRelicIds: ['rareHoarder', 'rareSurge', 'rareAvalanche'],        targetHoneId: 'rareLetter'  },
-  { id: 'doubled',     name: 'Doubled',      bagId: 'doubled',  targetRelicIds: ['doubleTrouble', 'echoChamber', 'resonanceEngine'],  targetHoneId: 'doubled'     },
-  { id: 'vowelHeavy',  name: 'Vowel Heavy',  bagId: 'standard', targetRelicIds: ['vowelBonus', 'freshStart', 'risingTide'],           targetHoneId: 'vowelHeavy'  },
-  { id: 'escalation',  name: 'Escalation',   bagId: 'standard', targetRelicIds: ['comboCounter', 'momentum', 'perpetualEngine'],      targetHoneId: 'escalation'  },
+  { id: 'shortWord',   name: 'Short Word',   bagId: 'lean',     targetRelicIds: ['shortAndSweet', 'flywheel', 'pressLead'],                       targetHoneId: 'shortWord',  targetModIds: ['catalyst', 'reprint']  },
+  { id: 'longWord',    name: 'Long Word',    bagId: 'standard', targetRelicIds: ['lengthy', 'longHaul', 'juggernaut'],                            targetHoneId: 'longWord',   targetModIds: ['catalyst', 'reprint']  },
+  { id: 'rareLetter',  name: 'Rare Letter',  bagId: 'rareRich', targetRelicIds: ['rareHoarder', 'rareSurge', 'rareAvalanche', 'rareReprint'],     targetHoneId: 'rareLetter', targetModIds: ['polished', 'reprint']  },
+  { id: 'doubled',     name: 'Doubled',      bagId: 'doubled',  targetRelicIds: ['doubleTrouble', 'echoChamber', 'resonanceEngine'],              targetHoneId: 'doubled',    targetModIds: ['resonator', 'catalyst'] },
+  { id: 'vowelHeavy',  name: 'Vowel Heavy',  bagId: 'standard', targetRelicIds: ['vowelBonus', 'freshStart', 'risingTide', 'pressLead'],          targetHoneId: 'vowelHeavy', targetModIds: ['catalyst', 'polished'] },
+  { id: 'escalation',  name: 'Escalation',   bagId: 'standard', targetRelicIds: ['comboCounter', 'momentum', 'perpetualEngine', 'chainReaction', 'throughLine'], targetHoneId: 'escalation', targetModIds: ['catalyst', 'polished'] },
 ];
 
 // runPersona — for each seed, build the persona's deck + policy, simulateRun, then summarizePersona.
@@ -244,7 +280,7 @@ export const PERSONAS = [
 // discardPolicy: optional discard function (default smartDiscard); pass dumpAllDiscard for BEFORE comparison.
 // Returns the summarizePersona summary over all seeds.
 export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard, agentFor = null, forceBoss = undefined }) {
-  const { bagId, targetRelicIds, targetHoneId } = persona;
+  const { bagId, targetRelicIds, targetHoneId, targetModIds = [] } = persona;
   // Resolve deck: 'standard' explicitly uses config.STARTING_BAG.
   // Any other bagId must be a real DECKS entry with a non-null startingBag; throw if missing.
   let deck;
@@ -256,7 +292,7 @@ export function runPersona({ config, dictionary, words, persona, seeds, pool = {
     deck = d;
   }
 
-  const policy = buildPurchasePolicy({ targetRelicIds, targetHoneId, reserve, maxRerolls, pool });
+  const policy = buildPurchasePolicy({ targetRelicIds, targetHoneId, targetModIds, reserve, maxRerolls, pool });
   const agent = agentFor ? agentFor(policy) : null;
 
   const results = seeds.map(seed =>
