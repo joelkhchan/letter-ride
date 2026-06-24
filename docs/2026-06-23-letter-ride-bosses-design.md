@@ -1,77 +1,107 @@
-# Letter Ride — Boss Rounds (Phase 2, sub-project 1)
+# Letter Ride — Run Structure (Passages) + Bosses (Phase 2, sub-project 1)
 
-**Date:** 2026-06-23 · **Status:** lean design for the first Phase 2 sub-project: archetype-antagonist boss rounds, built on the systems-bible warp-effect vocabulary (disable / cap / tax / lock). Bosses are the headline "substantial" want.
+**Date:** 2026-06-23 · **Status:** lean design, decisions locked with the author. Replaces the flat 8-round run with a tiered **Passage** structure (the Phase 2 "run texture" goal) and adds archetype-antagonist bosses on the warp-effect vocabulary from the systems bible (disable / cap / tax / lock). Magnitudes are tunable starting points; the author tunes the curve via play.
 
-**Design goal:** periodic boss rounds whose rule-warp attacks the player's committed build, forcing a pivot or a counter. The warp is **legible before the player commits** (shown at round start). Magnitudes are tunable starting points.
+## 1. The run structure (locked naming)
 
-## 1. Boss data model
+A run is **4 Passages**. Each Passage is three ascending encounters:
 
-A boss is data (no logic in the boss object beyond a pure predicate-free descriptor):
+| Encounter | Role | Target (provisional, tunable) |
+|---|---|---|
+| **Word** | base | base |
+| **Phrase** | bigger | ~1.5× base |
+| **Sentence** | **boss** | ~2.2× base + a boss warp |
+
+So **4 Passages × 3 encounters = 12 encounters**, with a boss on each **Sentence** (4 bosses, one per Passage). The pun is intended: the boss "passes a **Sentence**" on you (its rule-warp). "Passage" is the group; "Word → Phrase → Sentence" is the ascending trio.
+
+(Length is the one tunable structural knob: `CONFIG.PASSAGES = 4`. Dropping to 3 gives a 9-encounter run; the author was open to ~8-12.)
+
+## 2. Run model (minimal engine churn)
+
+Keep the existing internal **round index** (now 0..11) as the encounter counter; **derive** Passage + tier + boss-ness from it, and **display** the Passage names. No rename of `roundIndex`/`nextRound`/etc.
+
+- `passageOf(i) = Math.floor(i / 3) + 1` (1..4)
+- `tierOf(i) = ['Word','Phrase','Sentence'][i % 3]`
+- `isBoss(i) = i % 3 === 2` (the Sentence encounter)
+- `run.target` = the encounter's target (from a 12-entry tiered, escalating ladder; see §6).
+
+`CONFIG.ROUND_TARGETS` becomes the 12-entry tiered ladder (still a flat array the engine indexes by round index — minimal change). Shop after **every** encounter (as today), so the engine gets 12 shop visits to scale.
+
+## 3. Boss data model
+
+New pure module `src/bosses.js` (DOM-free, like relics.js): a `BOSSES` map + `ALL_BOSS_IDS` + a pure `applyBossToScore(scored, boss)` helper.
 
 ```
 { id, name, desc, warp: { verb, ...params } }
 ```
+`verb` ∈ `disable | cap | tax | lock` (the four locked bible verbs). `desc` is player-facing (concise, no emoji).
 
-- `verb` is one of the four locked bible verbs: `disable | cap | tax | lock`.
-- `desc` is player-facing (concise, no emoji), shown before the round.
+## 4. The four warp verbs and how each integrates (scoring.js stays LOCKED)
 
-Lives in a new `src/bosses.js` (pure, DOM-free, like relics.js): a `BOSSES` map + `ALL_BOSS_IDS` + a pure `applyBossToScore(scored, boss)` helper for the scoring-time verbs.
+`scoreWord` already takes `tileValues` as an injected param and returns `{ points, mult, score }`. Warps integrate at the `playWord` / encounter-setup layer, never inside `scoring.js`:
 
-## 2. The four warp verbs and how each integrates (scoring.js stays LOCKED)
-
-`scoreWord` already takes `tileValues` as an injected param and returns `{ points, mult, score }`. So warps integrate at the `playWord`/round-setup layer, never inside `scoring.js`:
-
-| Verb | Example | Where it applies | Mechanism (no scoring.js change) |
+| Verb | Example boss | Where | Mechanism (no scoring.js change) |
 |---|---|---|---|
-| **disable** | "vowels score 0" | scoring-time | `playWord` passes a **modified `tileValues`** to `scoreWord` (the disabled letters zeroed). Pure DI. |
-| **cap** | "×Mult capped at ×4" | scoring-time | `playWord` clamps `scored.mult` after `scoreWord`, recomputes `score = points × cappedMult`. |
-| **tax** | "-15 Points per word" | scoring-time | `playWord` applies `score = max(0, scored.score - tax)` after `scoreWord`. |
-| **lock** | "no discards this round" / "-1 play" | round-setup | `nextRound`/round-entry sets `discardsLeft = 0` or `playsLeft -= 1` on a boss round. |
+| **disable** | The Mute: vowels score 0 | scoring-time | `playWord` passes a **modified `tileValues`** to `scoreWord` (disabled letters zeroed). Pure DI. |
+| **cap** | The Ceiling: ×Mult ≤ 4 | scoring-time | `playWord` clamps `scored.mult` after `scoreWord`, recomputes `score = points × cappedMult`. |
+| **tax** | The Toll: −15 Points/word | scoring-time | `playWord`: `score = max(0, scored.score − tax)` after `scoreWord`. |
+| **lock** | The Vise: no discards | setup | encounter entry sets `discardsLeft = 0` (or `playsLeft −= 1`) on a boss encounter. |
 
-`applyBossToScore(scored, boss)` (pure) handles cap+tax and returns the adjusted score; disable is a `tileValues` transform; lock is a round-setup tweak. **scoring.js is not modified.**
+`applyBossToScore(scored, boss)` (pure) handles cap+tax; disable is a `tileValues` transform; lock is encounter-setup. **scoring.js is not modified.**
 
-## 3. Which rounds are bosses
+## 5. Starter boss roster (4, one per verb, each an archetype-antagonist)
 
-**🔷 DECISION (recommended): rounds 4 and 8** of the 8-round run (a mid-run boss + a final boss). Keeps most rounds as the baseline so bosses feel like spikes, not the norm. Configurable via `CONFIG.BOSS_ROUNDS = [4, 8]` (1-based) so it is a one-line tune later. (Balatro's small/big/boss rhythm is the inspiration; we keep it light for v1.)
+Tunable magnitudes; concise, non-religious, emoji-free copy:
 
-## 4. Boss selection (deterministic)
+- **The Mute** (`disable`, vowels): "Vowels score 0." Hits vowel-heavy + everyone's base.
+- **The Ceiling** (`cap`, mult 4): "Mult is capped at x4." Hits the ×Mult scaling engines (snowballs, Hone-×Mult, short-word).
+- **The Toll** (`tax`, 15): "Each word scores 15 fewer Points." Hits short-word / many-small-words lines. (Renamed from The Tithe.)
+- **The Vise** (`lock`, no-discard): "No discards this round." Hits drought-prone bags (lean/rareRich).
 
-On entering a boss round, pick a boss from `BOSSES` using `run.rng` (seeded → reproducible). The chosen boss id is stored on the run (`run.boss`) and cleared on a non-boss round. Avoid repeating the same boss within a run if more than one is available.
+One boss per Passage's Sentence (4 Passages → these 4). Roster grows later.
 
-## 5. Starter roster (4 bosses, one per verb, each an archetype-antagonist)
+## 6. Targets (provisional tiered ladder, tunable)
 
-Tunable magnitudes; concise descs:
+A 12-entry escalating, tiered `ROUND_TARGETS`. Starting shape (Word/Phrase/Sentence per Passage; Sentence ~2.2× the Word, base escalating ~2.5×/Passage). Provisional — the author tunes via play + the harness:
 
-- **The Mute** (`disable`, vowels): "Vowels score 0 this round." Antagonizes vowel-heavy + hurts everyone's base.
-- **The Ceiling** (`cap`, mult 4): "Mult is capped at x4 this round." Antagonizes the xMult scaling engines (snowballs, Hone-xMult, short-word).
-- **The Tithe** (`tax`, 15): "Each word scores 15 fewer Points." Antagonizes short-word / many-small-words lines.
-- **The Vise** (`lock`, no-discard): "No discards this round." Antagonizes drought-prone bags (lean/rareRich) by removing the escape lever.
+```
+P1:  40   60   90      (Word Phrase Sentence)
+P2:  120  175  260
+P3:  340  480  700
+P4:  950  1300 1800
+```
 
-(Roster grows later; four is enough to prove the system + cover the four verbs.)
+The engine (snowballs + Hone-×Mult) is what lets a committed build ride this exponential shape; a skilled human rides steeper than the bot.
 
-## 6. Legibility (a binding design rule)
+## 7. Boss selection (deterministic)
 
-The boss + its warp is shown at the **start of a boss round, before any play** (a banner in the run view): name + desc. The player sees "The Ceiling: Mult capped at x4" before committing tiles. No surprise warps.
+On entering a Sentence encounter, pick a boss from the roster using `run.rng` (seeded → reproducible), no repeat within a run (4 sentences, 4 bosses → each once, order shuffled by seed). Store `run.boss` (id) for the active encounter; clear it on non-Sentence encounters.
 
-## 7. Persistence
+## 8. Legibility (binding rule)
 
-`run.boss` (the active boss id, or null) is serialized; bump the save schema 3 → 4 (old saves drop gracefully, as before).
+The boss + its warp shows as a **banner at the start of the Sentence encounter, before any play**: name + desc (e.g. "The Ceiling — Mult is capped at x4"). No surprise warps. The Passage/tier label ("Passage 2 · Phrase") shows on every encounter.
 
-## 8. Harness
+## 9. Persistence
 
-`simulateRun` applies the active boss on boss rounds (same `applyBossToScore` + tileValues/round-setup hooks) so the eval harness measures runs **with** bosses. Add a small report line (win-rate on bossed runs vs not) so the author can see the bosses' bite. The harness REPORTS; it does not tune.
+Serialize the active `run.boss` (and any per-encounter warp state); bump the save schema (4 → 5). Old saves drop gracefully (loader guard, as before).
 
-## 9. Out of scope (later Phase 2 sub-projects)
+## 10. Harness
 
-Node variety (pick-a-node map) and events are **separate** sub-projects after bosses land + are playtested. This sub-project bolts boss rounds onto the existing linear round flow (minimal, high-value first increment).
+`simulateRun` applies the active boss on Sentence encounters (same `applyBossToScore` + tileValues / setup hooks) and drives the 12-encounter structure, so the eval harness measures runs **with** the new structure + bosses. Add a report line (win-rate, where runs end by Passage). Reports only; does not tune.
 
-## Decisions (one-pass)
+## 11. Out of scope (later Phase 2 sub-projects)
 
-| # | Decision | Recommendation |
+Node variety (pick-a-node map) and events are separate sub-projects after bosses land + are playtested. This sub-project delivers the tiered Passage structure + bosses on the existing linear flow.
+
+## Decisions (locked)
+
+| # | Decision | Value |
 |---|---|---|
-| B1 | Boss rounds | 4 and 8 (config `BOSS_ROUNDS`) |
-| B2 | Verb integration | disable=tileValues DI; cap/tax=playWord post-process; lock=round-setup. scoring.js untouched |
-| B3 | Selection | seeded pick from roster, no repeat within a run |
-| B4 | Starter roster | The Mute / The Ceiling / The Tithe / The Vise (one per verb) |
-| B5 | Legibility | boss banner shown at boss-round start, before play |
-| B6 | Persistence | `run.boss` serialized, schema 3->4 |
+| B1 | Structure | 4 Passages × (Word, Phrase, Sentence) = 12 encounters; `CONFIG.PASSAGES` tunable |
+| B2 | Boss placement | every Sentence (3rd encounter of each Passage) → 4 bosses |
+| B3 | Naming | Passage / Word / Phrase / Sentence (Sentence = boss, pun intended) |
+| B4 | Verb integration | disable=tileValues DI; cap/tax=playWord post-process; lock=setup. scoring.js untouched |
+| B5 | Roster | The Mute / The Ceiling / The Toll / The Vise (one per verb) |
+| B6 | Selection | seeded, no repeat within a run |
+| B7 | Legibility | boss banner at Sentence start, before play; Passage/tier label on every encounter |
+| B8 | Persistence | `run.boss` serialized, schema 4→5 |
