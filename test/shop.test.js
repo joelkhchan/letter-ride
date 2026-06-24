@@ -3,8 +3,8 @@ import assert from 'node:assert';
 import { generateShop, purchase } from '../src/shop.js';
 import { newRun } from '../src/run.js';
 import { makeDictionary } from '../src/dictionary.js';
-import { makeTile, getMod, resetTileIds } from '../src/tiles.js';
-import { RELICS } from '../src/relics.js';
+import { makeTile, getMod, resetTileIds, ALL_MOD_IDS } from '../src/tiles.js';
+import { RELICS, ALL_RELIC_IDS } from '../src/relics.js';
 
 const dict = makeDictionary(['cat']);
 const config = {
@@ -15,6 +15,13 @@ const config = {
   HONE: { cost: 6 },
 };
 const mkRun = () => { const r = newRun({ config, dictionary: dict, seed: 1 }); r.coins = 100; return r; };
+
+test('Phase 3 SP1: retrigger content is offerable (in the shop candidate pools)', () => {
+  // generateShop samples relics from ALL_RELIC_IDS (owned-filtered) and mods from ALL_MOD_IDS,
+  // so membership here proves the new content can appear as offers.
+  assert.ok(ALL_RELIC_IDS.includes('pressLead') && ALL_RELIC_IDS.includes('rareReprint'), 'retrigger relics offerable');
+  assert.ok(ALL_MOD_IDS.includes('reprint'), 'reprint mod offerable');
+});
 
 test('generateShop is deterministic per seed and returns offers + rerollCost', () => {
   const r1 = mkRun(); const r2 = mkRun();
