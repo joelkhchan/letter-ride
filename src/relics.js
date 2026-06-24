@@ -129,6 +129,18 @@ export const RELICS = {
     desc: 'Grows +0.1 Mult every word you play (this run)',
     perStack: 0.1, condition: () => true,
   }),
+
+  // ── Phase 3 SP1: Retrigger relics ──────────────────────────────────────────
+  pressLead: {
+    id: 'pressLead', name: 'Press Lead', desc: 'The first letter of the word prints one extra time',
+    evaluate: () => ({}),
+    retriggerTile: (tile, ctx) => (ctx.selection[0]?.tile === tile ? 1 : 0),
+  },
+  rareReprint: {
+    id: 'rareReprint', name: 'Rare Reprint', desc: 'Each J, Q, X, or Z prints one extra time',
+    evaluate: () => ({}),
+    retriggerTile: (tile) => (RARE.has(String(tile.letter).toUpperCase()) ? 1 : 0),
+  },
 };
 
 export const ALL_RELIC_IDS = Object.keys(RELICS);

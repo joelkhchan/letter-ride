@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { scoreWord } from '../src/scoring.js';
-import { RELICS } from '../src/relics.js';
+import { RELICS, ALL_RELIC_IDS } from '../src/relics.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
 
 const tv = { C:3, A:1, T:1, E:1, I:1, O:1, U:1, S:1, L:1, B:3, Q:10, Y:4, N:1 };
@@ -179,4 +179,30 @@ test('all six snowball relics: condition + ×Mult-from-stacks', () => {
   assert.equal(RELICS.perpetualEngine.snowball.condition({ letters: ['C','A','T'] }), true);
   // stacks read (flywheel perStack 0.3)
   assert.deepEqual(RELICS.flywheel.evaluate({ relicState: { flywheel: { stacks: 2 } } }), { timesMult: 1 + 0.3 * 2 });
+});
+
+test('pressLead retriggers only the first tile', () => {
+  const rel = RELICS.pressLead;
+  const selection = [{ tile: { letter: 'A' }, letter: 'A' }, { tile: { letter: 'B' }, letter: 'B' }];
+  const ctx = { selection };
+  assert.equal(rel.retriggerTile(selection[0].tile, ctx), 1);
+  assert.equal(rel.retriggerTile(selection[1].tile, ctx), 0);
+  assert.ok(ALL_RELIC_IDS.includes('pressLead'));
+});
+
+test('rareReprint retriggers only rare-letter tiles (J/Q/X/Z)', () => {
+  const rel = RELICS.rareReprint;
+  const ctx = { selection: [] };
+  assert.equal(rel.retriggerTile({ letter: 'Q' }, ctx), 1);
+  assert.equal(rel.retriggerTile({ letter: 'q' }, ctx), 1);   // case-insensitive
+  assert.equal(rel.retriggerTile({ letter: 'A' }, ctx), 0);
+  assert.ok(ALL_RELIC_IDS.includes('rareReprint'));
+});
+
+test('rareReprint doubles a rare tile base value through scoreWord', () => {
+  const r = scoreWord(
+    [{ tile: { letter: 'Q', mods: [] }, letter: 'Q' }, { tile: { letter: 'A', mods: [] }, letter: 'A' }],
+    { tileValues: { Q: 10, A: 1 }, lengthBonusPerLetter: 1, relics: [RELICS.rareReprint], context: {} }
+  );
+  assert.equal(r.breakdown.base, 21);   // Q=10 printed twice (20) + A=1 once
 });
