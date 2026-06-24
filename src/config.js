@@ -14,12 +14,15 @@ export const CONFIG = {
   LENGTH_BONUS_PER_LETTER: 5,                              // +5 × (len - 3), min 0
   TIER0_TARGETS: [20, 35, 55, 80, 110, 145, 185, 230],     // beatable from base bag, no shop
   PASSAGES: 4,                                             // run = PASSAGES x (Word, Phrase, Sentence)
-  // 4 Passages x (Word, Phrase, Sentence) — provisional exponential ladder, tuned via play:
+  // Tuned 2026-06-24 via the harness curve-sweep: ~1.22x/encounter, front-loaded. The full-toolkit
+  // bot (enchants + retrigger + chain + upgrades) wins ~16% here; a smarter human clears around the
+  // median ("skill beats luck"). Bosses provide the Sentence difficulty spikes, so targets stay
+  // smooth (not inflated on Sentences). FLOOR-tuned starting point — refine via author playtest.
   ROUND_TARGETS: [
-    40,  60,  90,      // Passage 1: Word, Phrase, Sentence(boss)
-    120, 175, 260,     // Passage 2
-    340, 480, 700,     // Passage 3
-    950, 1300, 1800,   // Passage 4 (final boss)
+    40,  50,  60,      // Passage 1: Word, Phrase, Sentence(boss)
+    75,  90,  110,     // Passage 2
+    130, 160, 195,     // Passage 3
+    240, 290, 355,     // Passage 4 (final boss)
   ],
   COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 }, // Tier 1
   INTEREST: { enabled: true, per: 5, rate: 1, cap: 5 },             // $1 per $5 held, max $5
