@@ -8,7 +8,7 @@ const KEY = 'letterRide.run';
 
 export function serializeRun(run) {
   return {
-    version: 3,                                          // bump when the schema changes
+    version: 4,                                          // bump when the schema changes
     seed: run.seed,
     rngState: run.rng.getState(),
     targets: run.targets,
@@ -32,6 +32,8 @@ export function serializeRun(run) {
     lastAward: run.lastAward || null,
     honeLevels: run.honeLevels || {},
     relicState: run.relicState || {},
+    boss: run.boss ?? null,
+    bossOrder: run.bossOrder || [],
   };
 }
 
@@ -66,6 +68,8 @@ export function deserializeRun(data, { config, dictionary }) {
     lastAward: data.lastAward || null,
     honeLevels: data.honeLevels || {},
     relicState: data.relicState || {},
+    boss: data.boss ?? null,
+    bossOrder: data.bossOrder || [],
   };
 }
 
@@ -78,7 +82,7 @@ export function loadRun(storage, deps) {
   if (!raw) return null;
   try {
     const data = JSON.parse(raw);
-    if (data.version !== 3) return null;     // schema changed → treat as no save (graceful drop)
+    if (data.version !== 4) return null;     // schema changed → treat as no save (graceful drop)
     return deserializeRun(data, deps);
   } catch {
     return null;                             // corrupt save → start fresh, never brick the page

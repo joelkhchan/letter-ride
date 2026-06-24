@@ -140,7 +140,7 @@ test('relicState round-trips through serialize/deserialize', () => {
   const run = newRun({ config, dictionary: dict, seed: 7 });
   run.relicState = { rareAvalanche: { stacks: 4 } };
   const data = serializeRun(run);
-  assert.equal(data.version, 3);
+  assert.equal(data.version, 4);
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.deepEqual(restored.relicState, { rareAvalanche: { stacks: 4 } });
 });
@@ -151,4 +151,14 @@ test('a missing relicState deserializes to {}', () => {
   delete data.relicState;
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.deepEqual(restored.relicState, {});
+});
+
+test('boss + bossOrder round-trip; schema is 4', () => {
+  const run = newRun({ config, dictionary: dict, seed: 5 });
+  const data = serializeRun(run);
+  assert.equal(data.version, 4);
+  assert.deepEqual(data.bossOrder, run.bossOrder);
+  const restored = deserializeRun(data, { config, dictionary: dict });
+  assert.deepEqual(restored.bossOrder, run.bossOrder);
+  assert.equal(restored.boss, run.boss);
 });
