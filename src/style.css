@@ -118,6 +118,29 @@ body {
 }
 
 /* ================================================================
+   Boss banner — shown only on boss encounters, above the rack
+   ================================================================ */
+#boss-banner {
+  text-align: center;
+  padding: 8px 14px;
+  margin: 6px 0 4px;
+  border: 1.5px solid #b85c00;
+  border-radius: var(--radius-sm);
+  background: #fff3e0;
+  color: #7a3c00;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  #boss-banner {
+    background: #2a1800;
+    border-color: #a05000;
+    color: #f0b060;
+  }
+}
+
+/* ================================================================
    Staging + live scorebug
    ================================================================ */
 #staging {

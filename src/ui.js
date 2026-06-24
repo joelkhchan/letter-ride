@@ -4,6 +4,8 @@ import { RELICS } from './relics.js';
 import { getMod } from './tiles.js';
 import { scoreWord } from './scoring.js';
 import { ARCHETYPES } from './archetypes.js';
+import { passageOf, tierOf } from './run.js';
+import { BOSSES } from './bosses.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -315,7 +317,7 @@ export function renderRun(run) {
 
   app().innerHTML = `
     <div id="hud">
-      <div>Round ${run.roundIndex + 1}/${run.targets.length}</div>
+      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)}</div>
       <div><span id="score-total">${run.roundTotal}</span> / ${run.target} Score</div>
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
@@ -325,6 +327,7 @@ export function renderRun(run) {
     ${lastPlayHtml}
     <div id="staging">${staged || '&nbsp;'}</div>
     ${preview}
+    ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner"><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</div>` : ''}
     <div id="rack">
       ${run.rack.map(t => {
         const modBadge = t.mods && t.mods.length
