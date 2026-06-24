@@ -502,7 +502,10 @@ test('summarizePersona aggregates margin + gap percentiles and exposes per-seed 
 test('runPersona accepts an agentFor and reports per-seed win flags', () => {
   const persona = { id: 'shortWord', name: 'Short', bagId: 'standard', targetRelicIds: [], targetHoneId: 'shortWord' };
   const seeds = [1, 2, 3];
-  const s = runPersona({ config: configB, dictionary: dictB, words: wordsB, persona, seeds, agentFor: (shop) => randomAgent(shop) });
+  let callCount = 0;
+  const agentFor = (shop) => { callCount++; return randomAgent(shop); };
+  const s = runPersona({ config: configB, dictionary: dictB, words: wordsB, persona, seeds, agentFor });
   assert.equal(s.wonFlags.length, 3);
   assert.equal(typeof s.winRate, 'number');
+  assert.equal(callCount, 1, 'agentFor must be called exactly once per runPersona call (not per seed)');
 });
