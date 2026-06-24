@@ -182,3 +182,23 @@ test('nodeEventId defaults to null when missing from save', () => {
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.equal(restored.nodeEventId, null);
 });
+
+test('nodeResolved true round-trips through serialize/deserialize', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 4 });
+  run.nodeResolved = true;
+  const data = serializeRun(run);
+  assert.equal(data.version, 5);
+  assert.equal(data.nodeResolved, true);
+  const restored = deserializeRun(data, { config, dictionary: dict });
+  assert.equal(restored.nodeResolved, true);
+});
+
+test('nodeResolved defaults to false when missing from save', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 4 });
+  const data = serializeRun(run);
+  delete data.nodeResolved;
+  const restored = deserializeRun(data, { config, dictionary: dict });
+  assert.equal(restored.nodeResolved, false);
+});

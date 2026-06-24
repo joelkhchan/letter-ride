@@ -76,12 +76,12 @@ export function applyEventOption(run, eventId, optionIndex, opts = {}) {
 // --- The Press: interactive push-your-luck state machine ---
 
 export function pressStart(run) {
-  run.press = { drawn: [], pot: 0, busted: false, banked: false };
+  run.press = { drawn: [], pot: 0, busted: false };
 }
 
 export function pressDraw(run) {
   const st = run.press;
-  if (!st || st.busted || st.banked) return st;
+  if (!st || st.busted) return st;
   const pool = Object.keys(run.tileValues).filter(l => l !== '*');
   // forcedNext is a test hook: set run.press.forcedNext = 'X' to deterministically draw that letter.
   const letter = st.forcedNext || shuffle([...pool], run.rng)[0];

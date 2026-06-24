@@ -105,7 +105,7 @@ test('The Press: pot grows on unique draws, busts on a duplicate, bank pays the 
   assert.equal(EVENTS.thePress.interactive, true);
   const run = newRun({ config, dictionary: dict, seed: 2 });
   pressStart(run);
-  assert.deepEqual(run.press, { drawn: [], pot: 0, busted: false, banked: false });
+  assert.deepEqual(run.press, { drawn: [], pot: 0, busted: false });
   pressDraw(run);
   assert.equal(run.press.drawn.length, 1);
   assert.ok(run.press.pot >= 1);                       // first letter's value

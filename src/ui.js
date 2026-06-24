@@ -343,6 +343,8 @@ export function renderRun(run) {
   if (run.status === 'roundCleared') {
     if (run.shop) { renderShop(run); return; }
     if (run._nodePick === 'event' && run.nodeEventId) {
+      // If the event was already resolved (persisted nodeResolved=true), skip re-offering it.
+      if (run.nodeResolved) { renderEventDone(run, EVENTS[run.nodeEventId] || { name: '', desc: '' }); return; }
       const ev = EVENTS[run.nodeEventId];
       if (ev?.interactive) { renderPress(run); return; }
       renderEventOneShot(run); return;
@@ -703,8 +705,7 @@ function renderPress(run) {
   const drawnDisplay = drawn.length ? drawn.join(' ') : 'No letters drawn yet';
   const pot = st.pot || 0;
   const busted = !!st.busted;
-  const banked = st.banked !== undefined ? st.banked : (run.press === null && run._nodePick === 'event');
-  // After pressBank, run.press is null — detect completion by run._pressResult
+  // After pressBank, run.press is null — detect completion by run._nodePick still being 'event'
   const pressComplete = !run.press && run._nodePick === 'event';
   const drawDisabled = busted || pressComplete ? 'disabled' : '';
   const bankDisabled = (busted || pot === 0 || pressComplete) ? 'disabled' : '';

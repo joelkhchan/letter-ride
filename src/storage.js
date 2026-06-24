@@ -35,6 +35,7 @@ export function serializeRun(run) {
     boss: run.boss ?? null,
     bossOrder: run.bossOrder || [],
     nodeEventId: run.nodeEventId ?? null,
+    nodeResolved: run.nodeResolved ?? false,
   };
 }
 
@@ -72,6 +73,7 @@ export function deserializeRun(data, { config, dictionary }) {
     boss: data.boss ?? null,
     bossOrder: data.bossOrder || [],
     nodeEventId: data.nodeEventId ?? null,
+    nodeResolved: data.nodeResolved ?? false,
   };
 }
 

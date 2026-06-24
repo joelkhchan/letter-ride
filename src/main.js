@@ -103,6 +103,7 @@ try {
     },
     onEventOption(optionIndex, opts) {
       const r = applyEventOption(run, run.nodeEventId, optionIndex, opts);
+      if (r?.ok !== false) run.nodeResolved = true;
       saveAll(); render(); return r;
     },
     onPressDraw() {
@@ -112,9 +113,10 @@ try {
     onPressBank() {
       run._pressLastPot = run.press?.pot || 0;
       pressBank(run);
+      run.nodeResolved = true;
       saveAll(); render();
     },
-    onContinue() { run.nodeEventId = null; run._nodePick = null; run.press = null; run._pressLastPot = null; run.shop = null; nextRound(run); saveAll(); render(); },
+    onContinue() { run.nodeEventId = null; run._nodePick = null; run.press = null; run._pressLastPot = null; run.shop = null; run.nodeResolved = false; nextRound(run); saveAll(); render(); },
     // Shuffle: cosmetically reorder the rack using Math.random (not run.rng).
     // Rack order has no effect on scoring or future draws, so this is purely visual.
     // Using run.rng here would desync the seeded RNG stream and make a run's outcome
