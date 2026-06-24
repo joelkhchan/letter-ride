@@ -422,6 +422,7 @@ export function renderRun(run) {
     <div id="staging">${staged || '&nbsp;'}</div>
     ${preview}
     ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner"><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</div>` : ''}
+    ${run.chainLength > 1 ? `<div id="chain-banner">Chain &times;${run.chainLength}${run.lastWord ? ` &middot; continue with ${run.lastWord.lastLetter}` : ''}</div>` : ''}
     <div id="rack">
       ${run.rack.map(t => {
         const modBadge = t.mods && t.mods.length

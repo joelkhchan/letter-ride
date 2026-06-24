@@ -141,6 +141,29 @@ body {
 }
 
 /* ================================================================
+   Chain indicator — shown only on chains of 2+, above the rack
+   ================================================================ */
+#chain-banner {
+  text-align: center;
+  padding: 8px 14px;
+  margin: 6px 0 4px;
+  border: 1.5px solid #00aa66;
+  border-radius: var(--radius-sm);
+  background: #e0f7f4;
+  color: #006644;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  #chain-banner {
+    background: #1a2a24;
+    border-color: #00cc88;
+    color: #66ddaa;
+  }
+}
+
+/* ================================================================
    Staging + live scorebug
    ================================================================ */
 #staging {
