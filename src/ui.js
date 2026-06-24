@@ -50,6 +50,8 @@ function offerLabel(offer) {
     }
     case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} · $${offer.cost}`;
     case 'thinLetter':       return `Thin a tile · $${offer.cost}`;
+    case 'recastTile':       return `Recast a tile to a letter you choose · $${offer.cost}`;
+    case 'transferMods':     return `Move a tile's mods onto another (destroys it) · $${offer.cost}`;
     case 'buyRelic': {
       const relic = RELICS[offer.relicId];
       return `Relic: ${relic?.name || offer.relicId} · ${relic?.desc || ''} · $${offer.cost}`;
@@ -69,51 +71,77 @@ function needsTilePicker(offer) {
   return offer.type === 'enchantTile' || offer.type === 'thinLetter';
 }
 
-// Render a tile-picker overlay and wire up the buttons.
-function showTilePicker(run, offer) {
-  // Remove any existing overlay first.
+// Build a modal overlay with a title and a set of choice buttons. choices = [{label, title?, onPick}].
+function buildPickOverlay(titleText, choices) {
   const old = document.getElementById('tile-picker-overlay');
   if (old) old.remove();
-
   const overlay = document.createElement('div');
   overlay.id = 'tile-picker-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:100;';
-
   const title = document.createElement('div');
-  title.textContent = offer.type === 'thinLetter' ? 'Remove which tile?' : 'Enchant which tile?';
+  title.textContent = titleText;
   title.style.cssText = 'color:#fff;font-weight:bold;font-size:1.1em;';
   overlay.appendChild(title);
-
   const grid = document.createElement('div');
   grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:320px;';
-
-  run.bag.tiles.forEach(tile => {
-    const modsLabel = tile.mods && tile.mods.length ? ` [${tile.mods.map(m => m.name || m.id[0].toUpperCase()).join(', ')}]` : '';
+  choices.forEach(c => {
     const btn = document.createElement('button');
-    btn.textContent = tile.letter + modsLabel;
-    if (tile.mods && tile.mods.length) {
-      btn.title = tile.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ');
-    }
+    btn.textContent = c.label;
+    if (c.title) btn.title = c.title;
     btn.style.cssText = 'padding:10px 14px;font-size:1em;border-radius:6px;cursor:pointer;';
-    btn.onclick = () => {
-      overlay.remove();
-      const res = handlers.onBuy?.(offer, tile.id);
-      if (res && !res.ok) {
-        const msg = document.getElementById('msg');
-        if (msg) msg.textContent = 'Purchase failed: ' + (res.reason || 'unknown');
-      }
-    };
+    btn.onclick = () => { overlay.remove(); c.onPick(); };
     grid.appendChild(btn);
   });
   overlay.appendChild(grid);
-
   const cancel = document.createElement('button');
   cancel.textContent = 'Cancel';
   cancel.style.cssText = 'margin-top:8px;padding:8px 20px;font-size:0.95em;border-radius:6px;cursor:pointer;';
   cancel.onclick = () => overlay.remove();
   overlay.appendChild(cancel);
-
   document.body.appendChild(overlay);
+}
+
+// Choice list for bag tiles, optionally excluding one id (e.g. the transfer source).
+function tileChoices(run, onPick, excludeId) {
+  return run.bag.tiles.filter(t => t.id !== excludeId).map(tile => {
+    const modsLabel = tile.mods && tile.mods.length ? ` [${tile.mods.map(m => m.name || m.id[0].toUpperCase()).join(', ')}]` : '';
+    return {
+      label: tile.letter + modsLabel,
+      title: tile.mods && tile.mods.length ? tile.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ') : undefined,
+      onPick: () => onPick(tile),
+    };
+  });
+}
+
+function reportBuy(res) {
+  if (res && !res.ok) {
+    const msg = document.getElementById('msg');
+    if (msg) msg.textContent = 'Purchase failed: ' + (res.reason || 'unknown');
+  }
+}
+
+// enchant/thin: single tile pick.
+function showTilePicker(run, offer) {
+  const titleText = offer.type === 'thinLetter' ? 'Remove which tile?' : 'Enchant which tile?';
+  buildPickOverlay(titleText, tileChoices(run, (tile) => reportBuy(handlers.onBuy?.(offer, { targetTileId: tile.id }))));
+}
+
+// recast: pick tile, then pick a letter from the shop pool.
+function showRecastPicker(run, offer) {
+  buildPickOverlay('Recast which tile?', tileChoices(run, (tile) => {
+    buildPickOverlay(`Recast ${tile.letter} to which letter?`, run.config.SHOP.buyableLetters.map(L => ({
+      label: L,
+      onPick: () => reportBuy(handlers.onBuy?.(offer, { targetTileId: tile.id, targetLetter: L })),
+    })));
+  }));
+}
+
+// transfer: pick source (destroyed), then target (receives the mods).
+function showTransferPicker(run, offer) {
+  buildPickOverlay('Melt down which tile? (its mods move on)', tileChoices(run, (src) => {
+    buildPickOverlay('Move its mods onto which tile?', tileChoices(run, (tgt) =>
+      reportBuy(handlers.onBuy?.(offer, { sourceTileId: src.id, targetTileId: tgt.id })), src.id));
+  }));
 }
 
 // Show a small inline popover anchored below the tapped chip element.
@@ -817,15 +845,10 @@ function renderShop(run) {
     const btn = app().querySelector(`.shop-offer[data-idx="${i}"]`);
     if (!btn || btn.disabled) return;
     btn.onclick = () => {
-      if (needsTilePicker(offer)) {
-        showTilePicker(run, offer);
-      } else {
-        const res = handlers.onBuy?.(offer);
-        if (res && !res.ok) {
-          const msg = document.getElementById('msg');
-          if (msg) msg.textContent = 'Purchase failed: ' + (res.reason || 'unknown');
-        }
-      }
+      if (offer.type === 'recastTile') showRecastPicker(run, offer);
+      else if (offer.type === 'transferMods') showTransferPicker(run, offer);
+      else if (needsTilePicker(offer)) showTilePicker(run, offer);
+      else reportBuy(handlers.onBuy?.(offer));
     };
 
     // Wire info (?) button if present.

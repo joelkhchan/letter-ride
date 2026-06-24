@@ -75,8 +75,8 @@ try {
       }
       saveAll(); render(); return r; },
     onDiscard(sel) { discard(run, sel); saveAll(); render(); },
-    onBuy(offer, targetTileId) {
-      const r = purchase(run, offer, { targetTileId });
+    onBuy(offer, opts = {}) {
+      const r = purchase(run, offer, opts);
       if (r.ok) {
         if (offer.type === 'buyRelic') recordPurchase(telemetry, offer.relicId);
         else if (offer.type === 'buyEnchantedTile' || offer.type === 'enchantTile') recordPurchase(telemetry, offer.modId);
