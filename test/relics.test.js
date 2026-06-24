@@ -206,3 +206,19 @@ test('rareReprint doubles a rare tile base value through scoreWord', () => {
   );
   assert.equal(r.breakdown.base, 21);   // Q=10 printed twice (20) + A=1 once
 });
+
+// ── Task 2: Chain relics (read ctx.chainLength) ───────────────────────────────
+
+test('chainReaction xMult scales with chainLength (neutral at 1)', () => {
+  const r = RELICS.chainReaction;
+  assert.deepEqual(r.evaluate({ chainLength: 1 }), { timesMult: 1 });
+  assert.deepEqual(r.evaluate({ chainLength: 3 }), { timesMult: 2 });   // 1 + 0.5*2
+  assert.ok(ALL_RELIC_IDS.includes('chainReaction'));
+});
+
+test('throughLine +Points scales with chainLength (neutral at 1)', () => {
+  const r = RELICS.throughLine;
+  assert.deepEqual(r.evaluate({ chainLength: 1 }), { addPoints: 0 });
+  assert.deepEqual(r.evaluate({ chainLength: 4 }), { addPoints: 24 });  // 8*3
+  assert.ok(ALL_RELIC_IDS.includes('throughLine'));
+});
