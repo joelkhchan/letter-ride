@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { EVENTS, ALL_EVENT_IDS, applyEventOption } from '../src/events.js';
+import { EVENTS, ALL_EVENT_IDS, applyEventOption, pressStart, pressDraw, pressBank } from '../src/events.js';
 import { newRun } from '../src/run.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { RELICS, ALL_RELIC_IDS } from '../src/relics.js';
@@ -14,10 +14,11 @@ const config = {
 };
 const dict = makeDictionary(['cat','cats']);
 
-test('roster: 4 one-shot events (The Press not yet present)', () => {
-  assert.equal(ALL_EVENT_IDS.length, 4);
+test('roster: 5 events, exactly 1 interactive (The Press)', () => {
+  assert.equal(ALL_EVENT_IDS.length, 5);
   const interactive = Object.values(EVENTS).filter(e => e.interactive);
-  assert.equal(interactive.length, 0, 'no interactive events in Task 1');
+  assert.equal(interactive.length, 1, 'exactly one interactive event');
+  assert.equal(interactive[0].id, 'thePress');
 });
 
 test('Redaction removes 2 chosen tiles via opts.tileIds (free thinning)', () => {
@@ -98,4 +99,23 @@ test('applyEventOption returns ok:false for unknown eventId', () => {
   const run = newRun({ config, dictionary: dict, seed: 1 });
   const result = applyEventOption(run, 'nonexistent', 0);
   assert.equal(result.ok, false);
+});
+
+test('The Press: pot grows on unique draws, busts on a duplicate, bank pays the pot', () => {
+  assert.equal(EVENTS.thePress.interactive, true);
+  const run = newRun({ config, dictionary: dict, seed: 2 });
+  pressStart(run);
+  assert.deepEqual(run.press, { drawn: [], pot: 0, busted: false, banked: false });
+  pressDraw(run);
+  assert.equal(run.press.drawn.length, 1);
+  assert.ok(run.press.pot >= 1);                       // first letter's value
+  // force a duplicate to prove the bust path:
+  const dup = run.press.drawn[0];
+  run.press.forcedNext = dup;                           // test hook
+  pressDraw(run);
+  assert.equal(run.press.busted, true);
+  const coinsBefore = run.coins;
+  pressBank(run);                                        // busted -> pays nothing
+  assert.equal(run.coins, coinsBefore);
+  assert.equal(run.press, null);
 });

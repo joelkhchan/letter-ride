@@ -55,7 +55,11 @@ export const EVENTS = {
     } }],
     canOffer: (run) => run.coins >= 5 && run.relics.length < ALL_RELIC_IDS.length,
   },
-  // thePress added in Task 2
+  thePress: {
+    id: 'thePress', name: 'The Press', interactive: true,
+    desc: 'Draw letters for $; Bank to keep the pot or Press your luck — bust on a repeat and lose it all',
+    canOffer: () => true,
+  },
 };
 
 export const ALL_EVENT_IDS = Object.keys(EVENTS);
@@ -67,4 +71,35 @@ export function applyEventOption(run, eventId, optionIndex, opts = {}) {
   if (!opt) return { ok: false, reason: 'no-option' };
   const r = opt.apply(run, opts);
   return r && r.ok === false ? r : { ok: true };
+}
+
+// --- The Press: interactive push-your-luck state machine ---
+
+export function pressStart(run) {
+  run.press = { drawn: [], pot: 0, busted: false, banked: false };
+}
+
+export function pressDraw(run) {
+  const st = run.press;
+  if (!st || st.busted || st.banked) return st;
+  const pool = Object.keys(run.tileValues).filter(l => l !== '*');
+  // forcedNext is a test hook: set run.press.forcedNext = 'X' to deterministically draw that letter.
+  const letter = st.forcedNext || shuffle([...pool], run.rng)[0];
+  st.forcedNext = null;
+  if (st.drawn.includes(letter)) {
+    st.busted = true;
+    st.pot = 0;
+    return st;
+  }
+  st.drawn.push(letter);
+  st.pot += run.tileValues[letter] || 0;
+  return st;
+}
+
+export function pressBank(run) {
+  const st = run.press;
+  if (!st || st.busted) { run.press = null; return run; }
+  run.coins += st.pot;
+  run.press = null;
+  return run;
 }
