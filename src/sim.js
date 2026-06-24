@@ -18,8 +18,9 @@
 // Exports (v2 personas):
 //   PERSONAS  — array of { id, name, bagId, targetRelicIds, targetHoneId }, one per archetype
 //   runPersona — run simulateRun for each seed, aggregate → summarizePersona summary
-// v1 limits (documented): wilds ('*') treated as non-letters in enumeration; greedy single-word
-// policy; no shop purchases; standard deck. Personas/purchases/wild-substitution = v2.
+// v1 limits (documented): greedy single-word policy; no shop purchases; standard deck.
+// Enumeration is now WILD-AWARE: a '*' tile substitutes for any one missing letter (v3).
+// Personas/purchases = v2.
 // No Math.random — randomness is the seeded RNG inside `run`.
 import { scoreWord } from './scoring.js';
 import { honeModifiers } from './archetypes.js';

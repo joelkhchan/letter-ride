@@ -1,5 +1,5 @@
 // src/enumerate.js — single source of word-enumeration. Pure + DI. No Math.random.
-// Wild-unaware in Wave 0 (identical to the original sim.js logic); Wave 2 adds wild support.
+// Wild-aware: a '*' tile substitutes for any one missing letter (greedy exact-match first).
 
 export function countsOf(letters) {
   const c = {};
@@ -8,10 +8,12 @@ export function countsOf(letters) {
 }
 
 export function canForm(word, counts) {
-  const need = {};
+  const have = { ...counts };
+  let wilds = have['*'] || 0;
   for (const ch of word) {
-    need[ch] = (need[ch] || 0) + 1;
-    if (need[ch] > (counts[ch] || 0)) return false;
+    if ((have[ch] || 0) > 0) have[ch] -= 1;
+    else if (wilds > 0) wilds -= 1;
+    else return false;
   }
   return true;
 }
@@ -23,13 +25,15 @@ export function legalWords(letters, wordList, minLen) {
 }
 
 // Build a selection of REAL rack tiles for `word` (one tile per letter); null if rack can't supply it.
+// Wild tiles ('*') are resolved to the missing letter they substitute for.
 export function selectionFor(word, rack) {
   const pool = [...rack];
   const sel = [];
   for (const ch of word) {
-    const i = pool.findIndex(t => t.letter === ch);
+    let i = pool.findIndex(t => t.letter === ch);
+    if (i < 0) i = pool.findIndex(t => t.letter === '*');   // fall back to a wild
     if (i < 0) return null;
-    sel.push({ tile: pool[i], letter: ch });
+    sel.push({ tile: pool[i], letter: ch });                 // chosen letter, even if tile is a wild
     pool.splice(i, 1);
   }
   return sel;

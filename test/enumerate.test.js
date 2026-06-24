@@ -24,3 +24,16 @@ test('selectionFor maps each letter to a distinct real tile, or null', () => {
   assert.deepEqual(sel.map(s => s.letter), ['C', 'A', 'T']);
   assert.equal(selectionFor('CATS', rack), null);
 });
+
+test('canForm treats * as a blank', () => {
+  assert.equal(canForm('CAT', { C: 1, A: 1, '*': 1 }), true);   // T via wild
+  assert.equal(canForm('CAT', { C: 1, '*': 1 }), false);        // need A and T, only one wild
+  assert.equal(canForm('AA', { A: 1, '*': 1 }), true);
+});
+
+test('selectionFor assigns a wild tile the needed letter', () => {
+  const rack = [{ id: 't1', letter: 'C' }, { id: 't2', letter: 'A' }, { id: 't3', letter: '*' }];
+  const sel = selectionFor('CAT', rack);
+  assert.deepEqual(sel.map(s => s.letter), ['C', 'A', 'T']);
+  assert.equal(sel.find(s => s.tile.id === 't3').letter, 'T');  // wild resolved to the missing letter
+});
