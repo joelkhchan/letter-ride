@@ -186,8 +186,66 @@ body {
 }
 .rp-row    { margin: 3px 0; }
 .rp-label  { font-weight: 700; }
-.relic-entry { cursor: default; border-bottom: 1px dotted #aaa; }
+.relic-entry { border-bottom: 1px dotted #aaa; }
 .none-label  { color: #a0a8b4; font-style: italic; }
+
+/* Tappable chips (relics, mods, hone) — tap reveals inline popover */
+.tappable-chip {
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 1px 3px;
+  transition: background 0.1s;
+}
+.tappable-chip:hover,
+.tappable-chip:focus-visible {
+  background: var(--accent-dim);
+  outline: 1px solid var(--accent);
+}
+
+/* Tap-to-reveal description popover */
+#desc-popover {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 2px;
+  padding: 7px 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  max-width: 320px;
+  position: relative;
+}
+.desc-pop-name {
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+.desc-pop-text {
+  color: var(--text-muted);
+  flex: 1;
+}
+.desc-pop-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0 2px;
+  margin-left: auto;
+}
+.desc-pop-close:hover { color: var(--text); }
+
+@media (prefers-color-scheme: dark) {
+  .relic-entry { border-bottom-color: #555; }
+  #desc-popover { background: var(--surface-alt); }
+}
 
 /* ================================================================
    Controls
@@ -221,12 +279,37 @@ body {
 /* ================================================================
    Shop / offer rows
    ================================================================ */
+
+/* Row wrapper holds optional info button + offer button side by side */
+.shop-offer-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin: 5px 0;
+}
+
+/* Info (?) button shown before offers with meaningful descs */
+.shop-offer-info {
+  flex-shrink: 0;
+  width: 32px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--accent);
+  transition: background 0.1s, border-color 0.1s;
+}
+.shop-offer-info:hover { background: var(--accent-dim); border-color: var(--accent); }
+
 .shop-offer, .meta-offer {
   display: block;
+  flex: 1;
   width: 100%;
   text-align: left;
   padding: 10px 14px;
-  margin: 5px 0;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface-alt);
@@ -303,8 +386,6 @@ body {
   #last-play { color: #5dba7d; }
 
   .none-label { color: #555; }
-
-  .relic-entry { border-bottom-color: #555; }
 
   .shop-offer, .meta-offer {
     background: #1d1f23;

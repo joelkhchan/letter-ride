@@ -116,6 +116,54 @@ function showTilePicker(run, offer) {
   document.body.appendChild(overlay);
 }
 
+// Show a small inline popover anchored below the tapped chip element.
+// Tapping the same chip again, or tapping elsewhere, dismisses it.
+function showDescPopover(anchorEl, name, desc) {
+  // Dismiss any existing popover first.
+  const old = document.getElementById('desc-popover');
+  if (old) {
+    // If re-tapping the same chip, just close (toggle off).
+    if (old.dataset.anchor === anchorEl.dataset.popoverKey) { old.remove(); return; }
+    old.remove();
+  }
+
+  const popover = document.createElement('div');
+  popover.id = 'desc-popover';
+  popover.dataset.anchor = anchorEl.dataset.popoverKey;
+  popover.innerHTML = `<span class="desc-pop-name">${name}</span><span class="desc-pop-text">${desc}</span><button class="desc-pop-close" aria-label="Close">x</button>`;
+
+  // Insert popover right after the anchor in the DOM.
+  anchorEl.insertAdjacentElement('afterend', popover);
+
+  const closeBtn = popover.querySelector('.desc-pop-close');
+  if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); popover.remove(); };
+
+  // Dismiss on tap-away (capture phase so it fires before any new tap-on-chip).
+  function onDocTap(e) {
+    if (!popover.isConnected) { document.removeEventListener('click', onDocTap, { capture: true }); return; }
+    if (!popover.contains(e.target) && e.target !== anchorEl) {
+      popover.remove();
+      document.removeEventListener('click', onDocTap, { capture: true });
+    }
+  }
+  // Delay one tick so the tap that opened it doesn't immediately close it.
+  setTimeout(() => document.addEventListener('click', onDocTap, { capture: true }), 0);
+}
+
+// Wire tap-to-reveal handlers on chips inside a container element.
+// Chips must have data-pop-name and data-pop-desc attributes.
+function wireDescPopovers(containerEl) {
+  if (!containerEl) return;
+  containerEl.querySelectorAll('[data-pop-name]').forEach((chip, idx) => {
+    chip.dataset.popoverKey = `chip-${idx}`;
+    chip.style.cursor = 'pointer';
+    chip.onclick = (e) => {
+      e.stopPropagation();
+      showDescPopover(chip, chip.getAttribute('data-pop-name'), chip.getAttribute('data-pop-desc'));
+    };
+  });
+}
+
 // Build relics + tile-mods panel HTML (always rendered during play and shop).
 // stagedBreakdown: optional breakdown object from scoreWord when a word is staged.
 function relicsModsPanelHtml(run, stagedBreakdown) {
@@ -129,12 +177,16 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
       for (const p of stagedBreakdown.timesMultParts) contributions[p.label] = `×${p.amount} Mult`;
       relicsText = run.relics.map(r => {
         const contrib = contributions[r.name] || '·';
-        return `<span class="relic-entry" title="${r.desc || ''}">${r.name}: <b>${contrib}</b></span>`;
+        const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
+        const safeName = (r.name || '').replace(/"/g, '&quot;');
+        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${r.name}: <b>${contrib}</b></span>`;
       }).join(' · ');
     } else {
-      relicsText = run.relics.map(r =>
-        `<span class="relic-entry" title="${r.desc || ''}">${r.name} · ${r.desc || ''}</span>`
-      ).join(' · ');
+      relicsText = run.relics.map(r => {
+        const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
+        const safeName = (r.name || '').replace(/"/g, '&quot;');
+        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${r.name}</span>`;
+      }).join(' · ');
     }
   } else {
     relicsText = '<span class="none-label">none yet</span>';
@@ -147,8 +199,13 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
   ];
   const moddedTiles = allTiles.filter(t => t.mods && t.mods.length);
   const modsText = moddedTiles.length
-    ? moddedTiles.map(t => `${t.letter}:${t.mods.map(m => m.name || m.id).join('+')}`)
-        .join(', ')
+    ? moddedTiles.map(t => {
+        const modsLabel = t.mods.map(m => m.name || m.id).join('+');
+        const modsDesc = t.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ');
+        const safeDesc = modsDesc.replace(/"/g, '&quot;');
+        const safeName = (`${t.letter}: ${modsLabel}`).replace(/"/g, '&quot;');
+        return `<span class="mod-chip tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${t.letter}:${modsLabel}</span>`;
+      }).join(', ')
     : '<span class="none-label">none yet</span>';
 
   // Hone levels: show only archetypes with level > 0.
@@ -157,8 +214,9 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
   const honeText = activeHones.length
     ? activeHones.map(([id, lvl]) => {
         const a = ARCHETYPES[id];
-        const titleAttr = a?.desc ? ` title="${a.desc}"` : '';
-        return `<span class="hone-entry"${titleAttr}>${a?.name || id} Lv${lvl}</span>`;
+        const safeDesc = (a?.desc || '').replace(/"/g, '&quot;');
+        const safeName = (a?.name || id).replace(/"/g, '&quot;');
+        return `<span class="hone-entry tappable-chip" data-pop-name="${safeName} Lv${lvl}" data-pop-desc="${safeDesc}">${a?.name || id} Lv${lvl}</span>`;
       }).join(', ')
     : '<span class="none-label">none yet</span>';
 
@@ -379,6 +437,7 @@ export function renderRun(run) {
   on('new', () => { selection = []; lastShownScore = null; handlers.onRunEnd?.(); });
   on('shuffle', () => { handlers.onShuffle?.(); });
   on('help-btn', () => showHelpOverlay());
+  wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
 // Keyboard handler — exported so main.js can wire it.
@@ -428,7 +487,7 @@ function renderNodeChoice(run) {
 
   app().innerHTML = `
     <div id="hud">
-      <div>Round ${run.roundIndex + 1}/${run.targets.length} · Node</div>
+      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} &middot; Node</div>
       <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
       <div id="coins">$${coins}</div>
     </div>
@@ -445,6 +504,7 @@ function renderNodeChoice(run) {
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('pick-shop', () => handlers.onPickShop?.());
   on('pick-event', () => handlers.onPickEvent?.());
+  wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
 function renderEventOneShot(run) {
@@ -461,7 +521,7 @@ function renderEventOneShot(run) {
 
   app().innerHTML = `
     <div id="hud">
-      <div>Round ${run.roundIndex + 1}/${run.targets.length} · Event</div>
+      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} &middot; Event</div>
       <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
       <div id="coins">$${coins}</div>
     </div>
@@ -513,13 +573,14 @@ function renderEventOneShot(run) {
       };
     }
   });
+  wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
 function renderEventDone(run, ev) {
   const coins = run.coins || 0;
   app().innerHTML = `
     <div id="hud">
-      <div>Round ${run.roundIndex + 1}/${run.targets.length} · Event</div>
+      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} &middot; Event</div>
       <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
       <div id="coins">$${coins}</div>
     </div>
@@ -532,6 +593,7 @@ function renderEventDone(run, ev) {
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('continue-btn', () => { selection = []; handlers.onContinue?.(); });
+  wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
 // Show an overlay for picking N tiles from the bag (used by Redaction event).
@@ -658,7 +720,7 @@ function renderPress(run) {
 
   app().innerHTML = `
     <div id="hud">
-      <div>Round ${run.roundIndex + 1}/${run.targets.length} · The Press</div>
+      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} &middot; The Press</div>
       <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
       <div id="coins">$${coins}</div>
     </div>
@@ -681,6 +743,31 @@ function renderPress(run) {
   on('press-draw', () => handlers.onPressDraw?.());
   on('press-bank', () => handlers.onPressBank?.());
   on('continue-btn', () => { selection = []; handlers.onContinue?.(); });
+  wireDescPopovers(document.getElementById('relics-mods-panel'));
+}
+
+// Return { name, desc } for offer types that have a description worth surfacing.
+// Returns null when there is no extra description (letter buy, upgrade, thin).
+function offerInfoData(offer) {
+  switch (offer.type) {
+    case 'buyEnchantedTile':
+    case 'enchantTile': {
+      const mod = getMod(offer.modId);
+      if (!mod?.desc) return null;
+      return { name: mod.name || offer.modId, desc: mod.desc };
+    }
+    case 'buyRelic': {
+      const relic = RELICS[offer.relicId];
+      if (!relic?.desc) return null;
+      return { name: relic.name || offer.relicId, desc: relic.desc };
+    }
+    case 'hone': {
+      const arch = ARCHETYPES[offer.archetypeId];
+      if (!arch?.desc) return null;
+      return { name: arch.name || offer.archetypeId, desc: arch.desc };
+    }
+    default: return null;
+  }
 }
 
 function renderShop(run) {
@@ -691,7 +778,11 @@ function renderShop(run) {
   const offersHtml = shop.offers.map((offer, i) => {
     const label = offerLabel(offer);
     const disabled = !canAfford(offer.cost) ? 'disabled' : '';
-    return `<button class="shop-offer" data-idx="${i}" ${disabled}>${label}</button>`;
+    const info = offerInfoData(offer);
+    const infoBtn = info
+      ? `<button class="shop-offer-info" data-shop-idx="${i}" aria-label="More info" tabindex="0">?</button>`
+      : '';
+    return `<div class="shop-offer-row">${infoBtn}<button class="shop-offer" data-idx="${i}" ${disabled}>${label}</button></div>`;
   }).join('');
 
   const rerollDisabled = !canAfford(shop.rerollCost) ? 'disabled' : '';
@@ -705,7 +796,7 @@ function renderShop(run) {
 
   app().innerHTML = `
     <div id="hud">
-      <div>Round ${run.roundIndex + 1}/${run.targets.length} · Shop</div>
+      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} &middot; Shop</div>
       <div><b>${run.roundTotal}</b> / ${run.target} Score ✓</div>
       <div id="coins">$${coins}</div>
     </div>
@@ -735,11 +826,23 @@ function renderShop(run) {
         }
       }
     };
+
+    // Wire info (?) button if present.
+    const infoBtn = app().querySelector(`.shop-offer-info[data-shop-idx="${i}"]`);
+    if (infoBtn) {
+      const info = offerInfoData(offer);
+      infoBtn.onclick = (e) => {
+        e.stopPropagation();
+        showDescPopover(infoBtn, info.name, info.desc);
+      };
+      infoBtn.dataset.popoverKey = `shop-info-${i}`;
+    }
   });
 
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('reroll', () => handlers.onReroll?.());
   on('continue', () => { selection = []; handlers.onContinue?.(); });
+  wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
 function showStatsOverlay(summary) {
