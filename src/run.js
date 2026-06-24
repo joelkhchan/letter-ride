@@ -5,6 +5,13 @@ import { validate, isLegalSelection } from './word.js';
 import { scoreWord } from './scoring.js';
 import { honeModifiers } from './archetypes.js';
 
+// Encounter structure: the target ladder is PASSAGES groups of (Word, Phrase, Sentence).
+// roundIndex (0-based) is the flat encounter counter; Passage/tier/boss-ness derive from it.
+export const TIERS = ['Word', 'Phrase', 'Sentence'];
+export function passageOf(roundIndex) { return Math.floor(roundIndex / 3) + 1; }
+export function tierOf(roundIndex) { return TIERS[roundIndex % 3]; }
+export function isBossRound(roundIndex) { return roundIndex % 3 === 2; }
+
 const sumExtraPlays = (relics = []) => relics.reduce((n, r) => n + (r.extraPlays || 0), 0);
 
 // Model B: fill the hand up to RACK_SIZE from the depleting draw-pile.

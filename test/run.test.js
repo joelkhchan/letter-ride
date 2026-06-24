@@ -306,3 +306,14 @@ test('newRun initializes relicState; snowball ratchets on a qualifying play', ()
   playWord(run, selection);
   assert.equal(run.relicState.rareAvalanche.stacks, 1); // ratcheted once (JAR has a rare letter)
 });
+
+// ── Task 2: Passage/tier derivation helpers ───────────────────────────────────
+
+import { passageOf, tierOf, isBossRound, TIERS } from '../src/run.js';
+
+test('Passage/tier derivation over 12 encounters', () => {
+  assert.deepEqual(TIERS, ['Word', 'Phrase', 'Sentence']);
+  assert.deepEqual([0,1,2,3,11].map(passageOf), [1,1,1,2,4]);
+  assert.deepEqual([0,1,2].map(tierOf), ['Word','Phrase','Sentence']);
+  assert.deepEqual([0,1,2,5,11].map(isBossRound), [false,false,true,true,true]);
+});
