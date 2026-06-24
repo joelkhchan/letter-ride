@@ -4,20 +4,8 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
   const word = letters.join('');
   const ctx = { word, letters, selection, ...context };
 
-  // Phase 1 — base Points
-  const base = selection.reduce(
-    (s, { tile, letter }) => s + (tile.letter === '*' ? 0 : (tileValues[letter.toUpperCase()] || 0)),
-    0
-  );
-  const lengthBonus = Math.max(0, letters.length - 3) * lengthBonusPerLetter;
-  let points = base + lengthBonus;
-
-  let addMult = 0, timesMult = 1;
-
-  // Breakdown tracking
-  const pointParts = [];
-  const addMultParts = [];
-  const timesMultParts = [];
+  let points = 0, addMult = 0, timesMult = 1;
+  const pointParts = [], addMultParts = [], timesMultParts = [];
 
   const apply = (d, label) => {
     if (!d) return;
@@ -26,9 +14,26 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
     if (d.timesMult && d.timesMult !== 1) { timesMult *= d.timesMult; timesMultParts.push({ label, amount: d.timesMult }); }
   };
 
-  for (const relic of relics) apply(relic.evaluate?.(ctx), relic.name || relic.id);   // global
-  for (const { tile } of selection)                                                     // tile-mods
-    for (const mod of (tile.mods || [])) apply(mod.evaluate?.(tile, ctx), mod.name || mod.id);
+  // Word-level relics fire ONCE (kept first, preserving breakdown order).
+  for (const relic of relics) apply(relic.evaluate?.(ctx), relic.name || relic.id);
+
+  // Per-tile: base value + the tile's OWN mods, each counted `times = 1 + retrigger`.
+  // Retrigger replays a tile's own contribution only; it never re-fires word-level relics or
+  // the length bonus. Looping `apply()` (not scaling) makes a retriggered ×Mult mod compound.
+  let base = 0;
+  for (const { tile, letter } of selection) {
+    const baseVal = tile.letter === '*' ? 0 : (tileValues[letter.toUpperCase()] || 0);
+    let retrigger = 0;
+    for (const mod of (tile.mods || [])) retrigger += (mod.evaluate?.(tile, ctx)?.retrigger || 0);
+    for (const relic of relics) retrigger += (relic.retriggerTile?.(tile, ctx) || 0);
+    const times = 1 + retrigger;
+    base += baseVal * times;
+    for (const mod of (tile.mods || []))
+      for (let i = 0; i < times; i++) apply(mod.evaluate?.(tile, ctx), mod.name || mod.id);
+  }
+
+  const lengthBonus = Math.max(0, letters.length - 3) * lengthBonusPerLetter;  // word-level, once
+  points += base + lengthBonus;
 
   const mult = (1 + addMult) * timesMult;                            // +Mult then ×Mult
   const breakdown = { base, lengthBonus, pointParts, addMultParts, timesMultParts };

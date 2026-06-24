@@ -57,3 +57,70 @@ test('phase order is enforced regardless of relic array order', () => {
   assert.equal(a.score, 45);   // 5 × ((1+2) × 3)
   assert.equal(b.score, 45);   // identical regardless of order
 });
+
+// --- Retrigger tests ---
+
+const V = { A: 1, B: 2, Q: 10 };          // tiny fixture tileValues
+const selR = (...specs) => specs.map(([letter, mods = []]) => ({ tile: { letter, mods }, letter }));
+const opts = (relics = []) => ({ tileValues: V, lengthBonusPerLetter: 1, relics, context: {} });
+
+test('retrigger: a tile-mod {retrigger:1} counts the tile base value twice', () => {
+  const r = scoreWord(selR(['A', [{ evaluate: () => ({ retrigger: 1 }) }]], ['B']), opts());
+  // base = A*2 + B*1 = 2 + 2 = 4 ; no lengthBonus (len 2 <= 3) ; mult 1
+  assert.equal(r.breakdown.base, 4);
+  assert.equal(r.points, 4);
+  assert.equal(r.score, 4);
+});
+
+test('retrigger: a tile prints ALL its mods `times`; a timesMult mod is squared (looped, not scaled)', () => {
+  const tileMods = [{ evaluate: () => ({ retrigger: 1 }) }, { evaluate: () => ({ timesMult: 2 }) }];
+  const r = scoreWord(selR(['A', tileMods]), opts());
+  // base = A*2 = 2 ; timesMult applied twice => 2*2 = 4 ; mult = (1+0)*4 = 4 ; score = 2*4 = 8
+  assert.equal(r.breakdown.base, 2);
+  assert.equal(r.mult, 4);
+  assert.equal(r.score, 8);
+});
+
+test('retrigger: relic.retriggerTile fires per matching tile; word-level relic.evaluate fires ONCE', () => {
+  const firstTileRelic = {
+    name: 'FT',
+    retriggerTile: (tile, ctx) => (ctx.selection[0].tile === tile ? 1 : 0),
+    evaluate: () => ({ addPoints: 100 }),   // word-level: must count once despite the retrigger
+  };
+  const r = scoreWord(selR(['A'], ['B']), opts([firstTileRelic]));
+  // base = A*2 (first tile retriggered) + B*1 = 2 + 2 = 4 ; relic +100 ONCE ; points = 104
+  assert.equal(r.breakdown.base, 4);
+  assert.equal(r.points, 104);
+});
+
+test('retrigger: length bonus is word-level (counted once, not multiplied)', () => {
+  const r = scoreWord(selR(['A', [{ evaluate: () => ({ retrigger: 1 }) }]], ['B'], ['A'], ['B']), opts());
+  // len 4 word => lengthBonus = (4-3)*1 = 1 (once) ; base = A*2 + B + A + B = 2+2+1+2 = 7 ; points = 8
+  assert.equal(r.breakdown.lengthBonus, 1);
+  assert.equal(r.breakdown.base, 7);
+  assert.equal(r.points, 8);
+});
+
+test('retrigger: phase order holds with mixed addMult + timesMult retriggered', () => {
+  const mods = [{ evaluate: () => ({ retrigger: 1 }) }, { evaluate: () => ({ addMult: 1 }) }, { evaluate: () => ({ timesMult: 2 }) }];
+  const r = scoreWord(selR(['A', mods]), opts());
+  // addMult applied twice => +2 => (1+2)=3 ; timesMult applied twice => 4 ; mult = 3*4 = 12
+  assert.equal(r.mult, 12);
+});
+
+test('retrigger: a Wild (base 0) retriggers to 0, no NaN', () => {
+  const r = scoreWord(selR(['*', [{ evaluate: () => ({ retrigger: 2 }) }]]), opts());
+  assert.equal(r.breakdown.base, 0);
+  assert.equal(Number.isFinite(r.score), true);
+});
+
+test('no retrigger: behavior unchanged (relic +Points, mod +Mult, base, length)', () => {
+  const relic = { name: 'R', evaluate: () => ({ addPoints: 5 }) };
+  const mod = { name: 'M', evaluate: () => ({ addMult: 1 }) };
+  const r = scoreWord(selR(['A', [mod]], ['B'], ['Q'], ['A']), opts([relic]));
+  // base = 1+2+10+1 = 14 ; lengthBonus = (4-3)*1 = 1 ; +5 relic => points = 20 ; addMult 1 => mult 2 ; score 40
+  assert.equal(r.breakdown.base, 14);
+  assert.equal(r.points, 20);
+  assert.equal(r.mult, 2);
+  assert.equal(r.score, 40);
+});
