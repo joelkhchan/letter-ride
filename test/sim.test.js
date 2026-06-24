@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { legalWords, bestPlay, scoreFor } from '../src/sim.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
-import { greedyAgent } from '../src/agents.js';
+import { greedyAgent, randomAgent } from '../src/agents.js';
 import { randomPlay } from '../src/sim.js';
 import { RELICS } from '../src/relics.js';
 
@@ -495,4 +495,14 @@ test('summarizePersona aggregates margin + gap percentiles and exposes per-seed 
   assert.deepEqual(s.wonFlags, [true, false]);
   assert.ok('clearMargin' in s && 'p50' in s.clearMargin);
   assert.ok('decisionGap' in s && 'p50' in s.decisionGap);
+});
+
+// ── Task 8: runPersona accepts a play-policy factory (agentFor) ───────────────
+
+test('runPersona accepts an agentFor and reports per-seed win flags', () => {
+  const persona = { id: 'shortWord', name: 'Short', bagId: 'standard', targetRelicIds: [], targetHoneId: 'shortWord' };
+  const seeds = [1, 2, 3];
+  const s = runPersona({ config: configB, dictionary: dictB, words: wordsB, persona, seeds, agentFor: (shop) => randomAgent(shop) });
+  assert.equal(s.wonFlags.length, 3);
+  assert.equal(typeof s.winRate, 'number');
 });
