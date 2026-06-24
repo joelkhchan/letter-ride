@@ -6,7 +6,10 @@ export function makeRng(seed) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  rng.getState = () => a;
+  // getState mirrors setState's unsigned coercion so state round-trips exactly
+  // (setState(getState()) is identity). The generator does `a |= 0` on first use,
+  // so the unsigned and signed 32-bit forms are equivalent for the sequence.
+  rng.getState = () => a >>> 0;
   rng.setState = (s) => { a = s >>> 0; };
   return rng;
 }

@@ -26,30 +26,34 @@ import { honeModifiers } from './archetypes.js';
 import { newRun, playWord, discard, nextRound } from './run.js';
 import { generateShop, purchase } from './shop.js';
 import { legalWords, selectionFor } from './enumerate.js';
+import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 
 export { legalWords };   // sim.js historically re-exported legalWords; keep that surface
 
-// Reconstruct the scoring options playWord will use, so we can rank candidate words faithfully.
-function scoringOpts(run) {
-  return {
-    tileValues: run.tileValues,
+// Faithful mirror of playWord's scoring: relicState in context + boss warps (disable/cap/tax).
+// run.boss is set per Sentence encounter by run.js, so this is LIVE on boss rounds.
+export function scoreFor(run, selection) {
+  const boss = run.boss ? BOSSES[run.boss] : null;
+  const scored = scoreWord(selection, {
+    tileValues: bossTileValues(run.tileValues, boss),
     lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
     relics: [...run.relics, ...honeModifiers(run.honeLevels)],
     context: {
       wordsPlayedThisRound: run.wordsPlayedThisRound,
       enablers: run.relics.filter(r => r.enabler).map(r => r.enabler),
+      relicState: run.relicState,
     },
-  };
+  });
+  return applyBossToScore(scored, boss);
 }
 
 export function bestPlay(run, wordList) {
   const words = legalWords(run.rack.map(t => t.letter), wordList, run.config.MIN_WORD_LEN);
-  const opts = scoringOpts(run);
   let best = null, bestScore = -Infinity;
   for (const w of words) {
     const selection = selectionFor(w, run.rack);
     if (!selection) continue;
-    const score = scoreWord(selection, opts).score;
+    const score = scoreFor(run, selection).score;
     if (score > bestScore) { bestScore = score; best = { word: w, selection, score }; }
   }
   return best;

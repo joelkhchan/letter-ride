@@ -1,10 +1,11 @@
 // test/sim.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { legalWords, bestPlay } from '../src/sim.js';
+import { legalWords, bestPlay, scoreFor } from '../src/sim.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
 import { greedyAgent } from '../src/agents.js';
 import { randomPlay } from '../src/sim.js';
+import { RELICS } from '../src/relics.js';
 
 const WORDS = ['CAT', 'ACT', 'AT', 'CATS', 'DOG'];
 
@@ -450,4 +451,27 @@ test('simulateRun with an explicit greedy agent matches the default (no agent) r
   const b = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 5, agent: greedyAgent() });
   assert.equal(a.roundReached, b.roundReached);
   assert.equal(a.won, b.won);
+});
+
+// ── Task 4: boss-aware, relicState-aware scoreFor ─────────────────────────────
+
+test('scoreFor ranks a snowball word using its current stacks', () => {
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  const sel = bestPlay(run, wordsB).selection; // CAT (rack always holds C,A,T)
+  run.relics = [RELICS.perpetualEngine]; // timesMult per stack, condition always true
+  run.relicState = { perpetualEngine: { stacks: 0 } };
+  const base = scoreFor(run, sel).score;
+  run.relicState = { perpetualEngine: { stacks: 5 } };
+  const boosted = scoreFor(run, sel).score;
+  assert.ok(boosted > base, 'more stacks => higher score');
+});
+
+test('scoreFor applies the boss warp (mute zeroes vowels in ranking)', () => {
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  const sel = bestPlay(run, wordsB).selection; // CAT contains the vowel A
+  run.boss = null;
+  const normal = scoreFor(run, sel).score;
+  run.boss = 'mute';
+  const muted = scoreFor(run, sel).score;
+  assert.ok(muted <= normal, 'mute (vowels score 0) cannot raise the score');
 });
