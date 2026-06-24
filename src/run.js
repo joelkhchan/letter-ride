@@ -4,6 +4,7 @@ import { makeRng, shuffle } from './rng.js';
 import { validate, isLegalSelection } from './word.js';
 import { scoreWord } from './scoring.js';
 import { honeModifiers } from './archetypes.js';
+import { BOSSES, ALL_BOSS_IDS, bossTileValues, applyBossToScore } from './bosses.js';
 
 // Encounter structure: the target ladder is PASSAGES groups of (Word, Phrase, Sentence).
 // roundIndex (0-based) is the flat encounter counter; Passage/tier/boss-ness derive from it.
@@ -11,6 +12,17 @@ export const TIERS = ['Word', 'Phrase', 'Sentence'];
 export function passageOf(roundIndex) { return Math.floor(roundIndex / 3) + 1; }
 export function tierOf(roundIndex) { return TIERS[roundIndex % 3]; }
 export function isBossRound(roundIndex) { return roundIndex % 3 === 2; }
+
+// Set run.boss for the current encounter (a boss id on Sentence encounters, else null) and apply
+// any setup-time warp (lock). Called at newRun and on each nextRound. The boss OBJECT is BOSSES[run.boss].
+function applyEncounterBoss(run) {
+  run.boss = null;
+  if (!isBossRound(run.roundIndex)) return;
+  const passageIdx = passageOf(run.roundIndex) - 1;                     // 0-based passage
+  run.boss = (run.bossOrder && run.bossOrder[passageIdx % run.bossOrder.length]) || null;
+  const boss = run.boss ? BOSSES[run.boss] : null;
+  if (boss && boss.warp.verb === 'lock' && boss.warp.lock === 'discard') run.discardsLeft = 0;
+}
 
 const sumExtraPlays = (relics = []) => relics.reduce((n, r) => n + (r.extraPlays || 0), 0);
 
@@ -90,8 +102,11 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     wordsPlayedThisRound: 0,
     stake, deck,
     status: 'playing',
+    bossOrder: shuffle([...ALL_BOSS_IDS], makeRng((seed ^ 0x9e3779b9) >>> 0)),   // seeded, separate stream
+    boss: null,
   };
   startRound(run);
+  applyEncounterBoss(run);
   return run;
 }
 
@@ -110,13 +125,15 @@ export function playWord(run, selection) {
       st.stacks += 1;
     }
   }
+  const boss = run.boss ? BOSSES[run.boss] : null;
   const allMods = [...run.relics, ...honeModifiers(run.honeLevels)];
-  const scored = scoreWord(selection, {
-    tileValues: run.tileValues,
+  const scored0 = scoreWord(selection, {
+    tileValues: bossTileValues(run.tileValues, boss),        // disable: vowels zeroed (else same ref)
     lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
     relics: allMods,
     context: { wordsPlayedThisRound: run.wordsPlayedThisRound, enablers, relicState: run.relicState },
   });
+  const scored = applyBossToScore(scored0, boss);            // cap/tax (else unchanged)
   run.roundTotal += scored.score;
   run.wordsPlayedThisRound += 1;
   run.playsLeft -= 1;
@@ -151,5 +168,6 @@ export function nextRound(run) {
   run.wordsPlayedThisRound = 0;
   run.status = 'playing';
   startRound(run);
+  applyEncounterBoss(run);
   return run;
 }

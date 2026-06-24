@@ -190,11 +190,12 @@ const dictB = dictCat;
 const wordsB = wordsCat;
 
 test('simulateRun with a purchase policy acquires the target relic and out-progresses no-shop', () => {
-  // seed=1 is verified to give an initial rack of [A,T,C] → CAT is playable every draw.
+  // seed=3: rack always holds C,A,T (CAT playable every draw); boss at Sentence=Ceiling (caps mult at 4,
+  // harmless since shortAndSweet is ×3 → still 15 pts; no-score warp like Toll avoided).
   // pool restricted to shortAndSweet so generateShop always includes it; policy buys it after round 1.
-  const noShopRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 1 });
+  const noShopRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 3 });
   const policy = buildPurchasePolicy({ targetRelicIds: ['shortAndSweet'], maxRerolls: 5, pool: { relicIds: ['shortAndSweet'] } });
-  const buyRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 1, policy });
+  const buyRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 3, policy });
   // Without relic: 5+5=10 < 12, loses at round 2 → roundReached=2. With relic: 15≥12, wins all → roundReached=3.
   assert.ok(buyRes.roundReached > noShopRes.roundReached, 'shopping out-progresses no-shop (strict)');
   assert.equal(buyRes.won, true, 'buy persona wins the run');

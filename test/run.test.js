@@ -317,3 +317,49 @@ test('Passage/tier derivation over 12 encounters', () => {
   assert.deepEqual([0,1,2].map(tierOf), ['Word','Phrase','Sentence']);
   assert.deepEqual([0,1,2,5,11].map(isBossRound), [false,false,true,true,true]);
 });
+
+// ── Task 3: Boss selection + warp application ─────────────────────────────────
+
+import { BOSSES } from '../src/bosses.js';
+
+// Use already-imported newRun/playWord/nextRound as aliases (static import at top of file).
+const newRunB = newRun;
+const playWordB = playWord;
+const nextRoundB = nextRound;
+
+const bossCfg = {
+  STARTING_BAG: ['A','E','I','O','R','S','T','N','L','D','C','B'],
+  TILE_VALUES: { A:1,E:1,I:1,O:1,R:1,S:1,T:1,N:1,L:1,D:2,C:3,B:3 },
+  RACK_SIZE: 9, PLAYS_PER_ROUND: 4, DISCARDS_PER_ROUND: 2, MIN_WORD_LEN: 3,
+  LENGTH_BONUS_PER_LETTER: 5, COINS_ON_CLEAR: null,
+  ROUND_TARGETS: [9999,9999,9999, 9999,9999,9999, 9999,9999,9999, 9999,9999,9999],   // never auto-clear
+};
+const dictBoss = makeDictionary(['rat','rate','oat']);
+
+test('bossOrder is seeded + deterministic + one of each boss', () => {
+  const a = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
+  const b = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
+  assert.deepEqual(a.bossOrder, b.bossOrder);
+  assert.deepEqual([...a.bossOrder].sort(), ['ceiling','mute','toll','vise']);
+  assert.equal(a.boss, null);                 // encounter 0 is a Word, no boss
+});
+
+test('The Vise zeroes discards on its boss encounter', () => {
+  // Force a run whose first Sentence boss is vise: spin nextRound to a Sentence and set bossOrder.
+  const run = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
+  run.bossOrder = ['vise','mute','toll','ceiling'];        // passage 1's boss = vise
+  nextRoundB(run); nextRoundB(run);                        // advance to roundIndex 2 (Passage 1 Sentence)
+  assert.equal(run.boss, 'vise');
+  assert.equal(run.discardsLeft, 0);                       // lock applied at encounter setup
+});
+
+test('The Toll taxes the played word on its boss encounter', () => {
+  const run = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
+  run.bossOrder = ['toll','mute','vise','ceiling'];
+  nextRoundB(run); nextRoundB(run);                        // Passage 1 Sentence, boss = toll
+  assert.equal(run.boss, 'toll');
+  run.rack = ['R','A','T'].map((l,i) => ({ id:'z'+i, letter:l, mods:[] }));
+  const sel = run.rack.map(t => ({ tile:t, letter:t.letter }));
+  const r = playWordB(run, sel);                           // RAT = 3 points, mult 1 => 3, minus 15 tax => 0
+  assert.equal(r.scored.score, 0);
+});
