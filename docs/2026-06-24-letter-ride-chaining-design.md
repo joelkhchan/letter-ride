@@ -36,9 +36,11 @@ In `playWord`, **before scoring**, compute this word's chain length:
 - else if this word's **first letter** equals `run.lastWord.lastLetter` → `chainLength = run.chainLength + 1` (continues);
 - else → `chainLength = 1` (chain broke; this word restarts a chain of length 1).
 
-A **Wild (`*`) at either boundary chains with anything** (wildcard semantics, consistent with the
-dead-hand "wild rescues" rule): if this word's first letter is `*`, or the previous last letter was
-`*`, or they are equal, the chain continues.
+The chain compares the **spelled letters** of the selection (`selection[0].letter` and the last
+entry's `letter`). Wilds are **not spellable into words yet** (a deferred feature: `dictionary.findWord`
+cannot place a wild, and the harness treats wilds as non-letters), so no special wild handling is
+needed now; if wilds become spellable later, a wild played *as* a letter chains on that letter
+naturally (the comparison already uses the played-as `letter`).
 
 Pass `chainLength` into the scoring context. **After scoring**, set `run.lastWord = { lastLetter }`
 (this word's last letter) and `run.chainLength = chainLength`. Reset both (`lastWord = null`,
@@ -91,8 +93,7 @@ deserialize.
 ## 7. Testing
 
 `test/run.test.js` (extend): `playWord` sets `chainLength = 1` on the first word; continues
-(`+1`) when the next word's first letter matches the previous last letter; resets to 1 on a break; a
-Wild at either boundary continues the chain; `chainLength` resets to 0 at `nextRound`; `chainLength` is
+(`+1`) when the next word's first letter matches the previous last letter; resets to 1 on a break; `chainLength` resets to 0 at `nextRound`; `chainLength` is
 present in the context passed to scoring (assert via a chain relic's effect end-to-end).
 `test/relics.test.js`: Chain Reaction's `×Mult` and Through-Line's `+Points` scale with `chainLength`
 (neutral at 1). `test/storage.test.js`: a mid-round `lastWord` + `chainLength` round-trip; v5 save
@@ -106,7 +107,7 @@ to the bot; confirms no break).
 | C1 | Chain relation (v1) | **Letter-chain**: this word's first letter == previous word's last letter |
 | C2 | Gating | Relic-gated reward, always-tracked state (opt-in build; no balance disturbance) |
 | C3 | Escalation | Bonus scales with links (`chainLength - 1`); within-round combo |
-| C4 | Wild handling | A Wild at either boundary chains with anything (wildcard, like dead-hand) |
+| C4 | Wild handling | None needed: chain compares spelled letters; wilds aren't spellable yet (future-proof: a played-as wild chains as its letter) |
 | C5 | Engine | `run.js` tracks + passes `chainLength` in context; **scoring.js untouched** |
 | C6 | Content | 2 relics: Chain Reaction (×Mult-scaling) + Through-Line (+Points); magnitudes author-owned |
 | C7 | Legibility | A chain indicator (length + continue-letter) near the rack; render-only |
