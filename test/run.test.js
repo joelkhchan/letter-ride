@@ -363,3 +363,69 @@ test('The Toll taxes the played word on its boss encounter', () => {
   const r = playWordB(run, sel);                           // RAT = 3 points, mult 1 => 3, minus 15 tax => 0
   assert.equal(r.scored.score, 0);
 });
+
+// ── Task 4: offerNode — seeded node-event offer ───────────────────────────────
+
+import { offerNode } from '../src/run.js';
+import { ALL_EVENT_IDS } from '../src/events.js';
+
+const nodeConfig = {
+  STARTING_BAG: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'],  // 15 tiles (> RACK_SIZE + 3)
+  TILE_VALUES: { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1 },
+  RACK_SIZE: 7, PLAYS_PER_ROUND: 3, DISCARDS_PER_ROUND: 1, MIN_WORD_LEN: 3,
+  LENGTH_BONUS_PER_LETTER: 5, ROUND_TARGETS: [999,999,999,999],
+};
+const dictNode = makeDictionary(['cat']);
+
+test('newRun initializes nodeEventId to null', () => {
+  resetTileIds();
+  const run = newRun({ config: nodeConfig, dictionary: dictNode, seed: 42 });
+  assert.equal(run.nodeEventId, null);
+});
+
+test('offerNode sets nodeEventId to a valid event id', () => {
+  resetTileIds();
+  const run = newRun({ config: nodeConfig, dictionary: dictNode, seed: 42 });
+  offerNode(run);
+  assert.ok(ALL_EVENT_IDS.includes(run.nodeEventId), `nodeEventId '${run.nodeEventId}' should be a known event id`);
+});
+
+test('offerNode is deterministic: same seed+roundIndex => same offer', () => {
+  resetTileIds();
+  const runA = newRun({ config: nodeConfig, dictionary: dictNode, seed: 77 });
+  const runB = newRun({ config: nodeConfig, dictionary: dictNode, seed: 77 });
+  offerNode(runA);
+  offerNode(runB);
+  assert.equal(runA.nodeEventId, runB.nodeEventId);
+});
+
+test('offerNode produces different offers for different seeds', () => {
+  resetTileIds();
+  const results = new Set();
+  for (let seed = 1; seed <= 20; seed++) {
+    const run = newRun({ config: nodeConfig, dictionary: dictNode, seed });
+    offerNode(run);
+    results.add(run.nodeEventId);
+  }
+  // With 5 events and 20 different seeds, we should see more than 1 distinct result
+  assert.ok(results.size > 1, 'offerNode should produce varied results across seeds');
+});
+
+test('offerNode respects canOffer: inkMerchant excluded when coins < 5 and is only candidate', () => {
+  resetTileIds();
+  // inkMerchant canOffer requires coins >= 5 AND relics.length < ALL_RELIC_IDS.length
+  // We construct a run where ONLY inkMerchant could have been eligible but coins < 5,
+  // so all events with other restrictions are also filtered, and the fallback is a still-eligible event or null.
+  // More directly: create a run with coins=0 and verify inkMerchant is never chosen.
+  const run = newRun({ config: nodeConfig, dictionary: dictNode, seed: 42 });
+  run.coins = 0;  // inkMerchant requires coins >= 5
+
+  // Run offerNode many times (different roundIndex values) to see if inkMerchant ever appears
+  let inkMerchantChosen = false;
+  for (let i = 0; i < 50; i++) {
+    run.roundIndex = i;
+    offerNode(run);
+    if (run.nodeEventId === 'inkMerchant') inkMerchantChosen = true;
+  }
+  assert.equal(inkMerchantChosen, false, 'inkMerchant should never be offered when coins < 5');
+});

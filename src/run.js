@@ -5,6 +5,7 @@ import { validate, isLegalSelection } from './word.js';
 import { scoreWord } from './scoring.js';
 import { honeModifiers } from './archetypes.js';
 import { BOSSES, ALL_BOSS_IDS, bossTileValues, applyBossToScore } from './bosses.js';
+import { EVENTS, ALL_EVENT_IDS } from './events.js';
 
 // Encounter structure: the target ladder is PASSAGES groups of (Word, Phrase, Sentence).
 // roundIndex (0-based) is the flat encounter counter; Passage/tier/boss-ness derive from it.
@@ -104,10 +105,21 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     status: 'playing',
     bossOrder: shuffle([...ALL_BOSS_IDS], makeRng((seed ^ 0x9e3779b9) >>> 0)),   // seeded, separate stream
     boss: null,
+    nodeEventId: null,
   };
   startRound(run);
   applyEncounterBoss(run);
   return run;
+}
+
+// Pick which Event is offered alongside the Shop after a cleared encounter.
+// Uses a SEPARATE seeded stream (constant 0x5bf03635, distinct from bossOrder's 0x9e3779b9)
+// so it does NOT consume run.rng and cannot desync the shop/bag draws.
+// Not called by the engine — called by main.js when it detects roundCleared.
+export function offerNode(run) {
+  const stream = makeRng((run.seed ^ 0x5bf03635 ^ run.roundIndex) >>> 0);
+  const eligible = ALL_EVENT_IDS.filter(id => EVENTS[id].canOffer(run));
+  run.nodeEventId = eligible.length ? shuffle(eligible, stream)[0] : null;
 }
 
 export function playWord(run, selection) {
