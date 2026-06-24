@@ -114,6 +114,16 @@ export function dumpAllDiscard(run) {
   return run.rack.map(t => ({ tile: t, letter: t.letter }));
 }
 
+// Floor policy: pick a uniformly random legal word using run.rng (deterministic at the run level).
+export function randomPlay(run, wordList) {
+  const words = legalWords(run.rack.map(t => t.letter), wordList, run.config.MIN_WORD_LEN);
+  const formable = words.map(w => ({ w, sel: selectionFor(w, run.rack) })).filter(x => x.sel);
+  if (formable.length === 0) return null;
+  const idx = Math.floor(run.rng() * formable.length);
+  const { w, sel } = formable[idx];
+  return { word: w, selection: sel, score: 0 };
+}
+
 // ── v1: greedy simulator ──────────────────────────────────────────────────────
 
 // Drive one full run with the greedy "best word" policy. Deterministic given seed.
@@ -122,17 +132,26 @@ export function dumpAllDiscard(run) {
 //     and discards remain — smartDiscard keeps the playable core, dumps the rare clog.
 //     Returns deadRacks + racksSeen: after each play/discard while still in a round,
 //     samples whether the new hand has any playable word.
-export function simulateRun({ config, dictionary, words, seed, deck = null, cap = 1000, policy = noShop, discardPolicy = smartDiscard }) {
+export function simulateRun({
+  config, dictionary, words, seed, deck = null, cap = 1000,
+  policy = noShop, discardPolicy = smartDiscard, agent = null,
+}) {
+  // Backward-compatible default agent: greedy play + the legacy discard/shop params.
+  const A = agent || {
+    choosePlay: (run, w) => bestPlay(run, w),
+    chooseDiscard: (run) => discardPolicy(run),
+    chooseShop: (run) => policy(run),
+  };
   const run = newRun({ config, dictionary, seed, deck });
   let iter = 0;
   let deadRacks = 0, racksSeen = 0;
   while (run.status === 'playing' && iter < cap) {
     iter++;
-    const play = bestPlay(run, words);
+    const play = A.choosePlay(run, words);
     if (play) {
       playWord(run, play.selection);
     } else if (run.discardsLeft > 0 && run.rack.length > 0) {
-      discard(run, discardPolicy(run));   // selective discard: keep the playable core, dump the rare clog
+      discard(run, A.chooseDiscard(run));   // selective discard: keep the playable core, dump the rare clog
     } else {
       break;   // unactionable: no word and no discard (engine dead-hand usually sets 'lost' first)
     }
@@ -142,7 +161,7 @@ export function simulateRun({ config, dictionary, words, seed, deck = null, cap 
       racksSeen += 1;
       if (!bestPlay(run, words)) deadRacks += 1;
     }
-    if (run.status === 'roundCleared') { policy(run); nextRound(run); }
+    if (run.status === 'roundCleared') { A.chooseShop(run); nextRound(run); }
   }
   // If we exited via break with the run still nominally 'playing', the hand is unactionable → loss.
   if (run.status === 'playing') run.status = 'lost';

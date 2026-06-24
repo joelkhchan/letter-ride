@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { legalWords, bestPlay } from '../src/sim.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
+import { greedyAgent } from '../src/agents.js';
+import { randomPlay } from '../src/sim.js';
 
 const WORDS = ['CAT', 'ACT', 'AT', 'CATS', 'DOG'];
 
@@ -435,4 +437,17 @@ test('each persona targets its archetype snowball relic', () => {
     const want = SNOWBALL_BY_ARCH[p.id];
     assert.ok(p.targetRelicIds.includes(want), `${p.name} (id=${p.id}) should target ${want}`);
   }
+});
+
+test('randomPlay returns a legal play the rack can form (or null), with the bestPlay shape', () => {
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  const p = randomPlay(run, wordsB); // consumes one run.rng draw to index the legal-word list
+  assert.ok(p === null || (p.selection && p.word));
+});
+
+test('simulateRun with an explicit greedy agent matches the default (no agent) run', () => {
+  const a = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 5 });
+  const b = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 5, agent: greedyAgent() });
+  assert.equal(a.roundReached, b.roundReached);
+  assert.equal(a.won, b.won);
 });
