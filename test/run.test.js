@@ -429,3 +429,45 @@ test('offerNode respects canOffer: inkMerchant excluded when coins < 5 and is on
   }
   assert.equal(inkMerchantChosen, false, 'inkMerchant should never be offered when coins < 5');
 });
+
+// ── Chain tracking (Task 1 of chain sub-project) ─────────────────────────────
+
+const chainDict = makeDictionary(['cat', 'tan', 'nap', 'dog']);
+const seatWord = (run, word) => {
+  const s = word.toUpperCase().split('').map(ch => ({ tile: makeTile(ch), letter: ch }));
+  run.rack = s.map(x => x.tile);
+  return s;
+};
+
+test('chaining: chainLength is 1 first word, +1 on a letter-chain continue, resets to 1 on a break', () => {
+  resetTileIds();
+  const run = newRun({ config: { ...config, STARTING_BAG: ['C','A','T'] }, dictionary: chainDict, seed: 1 });
+  run.target = 100000; run.playsLeft = 10;                 // never clear/lose mid-test
+  playWord(run, seatWord(run, 'cat'));  assert.equal(run.chainLength, 1);  // first word
+  playWord(run, seatWord(run, 'tan'));  assert.equal(run.chainLength, 2);  // CAT->T, TAN starts T
+  playWord(run, seatWord(run, 'nap'));  assert.equal(run.chainLength, 3);  // TAN->N, NAP starts N
+  playWord(run, seatWord(run, 'dog'));  assert.equal(run.chainLength, 1);  // NAP->P, DOG starts D (break)
+  assert.deepEqual(run.lastWord, { lastLetter: 'G' });
+});
+
+test('chaining: chainLength + lastWord reset at nextRound', () => {
+  resetTileIds();
+  const run = newRun({ config: { ...config, STARTING_BAG: ['C','A','T'] }, dictionary: chainDict, seed: 1 });
+  run.target = 100000; run.playsLeft = 10;
+  playWord(run, seatWord(run, 'cat'));
+  assert.equal(run.chainLength, 1);
+  nextRound(run);
+  assert.equal(run.chainLength, 0);
+  assert.equal(run.lastWord, null);
+});
+
+test('chaining: chainLength reaches the scoring context (read by a fixture relic)', () => {
+  resetTileIds();
+  const run = newRun({ config: { ...config, STARTING_BAG: ['C','A','T'] }, dictionary: chainDict, seed: 1 });
+  run.target = 100000; run.playsLeft = 10;
+  run.relics = [{ id: 'cx', name: 'cx', evaluate: (ctx) => ({ addPoints: (ctx.chainLength || 0) >= 2 ? 100 : 0 }) }];
+  const r1 = playWord(run, seatWord(run, 'cat'));   // chainLength 1 -> no bonus
+  const r2 = playWord(run, seatWord(run, 'tan'));   // chainLength 2 -> +100
+  assert.equal(r1.scored.points < 100, true);
+  assert.equal(r2.scored.points >= 100, true);
+});

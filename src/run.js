@@ -101,6 +101,8 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     honeLevels: {},
     relicState: {},
     wordsPlayedThisRound: 0,
+    chainLength: 0,
+    lastWord: null,
     stake, deck,
     status: 'playing',
     bossOrder: shuffle([...ALL_BOSS_IDS], makeRng((seed ^ 0x9e3779b9) >>> 0)),   // seeded, separate stream
@@ -137,17 +139,24 @@ export function playWord(run, selection) {
       st.stacks += 1;
     }
   }
+  // Chaining: a word continues the letter-chain when its first spelled letter equals the previous
+  // word's last spelled letter (this round). Computed before scoring so chain relics read it.
+  const chainFirst = selection[0].letter.toUpperCase();
+  const chainLast = selection[selection.length - 1].letter.toUpperCase();
+  const chainLength = (run.lastWord && run.lastWord.lastLetter === chainFirst) ? run.chainLength + 1 : 1;
   const boss = run.boss ? BOSSES[run.boss] : null;
   const allMods = [...run.relics, ...honeModifiers(run.honeLevels)];
   const scored0 = scoreWord(selection, {
     tileValues: bossTileValues(run.tileValues, boss),        // disable: vowels zeroed (else same ref)
     lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
     relics: allMods,
-    context: { wordsPlayedThisRound: run.wordsPlayedThisRound, enablers, relicState: run.relicState },
+    context: { wordsPlayedThisRound: run.wordsPlayedThisRound, enablers, relicState: run.relicState, chainLength },
   });
   const scored = applyBossToScore(scored0, boss);            // cap/tax (else unchanged)
   run.roundTotal += scored.score;
   run.wordsPlayedThisRound += 1;
+  run.chainLength = chainLength;
+  run.lastWord = { lastLetter: chainLast };
   run.playsLeft -= 1;
   // Model B: consume the played tiles from the hand, then refill from the draw-pile.
   const usedIds = new Set(selection.map(s => s.tile.id));
@@ -178,6 +187,8 @@ export function nextRound(run) {
   run.playsLeft = run.playsPerRound + sumExtraPlays(run.relics);
   run.discardsLeft = run.discardsPerRound;
   run.wordsPlayedThisRound = 0;
+  run.chainLength = 0;
+  run.lastWord = null;
   run.status = 'playing';
   startRound(run);
   applyEncounterBoss(run);
