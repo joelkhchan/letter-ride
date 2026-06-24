@@ -19,6 +19,10 @@ const MOD_REGISTRY = {
     id: 'anchor', name: 'Anchor', desc: '+8 Points if this tile is the first letter',
     evaluate: (tile, ctx) => ({ addPoints: ctx.selection[0]?.tile === tile ? 8 : 0 }),
   },
+  reprint: {
+    id: 'reprint', name: 'Reprint', desc: 'The sort it sits on prints one extra time',
+    evaluate: () => ({ retrigger: 1 }),
+  },
 };
 
 export const WILD = '*';

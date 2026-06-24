@@ -1,7 +1,8 @@
 // test/tiles.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { makeTile, nextId, setMinTileId, resetTileIds, rehydrateTile, tileIdNum, WILD, isWild } from '../src/tiles.js';
+import { makeTile, nextId, setMinTileId, resetTileIds, rehydrateTile, tileIdNum, WILD, isWild, getMod, ALL_MOD_IDS } from '../src/tiles.js';
+import { scoreWord } from '../src/scoring.js';
 
 test('makeTile builds a plain tile with a fresh id', () => {
   resetTileIds();
@@ -29,4 +30,19 @@ test('setMinTileId prevents id collisions after load', () => {
 test('WILD detection', () => {
   assert.equal(isWild(makeTile(WILD)), true);
   assert.equal(isWild(makeTile('A')), false);
+});
+
+test('reprint mod returns {retrigger:1} and is registered', () => {
+  const mod = getMod('reprint');
+  assert.ok(mod, 'reprint registered');
+  assert.deepEqual(mod.evaluate(), { retrigger: 1 });
+  assert.ok(ALL_MOD_IDS.includes('reprint'));
+});
+
+test('a tile with the reprint mod prints its base value twice', () => {
+  const r = scoreWord(
+    [{ tile: makeTile('A', [getMod('reprint')]), letter: 'A' }],
+    { tileValues: { A: 5 }, lengthBonusPerLetter: 1, relics: [], context: {} }
+  );
+  assert.equal(r.breakdown.base, 10);   // A=5 printed twice
 });
