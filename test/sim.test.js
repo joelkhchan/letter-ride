@@ -1,7 +1,7 @@
 // test/sim.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { legalWords, bestPlay, scoreFor } from '../src/sim.js';
+import { legalWords, bestPlay, scoreFor, forcedBossOrder } from '../src/sim.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
 import { greedyAgent, randomAgent } from '../src/agents.js';
 import { randomPlay } from '../src/sim.js';
@@ -508,4 +508,13 @@ test('runPersona accepts an agentFor and reports per-seed win flags', () => {
   assert.equal(s.wonFlags.length, 3);
   assert.equal(typeof s.winRate, 'number');
   assert.equal(callCount, 1, 'agentFor must be called exactly once per runPersona call (not per seed)');
+});
+
+// ── Task 11: forcedBossOrder helper ──────────────────────────────────────────
+
+test('forcedBossOrder maps a boss id / none / undefined correctly', () => {
+  assert.deepEqual(forcedBossOrder('mute'), ['mute']);   // force this boss every Sentence
+  assert.deepEqual(forcedBossOrder('none'), []);          // [] => applyEncounterBoss yields null (no bosses)
+  assert.equal(forcedBossOrder(undefined), undefined);    // leave the natural seeded bossOrder
+  assert.equal(forcedBossOrder(null), undefined);
 });
