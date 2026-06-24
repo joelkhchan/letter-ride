@@ -25,32 +25,9 @@ import { scoreWord } from './scoring.js';
 import { honeModifiers } from './archetypes.js';
 import { newRun, playWord, discard, nextRound } from './run.js';
 import { generateShop, purchase } from './shop.js';
+import { legalWords, selectionFor } from './enumerate.js';
 
-function countsOf(letters) { const c = {}; for (const l of letters) c[l] = (c[l] || 0) + 1; return c; }
-function canForm(word, counts) {
-  const need = {};
-  for (const ch of word) { need[ch] = (need[ch] || 0) + 1; if (need[ch] > (counts[ch] || 0)) return false; }
-  return true;
-}
-
-export function legalWords(letters, wordList, minLen) {
-  const c = countsOf(letters);
-  const max = letters.length;
-  return wordList.filter(w => w.length >= minLen && w.length <= max && canForm(w, c));
-}
-
-// Build a selection of REAL rack tiles for `word` (one tile per letter); null if rack can't supply it.
-function selectionFor(word, rack) {
-  const pool = [...rack];
-  const sel = [];
-  for (const ch of word) {
-    const i = pool.findIndex(t => t.letter === ch);
-    if (i < 0) return null;
-    sel.push({ tile: pool[i], letter: ch });
-    pool.splice(i, 1);
-  }
-  return sel;
-}
+export { legalWords };   // sim.js historically re-exported legalWords; keep that surface
 
 // Reconstruct the scoring options playWord will use, so we can rank candidate words faithfully.
 function scoringOpts(run) {
