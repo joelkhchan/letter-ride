@@ -6,6 +6,7 @@ import { scoreWord } from './scoring.js';
 import { ARCHETYPES } from './archetypes.js';
 import { passageOf, tierOf } from './run.js';
 import { BOSSES } from './bosses.js';
+import { EVENTS } from './events.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -280,10 +281,15 @@ function animateScoreCountUp(from, to) {
 export function renderRun(run) {
   lastRun = run;
 
-  // Shop screen: render when round cleared and shop is available.
-  if (run.status === 'roundCleared' && run.shop) {
-    renderShop(run);
-    return;
+  // Node routing: after a round clear, show node choice, event UI, or shop.
+  if (run.status === 'roundCleared') {
+    if (run.shop) { renderShop(run); return; }
+    if (run._nodePick === 'event' && run.nodeEventId) {
+      const ev = EVENTS[run.nodeEventId];
+      if (ev?.interactive) { renderPress(run); return; }
+      renderEventOneShot(run); return;
+    }
+    renderNodeChoice(run); return;
   }
 
   const inRack = id => selection.some(s => s.tile.id === id);
@@ -403,6 +409,278 @@ export function handleRunKey(e) {
     selection = [];
     renderRun(lastRun);
   }
+}
+
+function renderNodeChoice(run) {
+  const coins = run.coins || 0;
+  const totalAward = run.lastAward ? run.lastAward.reduce((s, x) => s + x.amount, 0) : 0;
+  const shopDesc = `Earned $${totalAward} this round. Browse upgrades, relics, and letters.`;
+
+  let eventCardHtml = '';
+  if (run.nodeEventId && EVENTS[run.nodeEventId]) {
+    const ev = EVENTS[run.nodeEventId];
+    eventCardHtml = `
+      <button class="node-card" id="pick-event">
+        <div class="node-card-title">Event: ${ev.name}</div>
+        <div class="node-card-desc">${ev.desc}</div>
+      </button>`;
+  }
+
+  app().innerHTML = `
+    <div id="hud">
+      <div>Round ${run.roundIndex + 1}/${run.targets.length} · Node</div>
+      <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
+      <div id="coins">$${coins}</div>
+    </div>
+    ${relicsModsPanelHtml(run)}
+    <div id="node-choice">
+      <button class="node-card" id="pick-shop">
+        <div class="node-card-title">Shop</div>
+        <div class="node-card-desc">${shopDesc}</div>
+      </button>
+      ${eventCardHtml}
+    </div>
+    <div id="msg"></div>`;
+
+  const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  on('pick-shop', () => handlers.onPickShop?.());
+  on('pick-event', () => handlers.onPickEvent?.());
+}
+
+function renderEventOneShot(run) {
+  const ev = EVENTS[run.nodeEventId];
+  if (!ev) { renderNodeChoice(run); return; }
+
+  const coins = run.coins || 0;
+
+  // Build option buttons HTML — each option may need extra input
+  // We'll render the base options first; special inputs rendered via DOM after
+  const optionsHtml = (ev.options || []).map((opt, i) =>
+    `<button class="event-option-btn" data-opt="${i}">${opt.label}</button>`
+  ).join('');
+
+  app().innerHTML = `
+    <div id="hud">
+      <div>Round ${run.roundIndex + 1}/${run.targets.length} · Event</div>
+      <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
+      <div id="coins">$${coins}</div>
+    </div>
+    ${relicsModsPanelHtml(run)}
+    <div id="event-ui">
+      <h3>${ev.name}</h3>
+      <div class="event-desc">${ev.desc}</div>
+      <div id="event-options">${optionsHtml}</div>
+      <div id="msg" style="color:#c0392b;min-height:1.2rem;margin-top:8px;"></div>
+    </div>`;
+
+  // Wire option buttons with special-case input gathering
+  (ev.options || []).forEach((opt, i) => {
+    const btn = app().querySelector(`.event-option-btn[data-opt="${i}"]`);
+    if (!btn) return;
+
+    if (ev.id === 'redaction') {
+      // Redaction: need 2 tile picks from the bag
+      btn.onclick = () => showEventTilePicker(run, 2, (tileIds) => {
+        const r = handlers.onEventOption?.(i, { tileIds });
+        if (r && !r.ok) {
+          const msg = document.getElementById('msg');
+          if (msg) msg.textContent = r.reason === 'need-2' ? 'Pick exactly 2 tiles.' : 'Could not remove tiles.';
+        } else {
+          renderEventDone(run, ev);
+        }
+      });
+    } else if (ev.id === 'wordsmith') {
+      // Wordsmith: show archetype picker
+      btn.onclick = () => showArchetypePicker(run, (archetypeId) => {
+        const r = handlers.onEventOption?.(i, { archetypeId });
+        if (r && !r.ok) {
+          const msg = document.getElementById('msg');
+          if (msg) msg.textContent = 'Could not apply hone.';
+        } else {
+          renderEventDone(run, ev);
+        }
+      });
+    } else {
+      // Simple confirm (theBlank, inkMerchant)
+      btn.onclick = () => {
+        const r = handlers.onEventOption?.(i, {});
+        if (r && !r.ok) {
+          const msg = document.getElementById('msg');
+          if (msg) msg.textContent = r.reason === 'broke' ? 'Not enough coins.' : r.reason === 'all-owned' ? 'You own all relics.' : 'Could not apply.';
+        } else {
+          renderEventDone(run, ev);
+        }
+      };
+    }
+  });
+}
+
+function renderEventDone(run, ev) {
+  const coins = run.coins || 0;
+  app().innerHTML = `
+    <div id="hud">
+      <div>Round ${run.roundIndex + 1}/${run.targets.length} · Event</div>
+      <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
+      <div id="coins">$${coins}</div>
+    </div>
+    ${relicsModsPanelHtml(run)}
+    <div id="event-ui">
+      <h3>${ev.name}</h3>
+      <div class="event-desc">${ev.desc}</div>
+      <p style="font-weight:700;color:#27ae60;">Done!</p>
+      <button id="continue-btn">Continue</button>
+    </div>`;
+  const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  on('continue-btn', () => { selection = []; handlers.onContinue?.(); });
+}
+
+// Show an overlay for picking N tiles from the bag (used by Redaction event).
+function showEventTilePicker(run, count, onConfirm) {
+  const old = document.getElementById('event-tile-picker-overlay');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'event-tile-picker-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:100;';
+
+  const title = document.createElement('div');
+  title.textContent = `Pick ${count} tiles to remove:`;
+  title.style.cssText = 'color:#fff;font-weight:bold;font-size:1.1em;';
+  overlay.appendChild(title);
+
+  const selected = new Set();
+
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:320px;';
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.textContent = `Remove ${count} tiles`;
+  confirmBtn.disabled = true;
+  confirmBtn.style.cssText = 'padding:10px 22px;font-size:1em;border-radius:6px;cursor:pointer;margin-top:8px;';
+
+  run.bag.tiles.forEach(tile => {
+    const modsLabel = tile.mods && tile.mods.length
+      ? ` [${tile.mods.map(m => m.name || m.id[0].toUpperCase()).join(', ')}]` : '';
+    const btn = document.createElement('button');
+    btn.textContent = tile.letter + modsLabel;
+    btn.style.cssText = 'padding:10px 14px;font-size:1em;border-radius:6px;cursor:pointer;';
+    btn.dataset.id = tile.id;
+    btn.onclick = () => {
+      if (selected.has(tile.id)) {
+        selected.delete(tile.id);
+        btn.style.outline = '';
+      } else if (selected.size < count) {
+        selected.add(tile.id);
+        btn.style.outline = '2px solid #3b7dd8';
+      }
+      confirmBtn.disabled = selected.size !== count;
+      confirmBtn.textContent = selected.size === count ? `Remove ${count} tiles` : `Pick ${count - selected.size} more`;
+    };
+    grid.appendChild(btn);
+  });
+  overlay.appendChild(grid);
+
+  confirmBtn.onclick = () => {
+    overlay.remove();
+    onConfirm([...selected]);
+  };
+  overlay.appendChild(confirmBtn);
+
+  const cancel = document.createElement('button');
+  cancel.textContent = 'Cancel';
+  cancel.style.cssText = 'padding:8px 20px;font-size:0.95em;border-radius:6px;cursor:pointer;';
+  cancel.onclick = () => overlay.remove();
+  overlay.appendChild(cancel);
+
+  document.body.appendChild(overlay);
+}
+
+// Show an overlay for picking an archetype (used by Wordsmith event).
+function showArchetypePicker(run, onConfirm) {
+  const old = document.getElementById('archetype-picker-overlay');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'archetype-picker-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:100;padding:16px;box-sizing:border-box;';
+
+  const title = document.createElement('div');
+  title.textContent = 'Choose an archetype to hone:';
+  title.style.cssText = 'color:#fff;font-weight:bold;font-size:1.1em;';
+  overlay.appendChild(title);
+
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:flex;flex-direction:column;gap:8px;max-width:320px;width:100%;';
+
+  Object.values(ARCHETYPES).forEach(arch => {
+    const currentLevel = (run.honeLevels?.[arch.id] || 0);
+    const btn = document.createElement('button');
+    btn.style.cssText = 'padding:10px 14px;font-size:1em;border-radius:6px;cursor:pointer;text-align:left;';
+    btn.innerHTML = `<b>${arch.name}</b> (Lv ${currentLevel} &rarr; ${currentLevel + 1})<br><span style="font-size:0.85em;color:#666;">${arch.desc}</span>`;
+    btn.onclick = () => {
+      overlay.remove();
+      onConfirm(arch.id);
+    };
+    grid.appendChild(btn);
+  });
+  overlay.appendChild(grid);
+
+  const cancel = document.createElement('button');
+  cancel.textContent = 'Cancel';
+  cancel.style.cssText = 'padding:8px 20px;font-size:0.95em;border-radius:6px;cursor:pointer;';
+  cancel.onclick = () => overlay.remove();
+  overlay.appendChild(cancel);
+
+  document.body.appendChild(overlay);
+}
+
+function renderPress(run) {
+  const st = run.press || {};
+  const coins = run.coins || 0;
+  const drawn = st.drawn || [];
+  const drawnDisplay = drawn.length ? drawn.join(' ') : 'No letters drawn yet';
+  const pot = st.pot || 0;
+  const busted = !!st.busted;
+  const banked = st.banked !== undefined ? st.banked : (run.press === null && run._nodePick === 'event');
+  // After pressBank, run.press is null — detect completion by run._pressResult
+  const pressComplete = !run.press && run._nodePick === 'event';
+  const drawDisabled = busted || pressComplete ? 'disabled' : '';
+  const bankDisabled = (busted || pot === 0 || pressComplete) ? 'disabled' : '';
+
+  let resultHtml = '';
+  if (busted) {
+    resultHtml = `<div id="press-result" style="color:#c0392b;">Busted! Lost the pot.</div>`;
+  } else if (pressComplete) {
+    resultHtml = `<div id="press-result" style="color:#27ae60;">Banked $${ run._pressLastPot || pot}!</div>`;
+  }
+
+  const showContinue = busted || pressComplete;
+
+  app().innerHTML = `
+    <div id="hud">
+      <div>Round ${run.roundIndex + 1}/${run.targets.length} · The Press</div>
+      <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
+      <div id="coins">$${coins}</div>
+    </div>
+    ${relicsModsPanelHtml(run)}
+    <div id="press-ui">
+      <h3>The Press</h3>
+      <p style="font-size:0.9em;color:#7a3c00;margin:0 0 8px;">Draw letters for $. Bank to keep; press your luck. Bust on a repeat -- lose it all.</p>
+      <div id="press-drawn">${drawnDisplay}</div>
+      <div id="press-pot">Pot: $${pot}</div>
+      <div id="press-controls">
+        <button id="press-draw" ${drawDisabled}>Draw</button>
+        <button id="press-bank" ${bankDisabled}>Bank $${pot}</button>
+      </div>
+      ${resultHtml}
+      ${showContinue ? '<button id="continue-btn" style="display:block;margin:12px auto 0;">Continue</button>' : ''}
+    </div>
+    <div id="msg"></div>`;
+
+  const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  on('press-draw', () => handlers.onPressDraw?.());
+  on('press-bank', () => handlers.onPressBank?.());
+  on('continue-btn', () => { selection = []; handlers.onContinue?.(); });
 }
 
 function renderShop(run) {

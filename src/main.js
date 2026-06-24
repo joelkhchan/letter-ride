@@ -1,13 +1,14 @@
 // src/main.js
 import { CONFIG } from './config.js';
 import { loadFromFile } from './dictionary.js';
-import { newRun, playWord, discard, nextRound } from './run.js';
+import { newRun, playWord, discard, nextRound, offerNode } from './run.js';
 import { saveRun, loadRun } from './storage.js';
 import { generateShop, purchase } from './shop.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
+import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
 import { renderRun, renderMeta, bindControls, flashInvalid, handleRunKey } from './ui.js';
 
 try {
@@ -50,7 +51,12 @@ try {
   }
 
   // resume safety: a finished run sitting in storage shouldn't strand the player
-  if (run && (run.status === 'roundCleared') && !run.shop) {
+  if (run && (run.status === 'roundCleared') && !run.shop && !run.nodeEventId && run.nodeEventId !== null) {
+    // nodeEventId not yet set — call offerNode to establish it
+    offerNode(run);
+  }
+  if (run && (run.status === 'roundCleared') && !run.shop && run.nodeEventId === null) {
+    // no eligible event — go straight to shop
     run.shop = generateShop(run, run.rng, pool());
     recordOffers(telemetry, extractOfferIds(run.shop));
   }
@@ -60,8 +66,12 @@ try {
       recordPlay(telemetry, { letters: sel.map(s => s.letter.toUpperCase()), word: sel.map(s => s.letter).join('').toUpperCase(), selection: sel, wordsPlayedThisRound: run.wordsPlayedThisRound, enablers: run.relics.filter(rv => rv.enabler).map(rv => rv.enabler) }, r.scored?.score ?? 0);
       run.lastPlay = { word: sel.map(s => s.letter).join(''), score: r.scored.score };
       if (run.status === 'roundCleared') {
-        run.shop = generateShop(run, run.rng, pool());
-        recordOffers(telemetry, extractOfferIds(run.shop));
+        offerNode(run);
+        if (run.nodeEventId === null) {
+          // no eligible event — go straight to shop
+          run.shop = generateShop(run, run.rng, pool());
+          recordOffers(telemetry, extractOfferIds(run.shop));
+        }
       }
       saveAll(); render(); return r; },
     onDiscard(sel) { discard(run, sel); saveAll(); render(); },
@@ -76,7 +86,35 @@ try {
       saveAll(); render(); return r;
     },
     onReroll() { if (run.coins >= run.shop.rerollCost) { run.coins -= run.shop.rerollCost; run.shop = generateShop(run, run.rng, pool()); recordOffers(telemetry, extractOfferIds(run.shop)); saveAll(); render(); } },
-    onContinue() { run.shop = null; nextRound(run); saveAll(); render(); },
+    onPickShop() {
+      run._nodePick = 'shop';
+      run.shop = generateShop(run, run.rng, pool());
+      recordOffers(telemetry, extractOfferIds(run.shop));
+      saveAll(); render();
+    },
+    onPickEvent() {
+      const ev = EVENTS[run.nodeEventId];
+      if (!ev) return;
+      run._nodePick = 'event';
+      if (ev.interactive) {
+        pressStart(run);
+      }
+      saveAll(); render();
+    },
+    onEventOption(optionIndex, opts) {
+      const r = applyEventOption(run, run.nodeEventId, optionIndex, opts);
+      saveAll(); render(); return r;
+    },
+    onPressDraw() {
+      pressDraw(run);
+      saveAll(); render();
+    },
+    onPressBank() {
+      run._pressLastPot = run.press?.pot || 0;
+      pressBank(run);
+      saveAll(); render();
+    },
+    onContinue() { run.nodeEventId = null; run._nodePick = null; run.press = null; run._pressLastPot = null; run.shop = null; nextRound(run); saveAll(); render(); },
     // Shuffle: cosmetically reorder the rack using Math.random (not run.rng).
     // Rack order has no effect on scoring or future draws, so this is purely visual.
     // Using run.rng here would desync the seeded RNG stream and make a run's outcome
