@@ -25,6 +25,13 @@ export function generateShop(run, rng, pool = {}) {
 }
 
 export function purchase(run, offer, opts = {}) {
+  if (run.purchaseLog) {
+    run.purchaseLog.push(
+      offer.type === 'buyRelic' ? `relic:${offer.relicId}`
+      : offer.type === 'hone' ? `hone:${offer.archetypeId}`
+      : offer.type
+    );
+  }
   if (run.coins < offer.cost) return { ok: false, reason: 'broke' };
   const findTarget = () => run.bag.tiles.find(t => t.id === opts.targetTileId);
   switch (offer.type) {

@@ -18,61 +18,65 @@
 // Exports (v2 personas):
 //   PERSONAS  — array of { id, name, bagId, targetRelicIds, targetHoneId }, one per archetype
 //   runPersona — run simulateRun for each seed, aggregate → summarizePersona summary
-// v1 limits (documented): wilds ('*') treated as non-letters in enumeration; greedy single-word
-// policy; no shop purchases; standard deck. Personas/purchases/wild-substitution = v2.
+// v1 limits (documented): greedy single-word policy; no shop purchases; standard deck.
+// Enumeration is now WILD-AWARE: a '*' tile substitutes for any one missing letter (v3).
+// Personas/purchases = v2.
 // No Math.random — randomness is the seeded RNG inside `run`.
 import { scoreWord } from './scoring.js';
 import { honeModifiers } from './archetypes.js';
 import { newRun, playWord, discard, nextRound } from './run.js';
 import { generateShop, purchase } from './shop.js';
+import { legalWords, selectionFor } from './enumerate.js';
+import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 
-function countsOf(letters) { const c = {}; for (const l of letters) c[l] = (c[l] || 0) + 1; return c; }
-function canForm(word, counts) {
-  const need = {};
-  for (const ch of word) { need[ch] = (need[ch] || 0) + 1; if (need[ch] > (counts[ch] || 0)) return false; }
-  return true;
+export { legalWords };   // sim.js historically re-exported legalWords; keep that surface
+
+// Map a forceBoss directive to a bossOrder override (or undefined = leave the run's natural order).
+// 'none' => [] (applyEncounterBoss then assigns null, i.e. no bosses); an id => [id] (that boss every Sentence).
+export function forcedBossOrder(forceBoss) {
+  if (forceBoss === undefined || forceBoss === null) return undefined;
+  return forceBoss === 'none' ? [] : [forceBoss];
 }
 
-export function legalWords(letters, wordList, minLen) {
-  const c = countsOf(letters);
-  const max = letters.length;
-  return wordList.filter(w => w.length >= minLen && w.length <= max && canForm(w, c));
-}
-
-// Build a selection of REAL rack tiles for `word` (one tile per letter); null if rack can't supply it.
-function selectionFor(word, rack) {
-  const pool = [...rack];
-  const sel = [];
-  for (const ch of word) {
-    const i = pool.findIndex(t => t.letter === ch);
-    if (i < 0) return null;
-    sel.push({ tile: pool[i], letter: ch });
-    pool.splice(i, 1);
-  }
-  return sel;
-}
-
-// Reconstruct the scoring options playWord will use, so we can rank candidate words faithfully.
-function scoringOpts(run) {
-  return {
-    tileValues: run.tileValues,
+// Faithful mirror of playWord's scoring: relicState in context + boss warps (disable/cap/tax).
+// run.boss is set per Sentence encounter by run.js, so this is LIVE on boss rounds.
+export function scoreFor(run, selection) {
+  const boss = run.boss ? BOSSES[run.boss] : null;
+  const scored = scoreWord(selection, {
+    tileValues: bossTileValues(run.tileValues, boss),
     lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
     relics: [...run.relics, ...honeModifiers(run.honeLevels)],
     context: {
       wordsPlayedThisRound: run.wordsPlayedThisRound,
       enablers: run.relics.filter(r => r.enabler).map(r => r.enabler),
+      relicState: run.relicState,
     },
-  };
+  });
+  return applyBossToScore(scored, boss);
+}
+
+// Per-rack legibility proxy: normalized gap between the best and 2nd-best legal play (policy-independent).
+function topTwoGap(run, wordList) {
+  const words = legalWords(run.rack.map(t => t.letter), wordList, run.config.MIN_WORD_LEN);
+  let top1 = -Infinity, top2 = -Infinity;
+  for (const w of words) {
+    const sel = selectionFor(w, run.rack);
+    if (!sel) continue;
+    const s = scoreFor(run, sel).score;
+    if (s > top1) { top2 = top1; top1 = s; } else if (s > top2) { top2 = s; }
+  }
+  if (top1 <= -Infinity) return null;       // no legal play
+  if (top2 <= -Infinity) top2 = 0;          // only one option
+  return (top1 - top2) / Math.max(top1, 1);
 }
 
 export function bestPlay(run, wordList) {
   const words = legalWords(run.rack.map(t => t.letter), wordList, run.config.MIN_WORD_LEN);
-  const opts = scoringOpts(run);
   let best = null, bestScore = -Infinity;
   for (const w of words) {
     const selection = selectionFor(w, run.rack);
     if (!selection) continue;
-    const score = scoreWord(selection, opts).score;
+    const score = scoreFor(run, selection).score;
     if (score > bestScore) { bestScore = score; best = { word: w, selection, score }; }
   }
   return best;
@@ -137,6 +141,16 @@ export function dumpAllDiscard(run) {
   return run.rack.map(t => ({ tile: t, letter: t.letter }));
 }
 
+// Floor policy: pick a uniformly random legal word using run.rng (deterministic at the run level).
+export function randomPlay(run, wordList) {
+  const words = legalWords(run.rack.map(t => t.letter), wordList, run.config.MIN_WORD_LEN);
+  const formable = words.map(w => ({ w, sel: selectionFor(w, run.rack) })).filter(x => x.sel);
+  if (formable.length === 0) return null;
+  const idx = Math.floor(run.rng() * formable.length);
+  const { w, sel } = formable[idx];
+  return { word: w, selection: sel, score: 0 };
+}
+
 // ── v1: greedy simulator ──────────────────────────────────────────────────────
 
 // Drive one full run with the greedy "best word" policy. Deterministic given seed.
@@ -145,37 +159,51 @@ export function dumpAllDiscard(run) {
 //     and discards remain — smartDiscard keeps the playable core, dumps the rare clog.
 //     Returns deadRacks + racksSeen: after each play/discard while still in a round,
 //     samples whether the new hand has any playable word.
-export function simulateRun({ config, dictionary, words, seed, deck = null, cap = 1000, policy = noShop, discardPolicy = smartDiscard }) {
+export function simulateRun({
+  config, dictionary, words, seed, deck = null, cap = 1000,
+  policy = noShop, discardPolicy = smartDiscard, agent = null, forceBoss = undefined,
+}) {
+  // Backward-compatible default agent: greedy play + the legacy discard/shop params.
+  const A = agent || {
+    choosePlay: (run, w) => bestPlay(run, w),
+    chooseDiscard: (run) => discardPolicy(run),
+    chooseShop: (run) => policy(run),
+  };
   const run = newRun({ config, dictionary, seed, deck });
-  let iter = 0;
-  let deadRacks = 0, racksSeen = 0;
+  const fbOrder = forcedBossOrder(forceBoss);
+  if (fbOrder !== undefined) run.bossOrder = fbOrder;
+  run.purchaseLog = [];
+  const clearMargins = [], decisionGaps = [];
+  let iter = 0, deadRacks = 0, racksSeen = 0;
   while (run.status === 'playing' && iter < cap) {
     iter++;
-    const play = bestPlay(run, words);
+    const gap = topTwoGap(run, words);
+    if (gap !== null) decisionGaps.push(gap);
+    const play = A.choosePlay(run, words);
     if (play) {
       playWord(run, play.selection);
     } else if (run.discardsLeft > 0 && run.rack.length > 0) {
-      discard(run, discardPolicy(run));   // selective discard: keep the playable core, dump the rare clog
+      discard(run, A.chooseDiscard(run));
     } else {
-      break;   // unactionable: no word and no discard (engine dead-hand usually sets 'lost' first)
+      break;
     }
-    // Dead-rack sampling: while still within a round (not yet cleared), check if
-    // the refreshed hand has any play. Includes 'playing' and 'lost' (dead-hand).
     if (run.status !== 'roundCleared' && run.status !== 'won') {
       racksSeen += 1;
       if (!bestPlay(run, words)) deadRacks += 1;
     }
-    if (run.status === 'roundCleared') { policy(run); nextRound(run); }
+    if (run.status === 'roundCleared') {
+      clearMargins.push(run.roundTotal - run.target);   // BEFORE nextRound resets target/roundTotal
+      A.chooseShop(run);
+      nextRound(run);
+    }
   }
   // If we exited via break with the run still nominally 'playing', the hand is unactionable → loss.
   if (run.status === 'playing') run.status = 'lost';
+  if (run.status === 'lost') clearMargins.push(run.roundTotal - run.target); // failing-round margin (negative)
+  const finalStacks = Object.values(run.relicState || {}).reduce((a, s) => a + (s.stacks || 0), 0);
   return {
-    won: run.status === 'won',
-    status: run.status,
-    roundReached: run.roundIndex + 1,   // 1-based; equals ROUND_TARGETS.length on a win
-    hitCap: iter >= cap,
-    deadRacks,
-    racksSeen,
+    won: run.status === 'won', status: run.status, roundReached: run.roundIndex + 1, hitCap: iter >= cap,
+    deadRacks, racksSeen, clearMargins, decisionGaps, purchaseLog: run.purchaseLog, finalStacks,
   };
 }
 
@@ -215,7 +243,7 @@ export const PERSONAS = [
 //       otherwise                                                          → config.DECKS[bagId]
 // discardPolicy: optional discard function (default smartDiscard); pass dumpAllDiscard for BEFORE comparison.
 // Returns the summarizePersona summary over all seeds.
-export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard }) {
+export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard, agentFor = null, forceBoss = undefined }) {
   const { bagId, targetRelicIds, targetHoneId } = persona;
   // Resolve deck: 'standard' explicitly uses config.STARTING_BAG.
   // Any other bagId must be a real DECKS entry with a non-null startingBag; throw if missing.
@@ -229,22 +257,25 @@ export function runPersona({ config, dictionary, words, persona, seeds, pool = {
   }
 
   const policy = buildPurchasePolicy({ targetRelicIds, targetHoneId, reserve, maxRerolls, pool });
+  const agent = agentFor ? agentFor(policy) : null;
 
   const results = seeds.map(seed =>
-    simulateRun({ config, dictionary, words, seed, deck, policy, discardPolicy })
+    simulateRun({ config, dictionary, words, seed, deck, policy, discardPolicy, agent, forceBoss })
   );
 
   return summarizePersona(results);
 }
 
 // Pure: aggregate an array of simulateRun result objects into a summary.
-// Returns { n, winRate, roundReached: {p10,p50,p90,mean}, deadRackRate }
+// Returns { n, winRate, roundReached: {p10,p50,p90,mean}, deadRackRate, wonFlags, clearMargin, decisionGap }
 export function summarizePersona(results) {
   const n = results.length;
   const wins = results.filter(r => r.won).length;
   const roundsReached = results.map(r => r.roundReached);
   const totalDeadRacks = results.reduce((sum, r) => sum + r.deadRacks, 0);
   const totalRacksSeen = results.reduce((sum, r) => sum + r.racksSeen, 0);
+  const allMargins = results.flatMap(r => r.clearMargins || []);
+  const allGaps = results.flatMap(r => r.decisionGaps || []);
 
   return {
     n,
@@ -256,5 +287,8 @@ export function summarizePersona(results) {
       mean: roundsReached.reduce((a, b) => a + b, 0) / n,
     },
     deadRackRate: totalRacksSeen > 0 ? totalDeadRacks / totalRacksSeen : 0,
+    wonFlags: results.map(r => r.won),
+    clearMargin: { p10: percentile(allMargins, 10), p50: percentile(allMargins, 50), p90: percentile(allMargins, 90) },
+    decisionGap: { p50: percentile(allGaps, 50), p90: percentile(allGaps, 90), mean: allGaps.length ? allGaps.reduce((a, b) => a + b, 0) / allGaps.length : 0 },
   };
 }

@@ -1,8 +1,11 @@
 // test/sim.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { legalWords, bestPlay } from '../src/sim.js';
+import { legalWords, bestPlay, scoreFor, forcedBossOrder } from '../src/sim.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
+import { greedyAgent, randomAgent } from '../src/agents.js';
+import { randomPlay } from '../src/sim.js';
+import { RELICS } from '../src/relics.js';
 
 const WORDS = ['CAT', 'ACT', 'AT', 'CATS', 'DOG'];
 
@@ -435,4 +438,83 @@ test('each persona targets its archetype snowball relic', () => {
     const want = SNOWBALL_BY_ARCH[p.id];
     assert.ok(p.targetRelicIds.includes(want), `${p.name} (id=${p.id}) should target ${want}`);
   }
+});
+
+test('randomPlay returns a legal play the rack can form (or null), with the bestPlay shape', () => {
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  const p = randomPlay(run, wordsB); // consumes one run.rng draw to index the legal-word list
+  assert.ok(p === null || (p.selection && p.word));
+});
+
+test('simulateRun with an explicit greedy agent matches the default (no agent) run', () => {
+  const a = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 5 });
+  const b = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 5, agent: greedyAgent() });
+  assert.equal(a.roundReached, b.roundReached);
+  assert.equal(a.won, b.won);
+});
+
+// ── Task 4: boss-aware, relicState-aware scoreFor ─────────────────────────────
+
+test('scoreFor ranks a snowball word using its current stacks', () => {
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  const sel = bestPlay(run, wordsB).selection; // CAT (rack always holds C,A,T)
+  run.relics = [RELICS.perpetualEngine]; // timesMult per stack, condition always true
+  run.relicState = { perpetualEngine: { stacks: 0 } };
+  const base = scoreFor(run, sel).score;
+  run.relicState = { perpetualEngine: { stacks: 5 } };
+  const boosted = scoreFor(run, sel).score;
+  assert.ok(boosted > base, 'more stacks => higher score');
+});
+
+test('scoreFor applies the boss warp (mute zeroes vowels in ranking)', () => {
+  const run = newRun({ config: configB, dictionary: dictB, seed: 1 });
+  const sel = bestPlay(run, wordsB).selection; // CAT contains the vowel A
+  run.boss = null;
+  const normal = scoreFor(run, sel).score;
+  run.boss = 'mute';
+  const muted = scoreFor(run, sel).score;
+  assert.ok(muted <= normal, 'mute (vowels score 0) cannot raise the score');
+});
+
+// ── Task 7: clear-margin / decision-gap / purchase-log diagnostics ────────────
+
+test('simulateRun records clear margins, decision gaps, a purchase log, and final stacks', () => {
+  const r = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 1 });
+  assert.ok(Array.isArray(r.clearMargins));
+  assert.ok(Array.isArray(r.decisionGaps));
+  assert.ok(Array.isArray(r.purchaseLog));
+  assert.equal(typeof r.finalStacks, 'number');
+});
+
+test('summarizePersona aggregates margin + gap percentiles and exposes per-seed win flags', () => {
+  const results = [
+    { won: true,  roundReached: 8, deadRacks: 0, racksSeen: 10, clearMargins: [5, 3], decisionGaps: [0.7, 0.2], purchaseLog: [], finalStacks: 4 },
+    { won: false, roundReached: 4, deadRacks: 1, racksSeen: 9,  clearMargins: [-12], decisionGaps: [0.9], purchaseLog: [], finalStacks: 0 },
+  ];
+  const s = summarizePersona(results);
+  assert.deepEqual(s.wonFlags, [true, false]);
+  assert.ok('clearMargin' in s && 'p50' in s.clearMargin);
+  assert.ok('decisionGap' in s && 'p50' in s.decisionGap);
+});
+
+// ── Task 8: runPersona accepts a play-policy factory (agentFor) ───────────────
+
+test('runPersona accepts an agentFor and reports per-seed win flags', () => {
+  const persona = { id: 'shortWord', name: 'Short', bagId: 'standard', targetRelicIds: [], targetHoneId: 'shortWord' };
+  const seeds = [1, 2, 3];
+  let callCount = 0;
+  const agentFor = (shop) => { callCount++; return randomAgent(shop); };
+  const s = runPersona({ config: configB, dictionary: dictB, words: wordsB, persona, seeds, agentFor });
+  assert.equal(s.wonFlags.length, 3);
+  assert.equal(typeof s.winRate, 'number');
+  assert.equal(callCount, 1, 'agentFor must be called exactly once per runPersona call (not per seed)');
+});
+
+// ── Task 11: forcedBossOrder helper ──────────────────────────────────────────
+
+test('forcedBossOrder maps a boss id / none / undefined correctly', () => {
+  assert.deepEqual(forcedBossOrder('mute'), ['mute']);   // force this boss every Sentence
+  assert.deepEqual(forcedBossOrder('none'), []);          // [] => applyEncounterBoss yields null (no bosses)
+  assert.equal(forcedBossOrder(undefined), undefined);    // leave the natural seeded bossOrder
+  assert.equal(forcedBossOrder(null), undefined);
 });
