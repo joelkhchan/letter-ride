@@ -11,7 +11,7 @@ const config = {
   STARTING_BAG: ['C','A','T','E','E'], TILE_VALUES: { C:3,A:1,T:1,E:1 },
   RACK_SIZE: 3, PLAYS_PER_ROUND: 2, DISCARDS_PER_ROUND: 1, MIN_WORD_LEN: 3,
   LENGTH_BONUS_PER_LETTER: 5, ROUND_TARGETS: [5,100], COINS_ON_CLEAR: { base:4, perUnusedPlay:1, perUnusedDiscard:1 },
-  SHOP: { offersPerShop: 4, rerollCost: 2, cost: { buyLetter:3, buyEnchantedTile:7, enchantTile:6, upgradeLetter:5, thinLetter:3, buyRelic:8 }, upgradePlus: 1, buyableLetters: ['E','A','R','Z'] },
+  SHOP: { offersPerShop: 4, rerollCost: 2, cost: { buyLetter:3, buyEnchantedTile:7, enchantTile:6, upgradeLetter:5, thinLetter:3, buyRelic:8, recastTile:5, transferMods:5 }, upgradePlus: 1, buyableLetters: ['E','A','R','Z'] },
   HONE: { cost: 6 },
 };
 const mkRun = () => { const r = newRun({ config, dictionary: dict, seed: 1 }); r.coins = 100; return r; };
@@ -168,4 +168,65 @@ test('purchase of an owned buyRelic returns { ok:false, reason:"owned" } and lea
   assert.deepEqual(res, { ok: false, reason: 'owned' });
   assert.equal(run.coins, beforeCoins, 'coins must not change');
   assert.equal(run.relics.length, beforeLen, 'relics length must not change');
+});
+
+test('recastTile changes the target tile letter, keeps id + mods, deducts cost', () => {
+  const run = mkRun();
+  const t = run.bag.tiles[0];
+  t.mods = [getMod('polished')];
+  const id = t.id;
+  const before = run.coins;
+  const res = purchase(run, { type: 'recastTile', cost: 5 }, { targetTileId: id, targetLetter: 'R' });
+  assert.equal(res.ok, true);
+  const after = run.bag.tiles.find(x => x.id === id);
+  assert.equal(after.letter, 'R');         // letter changed
+  assert.equal(after.id, id);              // id preserved
+  assert.equal(after.mods.length, 1);      // mods preserved
+  assert.equal(run.coins, before - 5);
+});
+
+test('recastTile rejects a letter outside the shop pool', () => {
+  const run = mkRun();   // test config buyableLetters = ['E','A','R','Z']
+  const res = purchase(run, { type: 'recastTile', cost: 5 }, { targetTileId: run.bag.tiles[0].id, targetLetter: 'Q' });
+  assert.equal(res.ok, false);
+  assert.equal(res.reason, 'bad-letter');
+});
+
+test('recastTile with a missing target tile errors', () => {
+  const run = mkRun();
+  const res = purchase(run, { type: 'recastTile', cost: 5 }, { targetTileId: 'nope', targetLetter: 'R' });
+  assert.equal(res.ok, false);
+  assert.equal(res.reason, 'no-target');
+});
+
+test('transferMods moves source mods to target and destroys the source', () => {
+  const run = mkRun();
+  const src = run.bag.tiles[0];
+  const tgt = run.bag.tiles[1];
+  src.mods = [getMod('polished'), getMod('catalyst')];
+  const tgtBefore = tgt.mods.length;
+  const srcId = src.id, tgtId = tgt.id;
+  const bagBefore = run.bag.tiles.length;
+  const before = run.coins;
+  const res = purchase(run, { type: 'transferMods', cost: 5 }, { sourceTileId: srcId, targetTileId: tgtId });
+  assert.equal(res.ok, true);
+  assert.equal(run.bag.tiles.find(x => x.id === srcId), undefined);        // source destroyed
+  assert.equal(run.bag.tiles.find(x => x.id === tgtId).mods.length, tgtBefore + 2);  // mods moved
+  assert.equal(run.bag.tiles.length, bagBefore - 1);
+  assert.equal(run.coins, before - 5);
+});
+
+test('transferMods rejects source === target and a missing tile', () => {
+  const run = mkRun();
+  const id = run.bag.tiles[0].id;
+  assert.equal(purchase(run, { type: 'transferMods', cost: 5 }, { sourceTileId: id, targetTileId: id }).reason, 'same-tile');
+  assert.equal(purchase(run, { type: 'transferMods', cost: 5 }, { sourceTileId: 'nope', targetTileId: id }).reason, 'no-target');
+});
+
+test('generateShop candidate pool includes recastTile + transferMods', () => {
+  const run = mkRun();
+  run.config = { ...config, SHOP: { ...config.SHOP, offersPerShop: 99 } };   // return all candidates
+  const shop = generateShop(run, run.rng);
+  const types = new Set(shop.offers.map(o => o.type));
+  assert.ok(types.has('recastTile') && types.has('transferMods'));
 });

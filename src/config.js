@@ -26,7 +26,7 @@ export const CONFIG = {
   SHOP: {
     offersPerShop: 4,
     rerollCost: 2,
-    cost: { buyLetter: 3, buyEnchantedTile: 7, enchantTile: 6, upgradeLetter: 5, thinLetter: 3, buyRelic: 8 },
+    cost: { buyLetter: 3, buyEnchantedTile: 7, enchantTile: 6, upgradeLetter: 5, thinLetter: 3, buyRelic: 8, recastTile: 5, transferMods: 5 },
     upgradePlus: 1,                                  // +points per upgradeLetter purchase
     buyableLetters: ['E','A','R','T','S','N','L','D','G','C','K','J','Q','X','Z'],  // shop letter pool
   },

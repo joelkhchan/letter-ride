@@ -17,6 +17,8 @@ export function generateShop(run, rng, pool = {}) {
   for (const modId of modIds) candidates.push({ type: 'enchantTile', modId, cost: cfg.cost.enchantTile });
   for (const letter of cfg.buyableLetters) candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: cfg.cost.upgradeLetter });
   candidates.push({ type: 'thinLetter', cost: cfg.cost.thinLetter });
+  candidates.push({ type: 'recastTile', cost: cfg.cost.recastTile });
+  candidates.push({ type: 'transferMods', cost: cfg.cost.transferMods });
   for (const relicId of relicIds) if (!owned.has(relicId)) candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic });
   for (const archetypeId of ALL_ARCHETYPE_IDS) candidates.push({ type: 'hone', archetypeId, cost: run.config.HONE.cost });
 
@@ -48,6 +50,19 @@ export function purchase(run, offer, opts = {}) {
     case 'thinLetter': {
       const t = findTarget(); if (!t) return { ok: false, reason: 'no-target' };
       run.bag.remove(t.id); break;
+    }
+    case 'recastTile': {
+      const t = findTarget(); if (!t) return { ok: false, reason: 'no-target' };
+      if (!run.config.SHOP.buyableLetters.includes(opts.targetLetter)) return { ok: false, reason: 'bad-letter' };
+      t.letter = opts.targetLetter; break;
+    }
+    case 'transferMods': {
+      const src = run.bag.tiles.find(t => t.id === opts.sourceTileId);
+      const tgt = run.bag.tiles.find(t => t.id === opts.targetTileId);
+      if (!src || !tgt) return { ok: false, reason: 'no-target' };
+      if (src.id === tgt.id) return { ok: false, reason: 'same-tile' };
+      tgt.mods.push(...src.mods);
+      run.bag.remove(src.id); break;
     }
     case 'buyRelic':
       if (run.relics.some(r => r.id === offer.relicId)) return { ok: false, reason: 'owned' };
