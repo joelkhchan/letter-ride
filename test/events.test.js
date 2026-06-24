@@ -119,3 +119,26 @@ test('The Press: pot grows on unique draws, busts on a duplicate, bank pays the 
   assert.equal(run.coins, coinsBefore);
   assert.equal(run.press, null);
 });
+
+test('The Press: clean bank path accumulates unique draws and pays pot on bank', () => {
+  const run = newRun({ config, dictionary: dict, seed: 3 });
+  pressStart(run);
+  const coinsBefore = run.coins;
+  // Force two distinct draws
+  run.press.forcedNext = 'A';
+  pressDraw(run);
+  assert.equal(run.press.drawn.length, 1);
+  assert.equal(run.press.drawn[0], 'A');
+  assert.ok(run.press.pot >= run.tileValues.A);
+  const potAfterFirst = run.press.pot;
+  run.press.forcedNext = 'E';
+  pressDraw(run);
+  assert.equal(run.press.drawn.length, 2);
+  assert.equal(run.press.drawn[1], 'E');
+  assert.ok(run.press.pot >= potAfterFirst + run.tileValues.E);
+  // Bank the pot
+  const finalPot = run.press.pot;
+  pressBank(run);
+  assert.equal(run.coins, coinsBefore + finalPot);
+  assert.equal(run.press, null);
+});

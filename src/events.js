@@ -57,7 +57,7 @@ export const EVENTS = {
   },
   thePress: {
     id: 'thePress', name: 'The Press', interactive: true,
-    desc: 'Draw letters for $; Bank to keep the pot or Press your luck — bust on a repeat and lose it all',
+    desc: 'Draw letters for $. Bank to keep the pot or Press your luck; bust on a repeat and lose it all.',
     canOffer: () => true,
   },
 };
