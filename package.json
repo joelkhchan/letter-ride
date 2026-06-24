@@ -9,6 +9,7 @@
     "analyze:sim": "node scripts/analyze-sim.js",
     "analyze:sim-v2": "node scripts/analyze-sim-v2.js",
     "analyze:corpus": "node scripts/analyze-corpus.js",
+    "analyze:eval": "node scripts/analyze-eval.js",
     "cap:copy": "node scripts/build-www.js",
     "cap:sync": "npm run cap:copy && npx cap sync"
   },
