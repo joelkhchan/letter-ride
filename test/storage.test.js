@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { serializeRun, deserializeRun, saveRun, loadRun } from '../src/storage.js';
 import { newRun, drawRack, nextRound } from '../src/run.js';
 import { makeDictionary } from '../src/dictionary.js';
-import { resetTileIds } from '../src/tiles.js';
+import { resetTileIds, getMod } from '../src/tiles.js';
 import { RELICS } from '../src/relics.js';
 
 const dict = makeDictionary(['cat']);
@@ -29,6 +29,18 @@ test('round-trip preserves round state, tile ids, rack, and upgraded tileValues'
   assert.equal(restored.tileValues.E, 3);
   assert.deepEqual(restored.bag.tiles.map(t => t.id), ids);       // ids preserved
   assert.deepEqual(restored.rack.map(t => t.id), rackIds);        // same rack
+});
+
+test('SP2: a recast letter and transferred mods survive a round-trip', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  const a = run.bag.tiles[0], b = run.bag.tiles[1];
+  a.letter = 'Z';                                       // simulate a Recast (letter changed, id kept)
+  b.mods = [getMod('polished'), getMod('catalyst')];    // simulate Transfer (mods moved onto b)
+  const aId = a.id, bId = b.id;
+  const restored = deserializeRun(serializeRun(run), { config, dictionary: dict });
+  assert.equal(restored.bag.tiles.find(t => t.id === aId).letter, 'Z');         // recast letter persisted
+  assert.equal(restored.bag.tiles.find(t => t.id === bId).mods.length, 2);      // moved mods persisted
 });
 
 test('rng continues the same sequence after restore', () => {
