@@ -47,6 +47,21 @@ export function scoreFor(run, selection) {
   return applyBossToScore(scored, boss);
 }
 
+// Per-rack legibility proxy: normalized gap between the best and 2nd-best legal play (policy-independent).
+function topTwoGap(run, wordList) {
+  const words = legalWords(run.rack.map(t => t.letter), wordList, run.config.MIN_WORD_LEN);
+  let top1 = -Infinity, top2 = -Infinity;
+  for (const w of words) {
+    const sel = selectionFor(w, run.rack);
+    if (!sel) continue;
+    const s = scoreFor(run, sel).score;
+    if (s > top1) { top2 = top1; top1 = s; } else if (s > top2) { top2 = s; }
+  }
+  if (top1 <= -Infinity) return null;       // no legal play
+  if (top2 <= -Infinity) top2 = 0;          // only one option
+  return (top1 - top2) / Math.max(top1, 1);
+}
+
 export function bestPlay(run, wordList) {
   const words = legalWords(run.rack.map(t => t.letter), wordList, run.config.MIN_WORD_LEN);
   let best = null, bestScore = -Infinity;
@@ -147,35 +162,38 @@ export function simulateRun({
     chooseShop: (run) => policy(run),
   };
   const run = newRun({ config, dictionary, seed, deck });
-  let iter = 0;
-  let deadRacks = 0, racksSeen = 0;
+  run.purchaseLog = [];
+  const clearMargins = [], decisionGaps = [];
+  let iter = 0, deadRacks = 0, racksSeen = 0;
   while (run.status === 'playing' && iter < cap) {
     iter++;
+    const gap = topTwoGap(run, words);
+    if (gap !== null) decisionGaps.push(gap);
     const play = A.choosePlay(run, words);
     if (play) {
       playWord(run, play.selection);
     } else if (run.discardsLeft > 0 && run.rack.length > 0) {
-      discard(run, A.chooseDiscard(run));   // selective discard: keep the playable core, dump the rare clog
+      discard(run, A.chooseDiscard(run));
     } else {
-      break;   // unactionable: no word and no discard (engine dead-hand usually sets 'lost' first)
+      break;
     }
-    // Dead-rack sampling: while still within a round (not yet cleared), check if
-    // the refreshed hand has any play. Includes 'playing' and 'lost' (dead-hand).
     if (run.status !== 'roundCleared' && run.status !== 'won') {
       racksSeen += 1;
       if (!bestPlay(run, words)) deadRacks += 1;
     }
-    if (run.status === 'roundCleared') { A.chooseShop(run); nextRound(run); }
+    if (run.status === 'roundCleared') {
+      clearMargins.push(run.roundTotal - run.target);   // BEFORE nextRound resets target/roundTotal
+      A.chooseShop(run);
+      nextRound(run);
+    }
   }
   // If we exited via break with the run still nominally 'playing', the hand is unactionable → loss.
   if (run.status === 'playing') run.status = 'lost';
+  if (run.status === 'lost') clearMargins.push(run.roundTotal - run.target); // failing-round margin (negative)
+  const finalStacks = Object.values(run.relicState || {}).reduce((a, s) => a + (s.stacks || 0), 0);
   return {
-    won: run.status === 'won',
-    status: run.status,
-    roundReached: run.roundIndex + 1,   // 1-based; equals ROUND_TARGETS.length on a win
-    hitCap: iter >= cap,
-    deadRacks,
-    racksSeen,
+    won: run.status === 'won', status: run.status, roundReached: run.roundIndex + 1, hitCap: iter >= cap,
+    deadRacks, racksSeen, clearMargins, decisionGaps, purchaseLog: run.purchaseLog, finalStacks,
   };
 }
 
@@ -238,13 +256,15 @@ export function runPersona({ config, dictionary, words, persona, seeds, pool = {
 }
 
 // Pure: aggregate an array of simulateRun result objects into a summary.
-// Returns { n, winRate, roundReached: {p10,p50,p90,mean}, deadRackRate }
+// Returns { n, winRate, roundReached: {p10,p50,p90,mean}, deadRackRate, wonFlags, clearMargin, decisionGap }
 export function summarizePersona(results) {
   const n = results.length;
   const wins = results.filter(r => r.won).length;
   const roundsReached = results.map(r => r.roundReached);
   const totalDeadRacks = results.reduce((sum, r) => sum + r.deadRacks, 0);
   const totalRacksSeen = results.reduce((sum, r) => sum + r.racksSeen, 0);
+  const allMargins = results.flatMap(r => r.clearMargins || []);
+  const allGaps = results.flatMap(r => r.decisionGaps || []);
 
   return {
     n,
@@ -256,5 +276,8 @@ export function summarizePersona(results) {
       mean: roundsReached.reduce((a, b) => a + b, 0) / n,
     },
     deadRackRate: totalRacksSeen > 0 ? totalDeadRacks / totalRacksSeen : 0,
+    wonFlags: results.map(r => r.won),
+    clearMargin: { p10: percentile(allMargins, 10), p50: percentile(allMargins, 50), p90: percentile(allMargins, 90) },
+    decisionGap: { p50: percentile(allGaps, 50), p90: percentile(allGaps, 90), mean: allGaps.length ? allGaps.reduce((a, b) => a + b, 0) / allGaps.length : 0 },
   };
 }

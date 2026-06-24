@@ -475,3 +475,24 @@ test('scoreFor applies the boss warp (mute zeroes vowels in ranking)', () => {
   const muted = scoreFor(run, sel).score;
   assert.ok(muted <= normal, 'mute (vowels score 0) cannot raise the score');
 });
+
+// ── Task 7: clear-margin / decision-gap / purchase-log diagnostics ────────────
+
+test('simulateRun records clear margins, decision gaps, a purchase log, and final stacks', () => {
+  const r = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 1 });
+  assert.ok(Array.isArray(r.clearMargins));
+  assert.ok(Array.isArray(r.decisionGaps));
+  assert.ok(Array.isArray(r.purchaseLog));
+  assert.equal(typeof r.finalStacks, 'number');
+});
+
+test('summarizePersona aggregates margin + gap percentiles and exposes per-seed win flags', () => {
+  const results = [
+    { won: true,  roundReached: 8, deadRacks: 0, racksSeen: 10, clearMargins: [5, 3], decisionGaps: [0.7, 0.2], purchaseLog: [], finalStacks: 4 },
+    { won: false, roundReached: 4, deadRacks: 1, racksSeen: 9,  clearMargins: [-12], decisionGaps: [0.9], purchaseLog: [], finalStacks: 0 },
+  ];
+  const s = summarizePersona(results);
+  assert.deepEqual(s.wonFlags, [true, false]);
+  assert.ok('clearMargin' in s && 'p50' in s.clearMargin);
+  assert.ok('decisionGap' in s && 'p50' in s.decisionGap);
+});
