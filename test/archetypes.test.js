@@ -44,7 +44,7 @@ test('honeModifiers yields one pseudo-relic per leveled archetype', () => {
 
 test('Hone emits ×Mult at level 3+ (shortWord example)', () => {
   const ctx = { letters: ['C', 'A', 'T'], word: 'CAT' };       // matches shortWord (≤3)
-  assert.equal(ARCHETYPES.shortWord.honeBonus(ctx, 2).timesMult ?? 1, 1);          // no kicker below L3
+  assert.strictEqual(ARCHETYPES.shortWord.honeBonus(ctx, 2).timesMult, 1);          // no kicker below L3
   assert.equal(ARCHETYPES.shortWord.honeBonus(ctx, 3).timesMult, 1 + 0.25 * 1);    // L3 kicker
   assert.equal(ARCHETYPES.shortWord.honeBonus(ctx, 4).timesMult, 1 + 0.25 * 2);    // L4 kicker
 });

@@ -9,6 +9,7 @@ export function generateShop(run, rng, pool = {}) {
   const cfg = run.config.SHOP;
   const relicIds = pool.relicIds || ALL_RELIC_IDS;
   const modIds = pool.modIds || ALL_MOD_IDS;
+  const owned = new Set(run.relics.map(r => r.id));
   const candidates = [];
   for (const letter of cfg.buyableLetters) candidates.push({ type: 'buyLetter', letter, cost: cfg.cost.buyLetter });
   for (const letter of cfg.buyableLetters) for (const modId of modIds)
@@ -16,7 +17,7 @@ export function generateShop(run, rng, pool = {}) {
   for (const modId of modIds) candidates.push({ type: 'enchantTile', modId, cost: cfg.cost.enchantTile });
   for (const letter of cfg.buyableLetters) candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: cfg.cost.upgradeLetter });
   candidates.push({ type: 'thinLetter', cost: cfg.cost.thinLetter });
-  for (const relicId of relicIds) candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic });
+  for (const relicId of relicIds) if (!owned.has(relicId)) candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic });
   for (const archetypeId of ALL_ARCHETYPE_IDS) candidates.push({ type: 'hone', archetypeId, cost: run.config.HONE.cost });
 
   const offers = shuffle(candidates, rng).slice(0, Math.min(cfg.offersPerShop, candidates.length));
@@ -42,6 +43,7 @@ export function purchase(run, offer, opts = {}) {
       run.bag.remove(t.id); break;
     }
     case 'buyRelic':
+      if (run.relics.some(r => r.id === offer.relicId)) return { ok: false, reason: 'owned' };
       run.relics.push(RELICS[offer.relicId]); break;
     case 'hone': {
       if (!run.honeLevels) run.honeLevels = {};

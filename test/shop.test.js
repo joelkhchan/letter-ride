@@ -4,6 +4,7 @@ import { generateShop, purchase } from '../src/shop.js';
 import { newRun } from '../src/run.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { makeTile, getMod, resetTileIds } from '../src/tiles.js';
+import { RELICS } from '../src/relics.js';
 
 const dict = makeDictionary(['cat']);
 const config = {
@@ -133,4 +134,31 @@ test('purchase hone with insufficient coins leaves honeLevels and coins unchange
   assert.deepEqual(res, { ok: false, reason: 'broke' });
   assert.equal(run.honeLevels.rareLetter, undefined);
   assert.equal(run.coins, 3);
+});
+
+// Duplicate relic prevention tests
+test('generateShop does not offer a relic already owned by the run', () => {
+  // Use a config override with offersPerShop large enough to guarantee all candidates are returned,
+  // then assert the owned relic is absent from every offer.
+  const bigShopConfig = { ...config, SHOP: { ...config.SHOP, offersPerShop: 999 } };
+  const run = newRun({ config: bigShopConfig, dictionary: dict, seed: 1 });
+  run.coins = 100;
+  const ownedRelicId = 'vowelBonus';
+  run.relics.push(RELICS[ownedRelicId]);
+  // Pool with only the relic the player owns (other candidates present from buyableLetters etc.)
+  const shop = generateShop(run, run.rng, { relicIds: [ownedRelicId], modIds: [] });
+  const hasOwnedRelic = shop.offers.some(o => o.type === 'buyRelic' && o.relicId === ownedRelicId);
+  assert.equal(hasOwnedRelic, false, 'owned relic must not appear as a shop offer');
+});
+
+test('purchase of an owned buyRelic returns { ok:false, reason:"owned" } and leaves coins and relics unchanged', () => {
+  const run = mkRun();
+  const ownedRelicId = 'vowelBonus';
+  run.relics.push(RELICS[ownedRelicId]);
+  const beforeCoins = run.coins;
+  const beforeLen = run.relics.length;
+  const res = purchase(run, { type: 'buyRelic', relicId: ownedRelicId, cost: 8 });
+  assert.deepEqual(res, { ok: false, reason: 'owned' });
+  assert.equal(run.coins, beforeCoins, 'coins must not change');
+  assert.equal(run.relics.length, beforeLen, 'relics length must not change');
 });
