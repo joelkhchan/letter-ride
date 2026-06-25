@@ -36,7 +36,10 @@ existing Meta sink, they do not introduce a new currency.
   rank, passages cleared, best word + score, win/loss.
 - **Telemetry (`src/telemetry.js`)** records dev-facing balance analytics (runs, wins, per-item,
   per-archetype, avg word length) at `recordPlay` / `recordRunEnd` call sites in `main.js`.
-  This is anonymous aggregate analytics, distinct from a player-facing profile.
+  This is anonymous aggregate analytics that is dev-only and freely resettable; the player-facing
+  profile (Section 5.1) is a separate source of truth that must persist independently. Where a
+  player-facing display overlaps a telemetry counter (e.g. total runs), the **profile** is
+  authoritative; we do not derive player-facing numbers from the resettable telemetry store.
 - **`src/stats.js`** is eval-harness statistics (Wilson / McNemar), unrelated to player stats.
 
 ---
@@ -101,6 +104,31 @@ feats fire on the summary. Pure logic lives in new DOM-free modules. (Alternativ
 post-run-only checking, rejected for losing live feel and transient state; checks embedded in
 `run.js`/`scoring.js`, rejected for breaking logic-module boundaries.)
 
+### 5.0 Prerequisite run-state wiring (must exist before any predicate works)
+
+The predicates in Section 6 read run/play state that the engine does **not** capture today. These
+wiring additions are prerequisites, not implementation detail, and must land first:
+
+- **`deckId` on the run.** Today `main.js` builds the run with `deck: { startingBag }` and strips
+  the id, and `storage.js` serializes only that. The bounty-grid key `${stakeId}:${deckId}` and its
+  lower-tier auto-grant have nothing to anchor on. Fix: thread the id through (`deck: { id: deckId,
+  startingBag }`) and persist it in `storage.js` serialize/deserialize.
+- **Run-scoped accumulators on the run object** (reset per run, persisted by `storage.js`):
+  `boughtAnythingThisRun` (set at the shop-buy site), `discardedThisRun` (set in `discard`),
+  `totalWordsThisRun` (incremented in `playWord`). Needed by "buying nothing", "without
+  discarding", and "<= N words" feats; none are inferable from the current end state because
+  `recordRunEnd` ctx is only `{ won, ownedIds }` and `discardsLeft` resets each round.
+- **Extended achievements play-ctx** (a dedicated object, NOT the telemetry ctx, to avoid the
+  telemetry aggregate classifier drifting): the existing
+  `{ letters, word, selection, wordsPlayedThisRound, enablers }` plus `status`, `target`,
+  `roundTotal`, `playsLeft`, and the **pre-play `roundTotal`** (to compute "from behind" for the
+  clutch feat). All are available at the `recordPlay` call site because `playWord` mutates
+  `status`/`playsLeft` before the call.
+- **`metaMult` removal is a coupled code edit, not just a config delete.** It is read at exactly
+  one runtime site (the `endRun` earned-Meta line in `main.js`); deleting it from `STAKES` requires
+  dropping the `* metaMult` factor there too. (Removing it from config alone leaves a harmless but
+  dead `|| 1` and a misleading intent.)
+
 ### 5.1 New modules (pure, DOM-free, dependency-injected, unit-tested)
 
 **`src/achievements.js`** — catalog + checking logic.
@@ -111,8 +139,12 @@ post-run-only checking, rejected for losing live feel and transient state; check
   not already in `profile.completed`. No mutation; orchestration applies the award.
 - Build-diversity predicates **reuse `src/archetypes.js`** (`ARCHETYPES[id].matches(ctx)` /
   `ALL_ARCHETYPE_IDS`); no new classification code.
-- `ctx` is the same play/run context telemetry already builds, extended with run-summary fields
-  needed by predicates (see 5.3).
+- `ctx` is a dedicated achievements context (see 5.0), not the telemetry ctx.
+- **Completeness predicates** (Curator "use every relic", Enchanter "every tile-mod") compare the
+  profile's `relicsEverUsed` / `modsEverApplied` set against the **full roster id list injected at
+  check time** (the roster can grow), never a snapshot. Once an id is in `profile.completed` it
+  stays earned: the double-award guard means a later roster addition never un-completes it nor
+  re-pays it.
 
 **`src/profile.js`** — persisted player profile. Mirrors the `telemetry.js` / `meta.js` pattern
 (storage injected, corruption-tolerant load, key `letterRide.profile`).
@@ -142,8 +174,9 @@ via the existing `saveAll()`.
 
 ### 5.3 Stake x deck bounty grid
 
-- Lives in `profile.bountyGrid`. On a run **win**, the `(stake, deck)` cell pays a one-time bounty
-  (`config.BOUNTY` keyed by stake tier).
+- Lives in `profile.bountyGrid`, keyed `${stakeId}:${deckId}` (both ids must be present on the run
+  at win time per the 5.0 wiring; `deckId` is not on the run today). On a run **win**, the
+  `(stake, deck)` cell pays a one-time bounty (`config.BOUNTY` keyed by stake tier).
 - **Lower-tier auto-grant:** winning stake N with deck D marks cells for all stakes `<= N` with
   deck D as granted; only the highest is surfaced in the UI. No wall of grey.
 - This is the difficulty long-tail. It is the sole replacement for the removed per-run `metaMult`.
@@ -156,12 +189,24 @@ via the existing `saveAll()`.
   **lifetime-stats / personal-best panel** (the healthy alternative to a streak).
 - **Unlock celebration:** a short corner toast (queued so multiple unlocks do not collide) plus the
   existing SFX chime. Respect the existing mute toggle.
+- **Operationalizing the competence-feedback framing** (the design's central mitigation against
+  overjustification, turned into testable UI rules, not a slogan):
+  1. The unlock toast **leads with the feat name + flavor** ("One and Done: a round in a single
+     word"). The Meta amount is shown **secondary and muted**, as a byproduct, never the headline.
+  2. **No achievement frames a Meta amount as a pre-shown target.** Progress bars show progress
+     toward the *feat* ("3/5 relics used"), not "earn N Meta". The payout is revealed on
+     completion, not advertised as the goal.
+  3. The achievements screen groups by feat bucket (skill/diversity/etc.), not by payout size, so
+     the player is not nudged to grind the highest-Meta entries.
 
 ### 5.5 Config changes (`src/config.js` — numbers only, no logic)
 
 - **Remove** `metaMult` from each `STAKES` entry (the difficulty ladder stays; only the per-run
   multiplier is deleted).
-- **`LOADOUT`:** remove `startCoins` and `startRelic`; keep `extraDiscards`.
+- **`LOADOUT`:** remove `startCoins` and `startRelic`; keep `extraDiscards`. This is a coupled
+  code change, not a config-only delete: `buildLoadout` reads `LOADOUT.startRelic.relicId` and
+  `metaShopOffers` iterates `Object.keys(LOADOUT)`, so both must stop referencing the removed keys.
+  See the migration step in 5.7 for the already-banked Meta spent on these.
 - **Keep** `META.earn` drip (`perRoundCleared: 2`, `winBonus: 10`).
 - **Add** `META.achievementReward` (per-bucket default payouts, overridable per achievement) and
   `META.bounty` (per-stake-tier grid reward).
@@ -170,10 +215,23 @@ via the existing `saveAll()`.
 ### 5.6 Tests
 
 - `test/achievements.test.js`: predicates fire on the right context; payouts correct; no
-  double-award (an id already in `completed` is never re-paid); lower-tier bounty auto-grant.
+  double-award (an id already in `completed` is never re-paid); lower-tier bounty auto-grant;
+  completeness predicate against a roster that **grows after completion** (stays earned, never
+  re-paid).
 - `test/profile.test.js`: load/save round-trip; corruption tolerance; stat accumulation; personal
   bests update only on improvement; sets dedupe.
+- Migration: an old `letterRide.meta` with `loadout.startCoins`/`startRelic` > 0 is refunded and
+  zeroed exactly once (idempotent on re-load).
 - Tiny fixtures only (3-word dictionary, small bag), per the project testing rule.
+
+### 5.7 Migration of existing saved state
+
+The author already has a save; removing the two perks must not silently confiscate Meta:
+- On `loadMeta`, detect `loadout.startCoins > 0` or `loadout.startRelic > 0`, **refund** the Meta
+  spent (sum of `unitCost * level` for each removed perk, using the costs they were bought at),
+  add it back to `metaState.meta`, and zero the fields. Mark the migration done so a second load
+  does not double-refund (e.g. a `schemaVersion` bump on the meta state).
+- After migration, `metaShopOffers` and `buildLoadout` reference only `extraDiscards`.
 
 ---
 
@@ -236,16 +294,27 @@ Per the project working agreement, balance numbers are surfaced, not silently ch
 6. **`extraDiscards` cap** — confirm it remains 2 and the round curve is not balanced around it.
 7. Whether the four build-diversity "win leaning X" achievements pressure any single un-fun line in
    practice (watch during playtest; the pillar is build diversity, not archetype supremacy).
+8. Overjustification check: do the Meta payouts make play feel like chasing a reward rather than
+   playing for the feat? If completing achievements starts to feel like a chore, mute or remove the
+   payout display further (the 5.4 rules are the first lever; reducing payout salience is the next).
 
 ---
 
 ## 8. Scope & sequencing
 
-- **This is a banked design only.** No implementation, no tier change. Revisit when the roadmap
-  reaches the deferred wishlist and the core loop is locked.
-- The two live-system fixes (delete `metaMult`; trim loadout to `extraDiscards`) are described here
-  but are **balance changes that need playtesting**; they should ship as a deliberate, separately
-  validated step, not bundled silently.
+- **This is a banked design only. The entire doc, including the two economy fixes, is one unit of
+  deferred work.** No implementation, no tier change now. Revisit when the roadmap reaches the
+  deferred wishlist and the core loop is locked. (Earlier draft language implying the economy fixes
+  should "ship separately now" was contradictory and is removed: the `metaMult` deletion's
+  replacement is the bounty grid, which is part of this banked feature, so it cannot precede it.)
+- **Internal build ordering (when this is built):**
+  1. Prerequisite run-state wiring (5.0) + the profile store + the migration step (5.7).
+  2. The bounty grid, then delete `metaMult` (the grid must exist before the multiplier is removed,
+     or harder stakes briefly pay *less* with no replacement).
+  3. The achievement catalog + checking + UI.
+  4. A dedicated balance pass on the open tuning questions (Section 7).
+- The **loadout trim** (`startCoins`/`startRelic` removal + migration) is the one piece that is
+  independent of the grid and could ship on its own if ever desired; everything else is coupled.
 - Related memory/docs: `achievements-future`, `balance-tuning-state`, `skill-vs-luck-principle`,
   `roadmap-march-discipline`; the design spec's Meta section and Deferred wishlist; the competitive
   research and research appendix (Letterlike "too stingy" criticism; "leash not a crutch").
