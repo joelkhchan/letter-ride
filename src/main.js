@@ -9,9 +9,9 @@ import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
 import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
-import { checkAchievements, grantBounties, collectAchievement, collectBounty } from './achievements.js';
+import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingMeta } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
-import { renderRun, renderMeta, renderMenu, renderSettings, renderAchievements, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
+import { renderRun, renderMeta, renderMenu, renderSettings, renderAchievements, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx, startMusic, stopMusic, resumeAudio } from './audio.js';
 
 try {
@@ -38,15 +38,15 @@ try {
   // Achievements screen (onCollectAchievement / onCollectBounty). The visual unlock toast is
   // added with the deferred achievements UI task.
   function markCompletions(list) {
-    for (const a of list) if (!profile.completed.includes(a.id)) profile.completed.push(a.id);
+    for (const a of list) if (!profile.completed.includes(a.id)) { profile.completed.push(a.id); achievementToast(a); }
   }
   const render = () => {
     if (view === 'run') stopMusic(); else if (gestured) startMusic();   // music on the front-of-game screens
     if (view === 'run') return renderRun(run);
     if (view === 'meta') return renderMeta(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS, () => summarize(telemetry));
     if (view === 'settings') return renderSettings(!!run);
-    if (view === 'achievements') return renderAchievements();
-    return renderMenu(!!run, meta.meta);   // 'menu'
+    if (view === 'achievements') return renderAchievements(profile, CONFIG, ACHIEVEMENTS, ALL_RELIC_IDS, ALL_MOD_IDS);
+    return renderMenu(!!run, meta.meta, pendingMeta(profile, CONFIG));   // 'menu'
   };
   const pool = () => poolFromMeta(meta);
 

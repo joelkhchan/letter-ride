@@ -10,6 +10,8 @@ import { EVENTS } from './events.js';
 import { play as sfx, isMuted, toggleMuted, isMusicMuted, toggleMusic } from './audio.js';
 import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 import { getPref, togglePref } from './settings.js';
+import { levelFor } from './profile.js';
+import { pendingMeta } from './achievements.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -1066,7 +1068,8 @@ function showStatsOverlay(summary) {
 }
 
 // ---- Front-of-game shell: main menu / settings / achievements ---------------
-export function renderMenu(hasRun, metaTotal = 0) {
+export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
+  const badge = pending > 0 ? ` <span class="menu-badge">+${pending}</span>` : '';
   app().innerHTML = `
     <div id="main-menu">
       <div class="menu-title">Letter Ride</div>
@@ -1077,7 +1080,7 @@ export function renderMenu(hasRun, metaTotal = 0) {
         <button id="menu-new" class="menu-btn${hasRun ? '' : ' primary'}">New Run</button>
         <button id="menu-metashop" class="menu-btn">Meta Shop</button>
         <button id="menu-settings" class="menu-btn">Settings</button>
-        <button id="menu-achievements" class="menu-btn">Achievements</button>
+        <button id="menu-achievements" class="menu-btn">Achievements${badge}</button>
       </div>
       <div class="menu-meta">Meta: ${metaTotal}</div>
     </div>`;
@@ -1111,15 +1114,96 @@ export function renderSettings(hasRun) {
   on('set-back', () => handlers.onBackToMenu?.());
 }
 
-export function renderAchievements() {
+export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = [], allModIds = []) {
+  const done = new Set(profile?.completed || []);
+  const claimed = new Set(profile?.claimedAchievements || []);
+  const s = profile?.stats || {};
+  const ach = config.META.achievement;
+  const rewardFor = (a) => (ach.rewardOverride && ach.rewardOverride[a.id]) ?? ach.reward[a.bucket];
+  // Minimal progress for the two countable discovery achievements (richer bars deferred to polish).
+  const progressFor = (a) => {
+    if (a.id === 'curator')   return `${(s.relicsEverUsed || []).length}/${allRelicIds.length}`;
+    if (a.id === 'enchanter') return `${(s.modsEverApplied || []).length}/${allModIds.length}`;
+    return '';
+  };
+  const buckets = [
+    ['onboarding', 'Getting Started'],
+    ['progression', 'Ranks'],
+    ['mastery', 'Mastery'],
+    ['diversity', 'Build Diversity'],
+    ['discovery', 'Discovery'],
+  ];
+  // Feat-first rows. Completed-unclaimed rows get a Collect button (the only path that pays Meta).
+  const rowsFor = (bucket) => (ACHIEVEMENTS || []).filter(a => a.bucket === bucket).map(a => {
+    const isClaimed = claimed.has(a.id), isDone = done.has(a.id);
+    let right;
+    if (isClaimed) right = `<span class="ach-claimed">collected</span>`;
+    else if (isDone) right = `<button class="ach-collect" data-collect-ach="${a.id}">Collect +${rewardFor(a)}</button>`;
+    else { const pr = progressFor(a); right = `<span class="ach-reward">${pr ? pr + ' · ' : ''}+${rewardFor(a)} Meta</span>`; }
+    return `<div class="ach-row ${isClaimed ? 'claimed' : isDone ? 'ready' : 'locked'}">
+      <span class="ach-name">${a.name}</span>
+      <span class="ach-desc">${a.desc}</span>
+      ${right}
+    </div>`;
+  }).join('');
+  const sections = buckets.map(([k, label]) => `<div class="ach-section"><h3>${label}</h3>${rowsFor(k)}</div>`).join('');
+
+  // Bounty grid: stakes x ALL decks. Earned-unclaimed cells are clickable to collect; claimed are filled.
+  const stakes = config.STAKES.map(x => x.id);
+  const decks = Object.keys(config.DECKS);
+  const gridHead = `<tr><th></th>${stakes.map(x => `<th>S${x}</th>`).join('')}</tr>`;
+  const gridRows = decks.map(d => {
+    const cells = stakes.map(st => {
+      const key = `${st}:${d}`;
+      if (profile?.bountyClaimed?.[key]) return `<td class="bounty-cell claimed">&#9733;</td>`;
+      if (profile?.bountyEarned?.[key]) return `<td class="bounty-cell ready"><button class="bounty-collect" data-collect-bounty="${key}">+${config.META.bounty[st] || 0}</button></td>`;
+      return `<td class="bounty-cell locked">&middot;</td>`;
+    }).join('');
+    return `<tr><th>${config.DECKS[d].name}</th>${cells}</tr>`;
+  }).join('');
+
+  const lvl = levelFor(s.lifetimeScore || 0, config);
+  const pending = pendingMeta(profile, config);
+  const statsPanel = `<div class="ach-stats">
+    <p>Rank <b>${lvl.name}</b>${lvl.nextAt ? ` &middot; next at ${lvl.nextAt} lifetime Score (now ${s.lifetimeScore || 0})` : ' &middot; max'}</p>
+    <p>Runs <b>${s.runs || 0}</b> &middot; Wins <b>${s.wins || 0}</b> &middot; Rounds cleared <b>${s.roundsCleared || 0}</b></p>
+    <p>Best word <b>${s.bestWord || '&mdash;'}</b> (${s.bestWordScore || 0}) &middot; Best run <b>${s.bestRunScore || 0}</b></p>
+  </div>`;
+  const pendingHtml = pending > 0 ? `<div class="ach-pending">${pending} Meta to collect</div>` : '';
+
   app().innerHTML = `
-    <div id="menu-screen">
+    <div id="menu-screen" class="achievements">
       <div class="menu-title small">Achievements</div>
-      <p class="menu-note">Coming soon. Earn ranks and milestones across runs; achievements will award Meta to spend in the shop.</p>
-      <div class="rank-ladder"><span>Apprentice</span><span>&rarr;</span><span>Journeyman</span><span>&rarr;</span><span>Master Printer</span></div>
+      ${statsPanel}
+      ${pendingHtml}
+      ${sections}
+      <div class="ach-section"><h3>Bounties</h3><table class="bounty-grid">${gridHead}${gridRows}</table></div>
       <div class="menu-buttons"><button id="ach-back" class="menu-btn">Back</button></div>
     </div>`;
-  const e = document.getElementById('ach-back'); if (e) e.onclick = () => handlers.onBackToMenu?.();
+  const back = document.getElementById('ach-back'); if (back) back.onclick = () => handlers.onBackToMenu?.();
+  app().querySelectorAll('[data-collect-ach]').forEach(b => { b.onclick = () => handlers.onCollectAchievement?.(b.dataset.collectAch); });
+  app().querySelectorAll('[data-collect-bounty]').forEach(b => { b.onclick = () => handlers.onCollectBounty?.(b.dataset.collectBounty); });
+}
+
+// Feat-first unlock toast. Celebrates the achievement; the Meta is collected separately on the
+// Achievements screen, so the toast never shows a payout. Queued so multiple unlocks don't collide.
+let _toastQueue = [];
+let _toastBusy = false;
+export function achievementToast(a) {
+  _toastQueue.push(a);
+  if (!_toastBusy) _drainToasts();
+}
+function _drainToasts() {
+  const a = _toastQueue.shift();
+  if (!a) { _toastBusy = false; return; }
+  _toastBusy = true;
+  const el = document.createElement('div');
+  el.className = 'ach-toast';
+  el.innerHTML = `<span class="t-tag">Unlocked</span><span class="t-name">${a.name}</span>`;
+  document.body.appendChild(el);
+  try { sfx('cash'); } catch {}
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.remove(); _drainToasts(); }, 300); }, 2000);
 }
 
 export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
