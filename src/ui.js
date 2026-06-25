@@ -7,6 +7,7 @@ import { ARCHETYPES, honeModifiers } from './archetypes.js';
 import { passageOf, tierOf, isBossRound } from './run.js';
 import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 import { EVENTS } from './events.js';
+import { play as sfx, isMuted, toggleMuted } from './audio.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -36,6 +37,7 @@ function tapTile(tile) {
     letter = choice;
   }
   selection.push({ tile, letter });
+  sfx('tap');
   renderRun(lastRun);
 }
 
@@ -409,6 +411,7 @@ function _pullDetail(bd) {
 
 // Animate the commit->score reveal in place, then onDone() to settle (re-render).
 export function animatePull(sel, scored, onDone) {
+  sfx('chunk');                                   // the platen comes down (plays even in reduced-motion)
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const bug = document.getElementById('scorebug');
   const stage = document.getElementById('staging');
@@ -416,6 +419,8 @@ export function animatePull(sel, scored, onDone) {
 
   _pulling = true;
   let finished = false;
+  let flourished = false;
+  const flourish = () => { if (!flourished) { flourished = true; sfx('flourish'); } };
   const intFmt = v => String(Math.round(v));
   const bd = scored.breakdown || {};
   const hasMult = ((bd.addMultParts || []).length + (bd.timesMultParts || []).length) > 0;
@@ -440,6 +445,7 @@ export function animatePull(sel, scored, onDone) {
     if (onDone) onDone();
   };
   const showFinals = () => {
+    flourish();
     if (ptsEl) ptsEl.textContent = intFmt(scored.points);
     if (multEl) multEl.textContent = _multStr(scored.mult);
     if (scoreEl) { scoreEl.textContent = intFmt(scored.score); scoreEl.classList.add('pull-pop'); }
@@ -464,7 +470,7 @@ export function animatePull(sel, scored, onDone) {
     else if (multEl) multEl.textContent = _multStr(scored.mult);
   });
   t += hasMult ? PULL.mult : 80;
-  _pullAfter(t, () => _pullTween(scoreEl, 0, scored.score, PULL.score, intFmt));
+  _pullAfter(t, () => { flourish(); _pullTween(scoreEl, 0, scored.score, PULL.score, intFmt); });
   t += PULL.score;
   _pullAfter(t, () => { if (scoreEl) scoreEl.classList.add('pull-pop'); });
   _pullAfter(t + PULL.hold, settle);
@@ -537,6 +543,7 @@ export function renderRun(run) {
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
       <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
+      <button id="mute-btn" title="${isMuted() ? 'Sound off (tap for on)' : 'Sound on (tap for off)'}" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">${isMuted() ? '🔇' : '🔊'}</button>
     </div>
     ${relicsModsPanelHtml(run, stagedBreakdown)}
     ${lastPlayHtml}
@@ -589,6 +596,7 @@ export function renderRun(run) {
   on('new', () => { selection = []; lastShownScore = null; handlers.onRunEnd?.(); });
   on('shuffle', () => { handlers.onShuffle?.(); });
   on('help-btn', () => showHelpOverlay());
+  on('mute-btn', () => { toggleMuted(); renderRun(run); });
   wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 

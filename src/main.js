@@ -1,7 +1,7 @@
 // src/main.js
 import { CONFIG } from './config.js';
 import { loadFromFile } from './dictionary.js';
-import { newRun, playWord, discard, nextRound, offerNode } from './run.js';
+import { newRun, playWord, discard, nextRound, offerNode, isBossRound } from './run.js';
 import { saveRun, loadRun } from './storage.js';
 import { generateShop, purchase } from './shop.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
@@ -10,6 +10,7 @@ import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildL
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
 import { renderRun, renderMeta, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
+import { play as sfx } from './audio.js';
 
 try {
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
@@ -109,15 +110,17 @@ try {
     },
     onPressDraw() {
       pressDraw(run);
+      sfx('tap');
       saveAll(); render();
     },
     onPressBank() {
       run._pressLastPot = run.press?.pot || 0;
       pressBank(run);
+      sfx('cash');
       run.nodeResolved = true;
       saveAll(); render();
     },
-    onContinue() { run.nodeEventId = null; run._nodePick = null; run.press = null; run._pressLastPot = null; run.shop = null; run.nodeResolved = false; nextRound(run); saveAll(); render(); },
+    onContinue() { run.nodeEventId = null; run._nodePick = null; run.press = null; run._pressLastPot = null; run.shop = null; run.nodeResolved = false; nextRound(run); if (isBossRound(run.roundIndex)) sfx('boss'); saveAll(); render(); },
     // Shuffle: cosmetically reorder the rack using Math.random (not run.rng).
     // Rack order has no effect on scoring or future draws, so this is purely visual.
     // Using run.rng here would desync the seeded RNG stream and make a run's outcome
