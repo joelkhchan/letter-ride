@@ -10,13 +10,23 @@ No opponent — you play against a number, then against your own mastery. Ships 
 
 ## Start here
 
-1. Read `docs/2026-06-20-letter-ride-design.md` (the design spec — the *what* and *why*).
-2. Read `docs/2026-06-20-letter-ride-plan.md` (the 4-tier **roadmap** — the overview + 🛑 gates).
-3. **Build Tier 0 from the executable plan `docs/2026-06-21-letter-ride-tier0-plan.md`** — the
-   source of truth for Tier 0 (full task-by-task code). Tiers 1–3 get their own executable plans
-   authored just-in-time after each gate; the roadmap is the high-level map.
-4. Execute **in order**, one task at a time, TDD-style. Build and **playtest each tier before the
-   next** (Tier 0 → 1 → 2 → 3).
+**Status (2026-06-25):** Tiers 0 to 2 are built and accepted (the spine, the in-run roguelike, the
+meta loop), plus extra greenlit mechanics (retrigger, transform/destroy, chaining) and the
+**Phase 4 feel layer** (the look, the pull, sound, the broadside trophy card, and a main menu).
+Remaining roadmap work: **Tier 3, ship as an Android APK (Capacitor)**, gated on an author playtest
++ difficulty tuning first. Next visual work: an **engraved icon set** (see below).
+
+Orientation docs:
+1. `docs/2026-06-20-letter-ride-design.md`: the design spec (the *what* and *why*).
+2. `docs/2026-06-20-letter-ride-plan.md`: the 4-tier **roadmap** (overview + 🛑 gates).
+3. `docs/2026-06-21-letter-ride-tier0-plan.md`: the executable Tier 0 plan (historical; Tier 0 done).
+4. `docs/2026-06-24-letter-ride-brand-identity.md`: the **visual identity**, deep navy + antique
+   gold + **Zilla Slab**, letterpress/print-craft (palette revised 2026-06-25 from warm cream). The
+   next visual layer is an **engraved icon set** (game-icons.net, CC-BY, gold-tinted + framed), NOT
+   pixel art. See the `visual-assets-decided` memory.
+
+Still TDD and playtest-gated: build and **playtest each tier before the next**, and the author
+judges feel (AI builds systems but cannot judge fun).
 
 ## Non-negotiable design rules (these prevent the design from drifting)
 
@@ -47,11 +57,12 @@ No opponent — you play against a number, then against your own mastery. Ships 
   Never let pure chance decide a run. *But* preserve the joy of chance: surprising draws and lucky
   combos should still delight. Tune toward "a skilled line clears the **median** draw," not the
   lucky tail, and make boss/round modifiers legible *before* the player commits.
-- **Tier discipline:** meta-progression (Tier 2) and the Capacitor/Android build (Tier 3) ARE
-  in scope now — but built **last**, each only after the previous tier is playtested as fun.
-  Do NOT build anything from the spec's "Deferred wishlist" (Tier 4+: leveled alphabet/letter
-  XP, achievements, variable word length, branching map, boss rounds, true part-of-speech
-  synergies). If you think a deferred feature is needed, STOP and ask.
+- **Tier discipline:** Tiers 0 to 2 are built; **Tier 3 (the Capacitor/Android APK) is the last
+  roadmap tier**, gated on an author playtest + tuning first. Do NOT build the spec's "Deferred
+  wishlist" (Tier 4+): leveled alphabet/letter XP; **achievements** (when built they should pay
+  **Meta**, see the `achievements-future` memory); variable word length; a branching run map; true
+  part-of-speech synergies. **Bosses are built** (the Sentence rounds, `bosses.js`), so they are no
+  longer deferred. If you think a deferred feature is needed, STOP and ask.
 
 ## Architecture & conventions
 
@@ -59,8 +70,11 @@ No opponent — you play against a number, then against your own mastery. Ships 
   Pawkeet Slots project's hand-rolled style.
 - **Logic vs. UI split is strict.** All game *rules* live in pure, DOM-free modules
   (`rng`, `dictionary`, `tiles`, `bag`, `word`, `patterns`, `scoring`, `relics`, `shop`, `run`,
-  `meta`, `storage`) and are unit-tested headless. `ui.js`/`main.js` only render state and emit
-  user actions (incl. tap-to-build) — no rules in the UI.
+  `meta`, `bosses`, `archetypes`, `events`, `telemetry`, `storage`) and are unit-tested headless.
+  The **UI/feel layer** is browser-only and verified manually (never unit-tested): `ui.js`/`main.js`
+  (render + tap-to-build, no rules), plus `audio.js` (Web Audio SFX, synthesized, no files),
+  `broadside.js` (the canvas trophy card), and `settings.js` (UI prefs). CSS is token-driven in
+  `style.css` (the whole palette is the `:root` block).
 - **Dependency injection:** `dictionary` and `tileValues` are passed *into* functions, never
   imported as globals inside logic modules. This is what keeps them testable.
 - **Determinism:** all randomness flows through the seeded RNG in `src/rng.js`. **No
