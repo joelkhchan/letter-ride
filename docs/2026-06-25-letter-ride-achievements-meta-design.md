@@ -295,7 +295,16 @@ content access (relics/mods/decks) is never gated behind the grind, only mastery
 
 ## 7. Open tuning questions (for playtest, not pre-decided)
 
-Per the project working agreement, balance numbers are surfaced, not silently chosen:
+Per the project working agreement, balance numbers are surfaced, not silently chosen.
+
+**Tuning pass 2026-06-25 (via the new `npm run analyze:meta` career harness):** measured Score/run
+~670-1650 (mean ~1150) and confirmed meta-progression is a leash not a crutch (gated win% ≈
+full-pool; target kit in ~2-4 runs; first unlock run 1). Applied: `efficientWords` 12→20 (was
+unreachable); LEVELS thresholds raised `[3k,9k,20k,40k]→[4k,12k,28k,60k]` (Artisan ~46 runs vs ~25).
+Left as-is (paced well): unlock costs, reward weights, bounty values. Author confirmed in-run Score/run
+should NOT be raised (would cancel the threshold change). Remaining open:
+
+
 
 1. **Per-achievement Meta payouts** by bucket, and the total expected faucet per run.
 2. **Raised `unlockCost` values** to hold the pacing target (first unlock under one run; bulk in
