@@ -1,15 +1,18 @@
 // src/meta.js — persistent meta-progression state + earn.
 const META_KEY = 'letterRide.meta';
 
+export const META_SCHEMA_VERSION = 2;
+
 export function makeMetaState(config) {
   const b = config.META.baseUnlocked;
   return {
+    schemaVersion: META_SCHEMA_VERSION,
     meta: 0,
     unlockedRelics: [...b.relics],
     unlockedMods: [...b.mods],
     unlockedDecks: [...b.decks],
     unlockedStakes: [...b.stakes],
-    loadout: { extraDiscards: 0, startCoins: 0, startRelic: 0 },
+    loadout: { extraDiscards: 0 },
   };
 }
 
@@ -17,13 +20,25 @@ export function saveMeta(metaState, storage) {
   storage.setItem(META_KEY, JSON.stringify(metaState));
 }
 
+// Historical costs of the removed perks, for one-time refund of already-spent Meta.
+const REMOVED_PERK_COST = { startCoins: 8, startRelic: 25 };
+
 export function loadMeta(storage, config) {
   const raw = storage.getItem(META_KEY);
   if (!raw) return makeMetaState(config);
   try {
     const data = JSON.parse(raw);
     const base = makeMetaState(config);
-    return { ...base, ...data, loadout: { ...base.loadout, ...(data.loadout || {}) } };
+    const merged = { ...base, ...data, loadout: { ...base.loadout, ...(data.loadout || {}) } };
+    if ((data.schemaVersion || 0) < META_SCHEMA_VERSION) {
+      const lo = data.loadout || {};
+      const refund = (lo.startCoins || 0) * REMOVED_PERK_COST.startCoins
+                   + (lo.startRelic || 0) * REMOVED_PERK_COST.startRelic;
+      merged.meta = (merged.meta || 0) + refund;
+      merged.loadout = { extraDiscards: lo.extraDiscards || 0 };   // drop removed keys
+      merged.schemaVersion = META_SCHEMA_VERSION;
+    }
+    return merged;
   } catch {
     return makeMetaState(config);
   }
@@ -46,16 +61,7 @@ export function applyStakeTargets(baseTargets, stake) {
 
 export function buildLoadout(metaState, config, RELICS) {
   const lo = metaState.loadout || {};
-  const startRelics = [];
-  if ((lo.startRelic || 0) > 0) {
-    const r = RELICS[config.LOADOUT.startRelic.relicId];
-    if (r) startRelics.push(r);
-  }
-  return {
-    extraDiscards: lo.extraDiscards || 0,
-    startCoins: (lo.startCoins || 0) * 5,
-    startRelics,
-  };
+  return { extraDiscards: lo.extraDiscards || 0, startRelics: [] };
 }
 
 export function metaShopOffers(metaState, config, allRelicIds, allModIds) {

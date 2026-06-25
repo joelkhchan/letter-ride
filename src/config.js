@@ -41,7 +41,21 @@ export const CONFIG = {
       decks: ['standard','rareRich','doubled','lean'],
       stakes: [0],
     },
-    unlockCost: { relic: 15, mod: 12, deck: 20, stake: 10 },
+    unlockCost: { relic: 25, mod: 20, deck: 35, stake: 15 },   // TUNE: raised to absorb the larger faucet
+    achievement: {
+      reward: { onboarding: 3, mastery: 12, diversity: 8, discovery: 5, progression: 10 },  // TUNE: Meta by bucket
+      rewardOverride: { winStake2: 25, reachApprentice: 5, reachJourneyman: 10, reachExpert: 15, reachArtisan: 25 },  // TUNE
+      bigWordScore: 150,    // TUNE
+      bigRoundScore: 400,   // TUNE
+      efficientWords: 12,   // TUNE: win in <= N total words
+      manyMods: 4,          // TUNE
+      manyRelics: 4,        // TUNE
+    },
+    bounty: { 0: 5, 1: 10, 2: 20 },   // TUNE: one-time per (stake,deck) cell, by stake tier
+  },
+  LEVELS: {
+    names: ['Novice', 'Apprentice', 'Journeyman', 'Expert', 'Artisan'],   // TUNE names (branding owns final)
+    thresholds: [0, 3000, 9000, 20000, 40000],                            // TUNE: cumulative lifetime Score per tier
   },
   DECKS: {
     standard:   { id: 'standard',   name: 'Standard',    desc: 'Balanced starter. Good for learning.',                                                              startingBag: null },  // null => CONFIG.STARTING_BAG
@@ -58,8 +72,6 @@ export const CONFIG = {
   ],
   LOADOUT: {
     extraDiscards: { name: '+1 Discard / round', max: 2, cost: 10 },
-    startCoins:    { name: '+5 starting $',  max: 2, cost: 8 },        // each level = +5 coins
-    startRelic:    { name: 'Start with Vowel Bonus', max: 1, cost: 25, relicId: 'vowelBonus' },
   },
   HONE: { cost: 6 },
   PROFANITY_FILTER: true,

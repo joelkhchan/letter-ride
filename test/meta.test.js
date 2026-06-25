@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { makeMetaState, saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from '../src/meta.js';
+import { CONFIG } from '../src/config.js';
 
 const config = {
   ROUND_TARGETS: [40,70,110,160,230,320,440,600],
@@ -15,7 +16,7 @@ test('makeMetaState seeds from baseUnlocked, meta starts at 0', () => {
   assert.equal(m.meta, 0);
   assert.deepEqual(m.unlockedRelics, ['vowelBonus']);
   assert.deepEqual(m.unlockedStakes, [0]);
-  assert.deepEqual(m.loadout, { extraDiscards: 0, startCoins: 0, startRelic: 0 });
+  assert.deepEqual(m.loadout, { extraDiscards: 0 });
 });
 test('save/load round-trips; absent -> fresh', () => {
   const s = fakeStorage();
@@ -44,16 +45,6 @@ test('applyStakeTargets scales targets by targetMult (ceil)', () => {
   assert.deepEqual(applyStakeTargets([40,70], { targetMult: 1.25 }), [50, 88]);
   assert.deepEqual(applyStakeTargets([40,70], null), [40, 70]);    // no stake -> unchanged
 });
-test('buildLoadout translates levels into run values', () => {
-  const cfg = { LOADOUT: { startCoins: { max:2 }, startRelic: { max:1, relicId:'vowelBonus' }, extraDiscards: { max:2 } } };
-  const RELICS = { vowelBonus: { id: 'vowelBonus' } };
-  const m = { loadout: { extraDiscards: 1, startCoins: 2, startRelic: 1 } };
-  const lo = buildLoadout(m, cfg, RELICS);
-  assert.equal(lo.extraDiscards, 1);
-  assert.equal(lo.startCoins, 10);            // 2 levels * 5
-  assert.deepEqual(lo.startRelics.map(r => r.id), ['vowelBonus']);
-});
-
 test('metaShopOffers lists locked content + loadout below max', () => {
   const cfg2 = {
     ...config,
@@ -99,4 +90,38 @@ test('purchaseMeta increments a loadout level up to max', () => {
   assert.deepEqual(purchaseMeta(m, { type:'loadout', key:'startRelic', cost:25 }, cfg2), { ok:true });
   assert.equal(m.loadout.startRelic, 1);
   assert.deepEqual(purchaseMeta(m, { type:'loadout', key:'startRelic', cost:25 }, cfg2), { ok:false, reason:'maxed' });
+});
+
+// --- Achievements/meta-economy refactor (Task 1) ---
+test('loadMeta refunds Meta spent on removed loadout perks exactly once', () => {
+  const store = new Map();
+  store.set('letterRide.meta', JSON.stringify({
+    meta: 0, unlockedRelics: [], unlockedMods: [], unlockedDecks: [], unlockedStakes: [0],
+    loadout: { extraDiscards: 1, startCoins: 2, startRelic: 1 },
+  }));
+  const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  const m = loadMeta(storage, CONFIG);
+  assert.equal(m.meta, 41);                 // 2*8 + 1*25
+  assert.equal(m.loadout.extraDiscards, 1);
+  assert.equal(m.loadout.startCoins, undefined);
+  assert.equal(m.loadout.startRelic, undefined);
+  assert.equal(m.schemaVersion, 2);
+  storage.setItem('letterRide.meta', JSON.stringify(m));
+  const m2 = loadMeta(storage, CONFIG);
+  assert.equal(m2.meta, 41);                // idempotent
+});
+
+test('config drops removed loadout perks and adds achievement/bounty blocks', () => {
+  assert.equal(CONFIG.LOADOUT.startCoins, undefined);
+  assert.equal(CONFIG.LOADOUT.startRelic, undefined);
+  assert.ok(CONFIG.LOADOUT.extraDiscards);
+  assert.ok(CONFIG.META.achievement && CONFIG.META.bounty);
+  assert.ok(CONFIG.LEVELS && Array.isArray(CONFIG.LEVELS.thresholds));
+});
+
+test('buildLoadout returns only extraDiscards', () => {
+  const m = makeMetaState(CONFIG); m.loadout.extraDiscards = 2;
+  const lo = buildLoadout(m, CONFIG, {});
+  assert.equal(lo.extraDiscards, 2);
+  assert.deepEqual(lo.startRelics, []);
 });
