@@ -3,7 +3,7 @@ import { makeTile } from './tiles.js';
 import { makeRng, shuffle } from './rng.js';
 import { validate, isLegalSelection } from './word.js';
 import { scoreWord } from './scoring.js';
-import { honeModifiers } from './archetypes.js';
+import { honeModifiers, ARCHETYPES, ALL_ARCHETYPE_IDS } from './archetypes.js';
 import { BOSSES, ALL_BOSS_IDS, bossTileValues, applyBossToScore } from './bosses.js';
 import { EVENTS, ALL_EVENT_IDS } from './events.js';
 
@@ -101,6 +101,11 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     honeLevels: {},
     relicState: {},
     wordsPlayedThisRound: 0,
+    totalWordsThisRun: 0,
+    discardedThisRun: false,
+    flawlessSoFar: true,
+    archetypeTally: {},
+    boughtAnythingThisRun: false,
     chainLength: 0,
     lastWord: null,
     stake, deck,
@@ -155,6 +160,10 @@ export function playWord(run, selection) {
   const scored = applyBossToScore(scored0, boss);            // cap/tax (else unchanged)
   run.roundTotal += scored.score;
   run.wordsPlayedThisRound += 1;
+  run.totalWordsThisRun += 1;
+  for (const id of ALL_ARCHETYPE_IDS) {
+    if (ARCHETYPES[id].matches(ratchetCtx)) run.archetypeTally[id] = (run.archetypeTally[id] || 0) + 1;
+  }
   run.chainLength = chainLength;
   run.lastWord = { lastLetter: chainLast };
   run.playsLeft -= 1;
@@ -162,7 +171,7 @@ export function playWord(run, selection) {
   const usedIds = new Set(selection.map(s => s.tile.id));
   run.rack = run.rack.filter(t => !usedIds.has(t.id));
   refillHand(run);
-  if (run.roundTotal >= run.target) { run.status = 'roundCleared'; if (run.config.COINS_ON_CLEAR) awardCoins(run); }
+  if (run.roundTotal >= run.target) { run.status = 'roundCleared'; if (run.playsLeft <= 0) run.flawlessSoFar = false; if (run.config.COINS_ON_CLEAR) awardCoins(run); }
   else if (run.playsLeft <= 0) run.status = 'lost';
   else checkDeadHand(run);
   return { ok: true, scored, run };
@@ -171,6 +180,7 @@ export function playWord(run, selection) {
 export function discard(run, selection = []) {
   if (run.discardsLeft <= 0 || selection.length === 0) return run;
   run.discardsLeft -= 1;
+  run.discardedThisRun = true;
   const dropIds = new Set(selection.map(s => s.tile.id));
   run.rack = run.rack.filter(t => !dropIds.has(t.id));
   refillHand(run);

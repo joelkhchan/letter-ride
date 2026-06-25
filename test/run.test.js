@@ -471,3 +471,31 @@ test('chaining: chainLength reaches the scoring context (read by a fixture relic
   assert.equal(r1.scored.points < 100, true);
   assert.equal(r2.scored.points >= 100, true);
 });
+
+// --- Run-scoped accumulators for achievements (Task 2) ---
+test('run tracks totalWordsThisRun and archetypeTally on a play', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.target = 100;                       // unreachable in one CAT, so the round stays open
+  playWord(run, seatCat(run));            // CAT, length 3 -> shortWord archetype
+  assert.equal(run.totalWordsThisRun, 1);
+  assert.equal(run.discardedThisRun, false);
+  assert.ok(run.archetypeTally.shortWord >= 1);
+});
+
+test('discard sets discardedThisRun', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  const sel = seatCat(run);               // rack now holds C, A, T
+  discard(run, [sel[0]]);                 // discard one seated tile
+  assert.equal(run.discardedThisRun, true);
+});
+
+test('flawlessSoFar flips false on a final-play clear', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.target = 5; run.playsLeft = 1;      // CAT clears exactly, on the last play
+  playWord(run, seatCat(run));
+  assert.equal(run.status, 'roundCleared');
+  assert.equal(run.flawlessSoFar, false);
+});

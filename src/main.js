@@ -45,7 +45,7 @@ try {
     const stake = CONFIG.STAKES.find(s => s.id === stakeId) || CONFIG.STAKES[0];
     const targets = applyStakeTargets(CONFIG.ROUND_TARGETS, stake);
     const loadout = buildLoadout(meta, CONFIG, RELICS);
-    run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets, deck: { startingBag: deck.startingBag }, stake, loadout });
+    run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets, deck: { id: deck.id, startingBag: deck.startingBag }, stake, loadout });
     view = 'run'; saveAll(); render();
   }
   function endRun() {
@@ -91,6 +91,7 @@ try {
     onBuy(offer, opts = {}) {
       const r = purchase(run, offer, opts);
       if (r.ok) {
+        run.boughtAnythingThisRun = true;
         if (offer.type === 'buyRelic') recordPurchase(telemetry, offer.relicId);
         else if (offer.type === 'buyEnchantedTile' || offer.type === 'enchantTile') recordPurchase(telemetry, offer.modId);
         run.shop = generateShop(run, run.rng, pool());
