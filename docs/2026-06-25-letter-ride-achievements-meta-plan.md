@@ -8,7 +8,7 @@
 
 **Tech Stack:** Vanilla JS, ES modules, no build step. Tests via `node --test` (`npm test`). Persistence via injected `localStorage`-shaped storage.
 
-**Status:** This plan implements a **banked, Tier-4+ deferred** feature. Do NOT execute it until the roadmap reaches the deferred wishlist and the author greenlights it. The spec is `docs/2026-06-25-letter-ride-achievements-meta-design.md`.
+**Status:** IMPLEMENTED (2026-06-25). Tasks 1-5 (logic) on branch `worktree-achievements-meta` (283 tests green); Task 6 (UI) on branch `achievements-ui`, browser-smoked. NOT merged to main. Remaining: balance-tuning pass on the TUNE numbers, then merge (expect a ui.js/style.css resolution against the branding session). The spec is `docs/2026-06-25-letter-ride-achievements-meta-design.md`.
 
 > **Staleness warning (read before executing):** This plan is banked for Tier 4+, so the core loop will have drifted by execution time. Every line number and quoted OLD-string snippet below is anchored to the `worktree-achievements-meta` branch at authoring time. **Re-locate each edit by its surrounding symbol (function name + an adjacent unique line), not by line number, before pasting.** If a quoted OLD block no longer matches verbatim, stop and re-derive the edit against the current code.
 
