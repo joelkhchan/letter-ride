@@ -567,7 +567,7 @@ export function renderRun(run) {
         const titleAttr = t.mods && t.mods.length
           ? ` title="${t.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ')}"`
           : '';
-        return `<button class="tile ${inRack(t.id) ? 'used' : ''}" data-id="${t.id}"${titleAttr}>${t.letter}${modBadge}${tileVal}</button>`;
+        return `<button class="tile ${t.mods && t.mods.length ? 'mod ' : ''}${inRack(t.id) ? 'used' : ''}" data-id="${t.id}"${titleAttr}>${t.letter}${modBadge}${tileVal}</button>`;
       }).join('')}
     </div>
     <div id="msg"></div>
