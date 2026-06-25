@@ -11,6 +11,7 @@
     "analyze:corpus": "node scripts/analyze-corpus.js",
     "analyze:eval": "node scripts/analyze-eval.js",
     "analyze:boss": "node scripts/analyze-boss.js",
+    "analyze:meta": "node scripts/analyze-meta.js",
     "cap:copy": "node scripts/build-www.js",
     "cap:sync": "npm run cap:copy && npx cap sync"
   },

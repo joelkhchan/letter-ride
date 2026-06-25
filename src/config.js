@@ -47,7 +47,7 @@ export const CONFIG = {
       rewardOverride: { winStake2: 25, reachApprentice: 5, reachJourneyman: 10, reachExpert: 15, reachArtisan: 25 },  // TUNE
       bigWordScore: 150,    // TUNE
       bigRoundScore: 400,   // TUNE
-      efficientWords: 12,   // TUNE: win in <= N total words
+      efficientWords: 20,   // TUNE: win in <= N total words (12 rounds, so <=20 ≈ 1.6 words/round)
       manyMods: 4,          // TUNE
       manyRelics: 4,        // TUNE
     },
