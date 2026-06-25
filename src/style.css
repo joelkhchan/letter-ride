@@ -178,8 +178,8 @@ button { font-family: var(--font-body); color: var(--ink); }
 
 /* ================================================================ Node-choice */
 #node-choice { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }
-.node-prompt { text-align: center; font-size: 0.92rem; color: var(--ink-soft); padding: 2px 6px; }
-.node-prompt b { color: var(--gold); }
+.node-or { display: flex; align-items: center; gap: 12px; color: var(--gold); font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; letter-spacing: 2px; margin: 2px 0; }
+.node-or::before, .node-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .node-card { display: block; width: 100%; text-align: left; padding: 15px 18px; border-radius: var(--radius-md); border: 1px solid var(--line); border-top: 3px solid var(--gold); background: linear-gradient(var(--night-2), var(--night-sunk)); color: var(--ink); font-size: 1rem; cursor: pointer; transition: border-color 0.12s, background 0.12s, transform 0.06s; box-shadow: 0 2px 7px rgba(0,0,0,0.5); }
 .node-card:hover { border-color: var(--gold); background: var(--gold-wash); transform: translateY(-1px); }
 .node-card-title { font-family: var(--font-display); font-weight: 700; font-size: 1.15em; margin-bottom: 4px; }
