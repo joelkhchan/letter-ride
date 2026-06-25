@@ -1,576 +1,166 @@
 /* ============================================================
-   Letter Ride — UI styles (Phase 0a light polish)
-   Vanilla, no framework, no new fonts. Neutral palette so the
-   visual identity pass (Phase 4) can layer on top freely.
+   Letter Ride — Deep Navy + Antique Gold (Phase 4 SP1, locked 2026-06-25)
+   Deep-navy ground, warm ivory type, antique gold + spot inks; Zilla Slab.
+   Fully token-driven: change a palette by editing the :root tokens only.
+   Render/feel layer — no game rules. System-serif fallback before the woff2.
    ============================================================ */
 
-/* ---- tokens ---- */
+/* ---- fonts (self-hosted OFL, see assets/fonts/README.md) ---- */
+@font-face { font-family: 'Zilla Slab'; src: url('../assets/fonts/zilla-slab-latin-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Zilla Slab'; src: url('../assets/fonts/zilla-slab-latin-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+
+/* ---- theme tokens (the whole palette lives here) ---- */
 :root {
-  --accent:       #3b7dd8;   /* interactive / score highlight — one accent only */
-  --accent-dim:   #d0e4f7;   /* accent background wash */
-  --surface:      #ffffff;
-  --surface-alt:  #f5f6f8;
-  --border:       #dde0e5;
-  --text:         #1a1a1a;
-  --text-muted:   #6b7280;
-  --radius-sm:    6px;
-  --radius-md:    10px;
-  --radius-lg:    14px;
-  color-scheme: light dark;
+  --night:      #0d182e;   /* deep-navy ground */
+  --night-2:    #172741;   /* raised card */
+  --night-sunk: #112036;   /* recessed panel */
+  --glow:       #20355a;   /* radial depth lift */
+  --ink:        #f1ebd9;   /* warm ivory type */
+  --ink-soft:   #a9b4c9;   /* muted blue-grey */
+  --line:       #2e405f;   /* navy rule + border */
+  --line-dim:   #233351;
+  --gold:       #d9b25a;   /* antique gold — score, value, accent */
+  --gold-deep:  #9c7a1e;   /* deep gold for value-on-ivory */
+  --gold-wash:  #202f4b;   /* lifted-navy hover wash */
+  --coral:      #e8795a;   /* coral — boss / danger */
+  --teal:       #4fb89c;   /* teal — chain / combo */
+  --tile-a:     #f4eed8;   /* sort face — top */
+  --tile-b:     #dccba6;   /* sort face — bottom */
+  --tile-ink:   #16203a;   /* sort glyph */
+  --boss-bg:    #2c1a20;   /* coral-tinted dark (boss banner) */
+  --chain-bg:   #112a27;   /* teal-tinted dark (chain banner) */
+
+  /* legacy aliases */
+  --accent: var(--gold); --accent-dim: var(--gold-wash);
+  --surface: var(--night); --surface-alt: var(--night-sunk);
+  --border: var(--line); --text: var(--ink); --text-muted: var(--ink-soft);
+
+  --radius-sm: 6px; --radius-md: 9px; --radius-lg: 13px;
+  --font-display: 'Zilla Slab', 'Georgia', serif;
+  --font-body:    'Zilla Slab', 'Georgia', serif;
+  color-scheme: dark;
 }
 
-/* ---- base ---- */
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  margin: 0;
-  padding: 16px;
-  color: var(--text);
-  background: var(--surface);
-  line-height: 1.45;
+  font-family: var(--font-body); font-weight: 400;
+  margin: 0; padding: 18px;
+  color: var(--ink);
+  background-color: var(--night);
+  background-image:
+    radial-gradient(135% 110% at 50% -14%, var(--glow) 0%, transparent 52%),
+    radial-gradient(95% 75% at 88% 118%, var(--night-2) 0%, transparent 60%);
+  line-height: 1.5; -webkit-font-smoothing: antialiased;
 }
 
-/* ================================================================
-   HUD / scorebug area
-   ================================================================ */
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.2px; }
+h1 { color: var(--gold); }
+
+/* ================================================================ HUD */
 #hud {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px;
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 8px 14px;
-  margin-bottom: 12px;
-  font-size: 1rem;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+  background: linear-gradient(var(--night-2), var(--night-sunk));
+  border: 1px solid var(--line); border-top: 3px solid var(--gold);
+  border-radius: var(--radius-md); padding: 9px 15px; margin-bottom: 14px;
+  font-size: 1rem; font-weight: 400; font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 7px rgba(0,0,0,0.5);
 }
+#score-total { font-family: var(--font-display); font-weight: 700; font-size: 1.5em; color: var(--gold); }
+#coins { font-weight: 700; color: var(--gold); }
 
-/* Score number — make it pop */
-#score-total {
-  font-size: 1.3em;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-#coins {
-  font-weight: 600;
-  color: #b07d0a;
-}
-
-/* ================================================================
-   Rack tiles
-   ================================================================ */
-#rack {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin: 12px 0;
-}
-
+/* ================================================================ Tiles (sorts) */
+#rack { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0; }
 .tile {
-  position: relative;
-  width: 56px; height: 56px;
-  font-size: 1.6rem; font-weight: 700;
-  border-radius: var(--radius-md);
-  border: 2px solid #b0b8c4;
-  background: var(--surface);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.07);
+  position: relative; width: 58px; height: 64px;
+  font-family: var(--font-display); font-size: 1.7rem; font-weight: 700;
+  color: var(--tile-ink);
+  border-radius: 5px; border: 1px solid #c7b890;
+  background: linear-gradient(var(--tile-a), var(--tile-b));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -3px 4px rgba(120,95,40,0.18), 0 3px 7px rgba(0,0,0,0.55);
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  min-width: 44px; min-height: 44px;
-  transition: transform 0.08s, box-shadow 0.08s, border-color 0.08s;
+  cursor: pointer; min-width: 44px; min-height: 44px;
+  transition: transform 0.07s, box-shadow 0.07s;
 }
+.tile:hover:not(.used) { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -3px 4px rgba(120,95,40,0.18), 0 8px 14px rgba(0,0,0,0.6), 0 0 0 2px var(--gold); }
+.tile:active:not(.used) { transform: translateY(1px); }
+.tile.used { opacity: 0.3; cursor: default; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25); transform: none; filter: grayscale(0.45); }
+.mod-badge { position: absolute; top: 2px; left: 3px; font-family: var(--font-body); font-size: 0.5rem; font-weight: 700; background: var(--coral); color: var(--tile-ink); border-radius: 3px; padding: 1px 3px; line-height: 1.2; letter-spacing: 0.3px; }
+.tile-val { position: absolute; bottom: 2px; right: 5px; font-size: 0.92rem; font-weight: 700; color: var(--gold-deep); line-height: 1; font-variant-numeric: tabular-nums; }
 
-.tile:hover:not(.used) {
-  border-color: var(--accent);
-  box-shadow: 0 3px 8px rgba(59,125,216,0.20);
-  transform: translateY(-2px);
-}
+/* ================================================================ Banners */
+#boss-banner { text-align: center; font-family: var(--font-body); font-weight: 700; padding: 9px 14px; margin: 8px 0 4px; border: 1px solid var(--coral); border-left: 5px solid var(--coral); border-radius: var(--radius-sm); background: var(--boss-bg); color: #f7ab95; font-size: 0.97rem; }
+#chain-banner { text-align: center; font-family: var(--font-body); font-weight: 700; padding: 8px 14px; margin: 8px 0 4px; border: 1px solid var(--teal); border-left: 5px solid var(--teal); border-radius: var(--radius-sm); background: var(--chain-bg); color: #84ddc5; font-size: 0.95rem; }
 
-.tile:active:not(.used) {
-  transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-}
+/* ================================================================ Staging + scorebug */
+#staging { min-height: 2.4rem; font-family: var(--font-display); font-weight: 700; font-size: 2.1rem; letter-spacing: 4px; text-align: center; color: var(--ink); }
+#scorebug { display: flex; flex-direction: column; align-items: center; gap: 3px; margin: 8px auto; padding: 11px 18px; background: linear-gradient(var(--night-2), var(--night-sunk)); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: var(--radius-sm); max-width: 380px; box-shadow: 0 2px 7px rgba(0,0,0,0.5); }
+.sb-word    { font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; letter-spacing: 2px; }
+.sb-formula { font-size: 1.05rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+.sb-detail  { font-size: 0.82rem; color: var(--ink-soft); }
+#last-play { text-align: center; font-size: 0.97rem; color: var(--teal); font-weight: 700; margin: 5px 0 2px; }
 
-.tile.used {
-  opacity: 0.30;
-  cursor: default;
-  box-shadow: none;
-}
+/* ================================================================ Relics + mods panel */
+#relics-mods-panel { background: var(--night-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 13px; margin-bottom: 10px; font-size: 0.86rem; }
+.rp-row { margin: 3px 0; }
+.rp-label { font-weight: 700; font-family: var(--font-display); }
+.relic-entry { border-bottom: 1px dotted var(--line); }
+.none-label { color: var(--ink-soft); font-style: italic; }
+.tappable-chip { display: inline-block; cursor: pointer; border-radius: 4px; padding: 1px 4px; transition: background 0.1s; }
+.tappable-chip:hover, .tappable-chip:focus-visible { background: var(--gold-wash); outline: 1px solid var(--gold); }
+#desc-popover { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; padding: 8px 11px; background: var(--night-2); border: 1px solid var(--gold); border-radius: var(--radius-sm); box-shadow: 0 4px 12px rgba(0,0,0,0.6); font-size: 0.86rem; line-height: 1.45; max-width: 330px; position: relative; }
+.desc-pop-name { font-weight: 700; flex-shrink: 0; margin-right: 4px; color: var(--gold); }
+.desc-pop-text { color: var(--ink-soft); flex: 1; }
+.desc-pop-close { flex-shrink: 0; background: none; border: none; font-size: 0.9rem; line-height: 1; cursor: pointer; color: var(--ink-soft); padding: 0 2px; margin-left: auto; }
+.desc-pop-close:hover { color: var(--ink); }
 
-/* Mod badge — top-left */
-.mod-badge {
-  position: absolute; top: 2px; left: 3px;
-  font-size: 0.48rem; font-weight: 700;
-  background: #e67e22; color: #fff;
-  border-radius: 3px; padding: 1px 3px;
-  line-height: 1.2;
+/* ================================================================ Buttons */
+button { font-family: var(--font-body); color: var(--ink); }
+#controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 16px; }
+#controls button, #shop-actions button, #press-controls button {
+  font-size: 1.05rem; font-weight: 700; padding: 11px 19px; border-radius: var(--radius-sm);
+  border: 1px solid var(--line); background: linear-gradient(var(--night-2), var(--night));
+  color: var(--ink); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 6px rgba(0,0,0,0.5);
+  cursor: pointer; transition: transform 0.06s, border-color 0.1s, background 0.1s;
 }
+#controls button:hover:not([disabled]), #shop-actions button:hover:not([disabled]), #press-controls button:hover:not([disabled]) { border-color: var(--gold); background: linear-gradient(#22304e, var(--night-sunk)); }
+#controls button:active, #shop-actions button:active, #press-controls button:active { transform: translateY(1px); }
+#controls button[disabled], #shop-actions button[disabled], #press-controls button[disabled] { opacity: 0.4; cursor: default; }
+#continue, #continue-btn { border-color: var(--gold) !important; background: linear-gradient(#26365a, var(--night-sunk)) !important; color: var(--gold) !important; }
+#shop-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; }
+#msg { text-align: center; color: var(--coral); font-weight: 700; min-height: 1.2rem; }
+.end { width: 100%; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; color: var(--gold); margin: 10px 0; }
 
-/* Tile value badge — top-right: smaller & muted */
-.tile-val {
-  position: absolute; top: 2px; right: 4px;
-  font-size: 0.52rem; font-weight: 600;
-  color: var(--text-muted);
-  line-height: 1.2;
-}
+/* ================================================================ Shop offers */
+.shop-offer-row { display: flex; align-items: stretch; gap: 4px; margin: 6px 0; }
+.shop-offer, .meta-offer { display: block; flex: 1; width: 100%; text-align: left; padding: 11px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line); border-left: 3px solid var(--line); background: var(--night-2); color: var(--ink); font-size: 0.95rem; cursor: pointer; transition: border-color 0.1s, background 0.1s; }
+.shop-offer:hover:not([disabled]), .meta-offer:hover:not([disabled]) { border-color: var(--gold); border-left-color: var(--gold); background: var(--gold-wash); }
+.shop-offer[disabled], .meta-offer[disabled] { opacity: 0.42; cursor: default; }
 
-/* ================================================================
-   Boss banner — shown only on boss encounters, above the rack
-   ================================================================ */
-#boss-banner {
-  text-align: center;
-  padding: 8px 14px;
-  margin: 6px 0 4px;
-  border: 1.5px solid #b85c00;
-  border-radius: var(--radius-sm);
-  background: #fff3e0;
-  color: #7a3c00;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
+/* ================================================================ Deck / bag picker */
+.deck-pick, .stake-pick { display: inline-block; padding: 10px 15px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--night-2); color: var(--ink); box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 2px 6px rgba(0,0,0,0.45); margin: 4px; cursor: pointer; font-size: 0.95rem; font-weight: 700; vertical-align: top; transition: border-color 0.1s; }
+.deck-pick:hover, .stake-pick:hover { border-color: var(--gold); }
+.bag-desc { font-size: 0.74rem; font-weight: 400; color: var(--ink-soft); white-space: normal; margin-top: 2px; line-height: 1.35; }
 
-@media (prefers-color-scheme: dark) {
-  #boss-banner {
-    background: #2a1800;
-    border-color: #a05000;
-    color: #f0b060;
-  }
-}
+/* ================================================================ Node-choice */
+#node-choice { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }
+.node-prompt { text-align: center; font-size: 0.92rem; color: var(--ink-soft); padding: 2px 6px; }
+.node-prompt b { color: var(--gold); }
+.node-card { display: block; width: 100%; text-align: left; padding: 15px 18px; border-radius: var(--radius-md); border: 1px solid var(--line); border-top: 3px solid var(--gold); background: linear-gradient(var(--night-2), var(--night-sunk)); color: var(--ink); font-size: 1rem; cursor: pointer; transition: border-color 0.12s, background 0.12s, transform 0.06s; box-shadow: 0 2px 7px rgba(0,0,0,0.5); }
+.node-card:hover { border-color: var(--gold); background: var(--gold-wash); transform: translateY(-1px); }
+.node-card-title { font-family: var(--font-display); font-weight: 700; font-size: 1.15em; margin-bottom: 4px; }
+.node-card-desc { font-size: 0.88em; color: var(--ink-soft); line-height: 1.45; }
 
-/* ================================================================
-   Chain indicator — shown only on chains of 2+, above the rack
-   ================================================================ */
-#chain-banner {
-  text-align: center;
-  padding: 8px 14px;
-  margin: 6px 0 4px;
-  border: 1.5px solid #00aa66;
-  border-radius: var(--radius-sm);
-  background: #e0f7f4;
-  color: #006644;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
+/* ================================================================ Event UI */
+#event-ui { margin: 14px 0; padding: 16px; border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: var(--radius-md); background: var(--night-2); }
+#event-ui h3 { margin: 0 0 6px; font-size: 1.2em; color: var(--gold); }
+#event-ui .event-desc { font-size: 0.93em; color: var(--ink-soft); margin-bottom: 12px; }
+.event-option-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; margin: 5px 0; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--night-sunk); color: var(--ink); font-size: 0.95rem; cursor: pointer; transition: border-color 0.1s, background 0.1s; }
+.event-option-btn:hover:not([disabled]) { border-color: var(--gold); background: var(--gold-wash); }
 
-@media (prefers-color-scheme: dark) {
-  #chain-banner {
-    background: #1a2a24;
-    border-color: #00cc88;
-    color: #66ddaa;
-  }
-}
-
-/* ================================================================
-   Staging + live scorebug
-   ================================================================ */
-#staging {
-  min-height: 2.2rem;
-  font-size: 2rem;
-  letter-spacing: 4px;
-  text-align: center;
-  font-weight: 700;
-}
-
-#scorebug {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  margin: 6px auto; padding: 10px 16px;
-  background: var(--accent-dim);
-  border: 1.5px solid #7db3e8;
-  border-radius: var(--radius-md);
-  max-width: 360px;
-}
-.sb-word   { font-size: 1.4rem; font-weight: 700; letter-spacing: 3px; }
-.sb-formula { font-size: 1rem; font-weight: 600; }
-.sb-detail  { font-size: 0.8rem; color: var(--text-muted); }
-
-/* ================================================================
-   Last play result
-   ================================================================ */
-#last-play {
-  text-align: center;
-  font-size: 0.95rem;
-  color: #27ae60;
-  margin: 4px 0 2px;
-}
-
-/* ================================================================
-   Relics + mods panel
-   ================================================================ */
-#relics-mods-panel {
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 7px 12px;
-  margin-bottom: 8px;
-  font-size: 0.84rem;
-}
-.rp-row    { margin: 3px 0; }
-.rp-label  { font-weight: 700; }
-.relic-entry { border-bottom: 1px dotted #aaa; }
-.none-label  { color: #a0a8b4; font-style: italic; }
-
-/* Tappable chips (relics, mods, hone) — tap reveals inline popover */
-.tappable-chip {
-  display: inline-block;
-  cursor: pointer;
-  border-radius: 3px;
-  padding: 1px 3px;
-  transition: background 0.1s;
-}
-.tappable-chip:hover,
-.tappable-chip:focus-visible {
-  background: var(--accent-dim);
-  outline: 1px solid var(--accent);
-}
-
-/* Tap-to-reveal description popover */
-#desc-popover {
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 4px 0 2px;
-  padding: 7px 10px;
-  background: var(--surface);
-  border: 1.5px solid var(--accent);
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
-  line-height: 1.4;
-  max-width: 320px;
-  position: relative;
-}
-.desc-pop-name {
-  font-weight: 700;
-  flex-shrink: 0;
-  margin-right: 4px;
-}
-.desc-pop-text {
-  color: var(--text-muted);
-  flex: 1;
-}
-.desc-pop-close {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  font-size: 0.9rem;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--text-muted);
-  padding: 0 2px;
-  margin-left: auto;
-}
-.desc-pop-close:hover { color: var(--text); }
-
-@media (prefers-color-scheme: dark) {
-  .relic-entry { border-bottom-color: #555; }
-  #desc-popover { background: var(--surface-alt); }
-}
-
-/* ================================================================
-   Controls
-   ================================================================ */
-#controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 14px;
-}
-#controls button {
-  font-size: 1.05rem;
-  padding: 11px 18px;
-  border-radius: var(--radius-md);
-}
-
-#msg {
-  text-align: center;
-  color: #c0392b;
-  min-height: 1.2rem;
-}
-
-.end {
-  width: 100%;
-  text-align: center;
-  font-size: 1.25rem;
-  margin: 8px 0;
-}
-
-/* ================================================================
-   Shop / offer rows
-   ================================================================ */
-
-/* Row wrapper holds optional info button + offer button side by side */
-.shop-offer-row {
-  display: flex;
-  align-items: stretch;
-  gap: 4px;
-  margin: 5px 0;
-}
-
-/* Info (?) button shown before offers with meaningful descs */
-.shop-offer-info {
-  flex-shrink: 0;
-  width: 32px;
-  padding: 0;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-alt);
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  color: var(--accent);
-  transition: background 0.1s, border-color 0.1s;
-}
-.shop-offer-info:hover { background: var(--accent-dim); border-color: var(--accent); }
-
-.shop-offer, .meta-offer {
-  display: block;
-  flex: 1;
-  width: 100%;
-  text-align: left;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-alt);
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: border-color 0.1s, background 0.1s;
-}
-.shop-offer:hover:not([disabled]),
-.meta-offer:hover:not([disabled]) {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-.shop-offer[disabled],
-.meta-offer[disabled] {
-  opacity: 0.45;
-  cursor: default;
-}
-
-/* ================================================================
-   Deck / bag picker cards
-   ================================================================ */
-.deck-pick, .stake-pick {
-  display: inline-block;
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-alt);
-  margin: 4px;
-  cursor: pointer;
-  font-size: 0.93rem;
-  vertical-align: top;
-  transition: border-color 0.1s;
-}
-.deck-pick:hover, .stake-pick:hover {
-  border-color: var(--accent);
-}
-
-/* Deck description — muted, smaller */
-.bag-desc {
-  font-size: 0.72rem;
-  font-weight: 400;
-  color: var(--text-muted);
-  white-space: normal;
-  margin-top: 2px;
-  line-height: 1.3;
-}
-
-/* ================================================================
-   Dark mode overrides
-   ================================================================ */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface:     #121214;
-    --surface-alt: #1d1f23;
-    --border:      #383c44;
-    --text:        #e8eaed;
-    --text-muted:  #9ca3af;
-    --accent-dim:  #1a2e48;
-  }
-
-  .tile {
-    background: #222428;
-    border-color: #52575f;
-    color: #eee;
-  }
-  .tile:hover:not(.used) {
-    border-color: #6da4e8;
-    box-shadow: 0 3px 8px rgba(59,125,216,0.25);
-  }
-  .tile-val { color: #9ca3af; }
-
-  #scorebug { border-color: #4a8ab0; }
-
-  #last-play { color: #5dba7d; }
-
-  .none-label { color: #555; }
-
-  .shop-offer, .meta-offer {
-    background: #1d1f23;
-    border-color: #383c44;
-    color: #e8eaed;
-  }
-  .shop-offer:hover:not([disabled]),
-  .meta-offer:hover:not([disabled]) {
-    border-color: #6da4e8;
-    background: #1a2e48;
-  }
-
-  .deck-pick, .stake-pick {
-    background: #1d1f23;
-    border-color: #383c44;
-    color: #e8eaed;
-  }
-  .deck-pick:hover, .stake-pick:hover {
-    border-color: #6da4e8;
-  }
-}
-
-/* ================================================================
-   Node-choice screen
-   ================================================================ */
-#node-choice {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 12px 0;
-}
-
-.node-card {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 14px 18px;
-  border-radius: var(--radius-md);
-  border: 2px solid var(--border);
-  background: var(--surface-alt);
-  font-size: 1rem;
-  cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
-}
-
-.node-card:hover {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-
-.node-card-title {
-  font-weight: 700;
-  font-size: 1.1em;
-  margin-bottom: 4px;
-}
-
-.node-card-desc {
-  font-size: 0.88em;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-/* ================================================================
-   Event UI (one-shot events)
-   ================================================================ */
-#event-ui {
-  margin: 12px 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-alt);
-}
-
-#event-ui h3 {
-  margin: 0 0 6px;
-  font-size: 1.15em;
-}
-
-#event-ui .event-desc {
-  font-size: 0.92em;
-  color: var(--text-muted);
-  margin-bottom: 12px;
-}
-
-.event-option-btn {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 14px;
-  margin: 5px 0;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: border-color 0.1s, background 0.1s;
-}
-
-.event-option-btn:hover:not([disabled]) {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-
-/* ================================================================
-   The Press interactive UI
-   ================================================================ */
-#press-ui {
-  margin: 12px 0;
-  padding: 16px;
-  border: 2px solid #b85c00;
-  border-radius: var(--radius-md);
-  background: #fff3e0;
-}
-
-#press-ui h3 {
-  margin: 0 0 8px;
-  color: #7a3c00;
-}
-
-#press-drawn {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-align: center;
-  min-height: 2rem;
-  margin: 8px 0;
-}
-
-#press-pot {
-  text-align: center;
-  font-size: 1.1em;
-  font-weight: 600;
-  color: #b07d0a;
-  margin-bottom: 12px;
-}
-
-#press-controls {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-#press-controls button {
-  padding: 10px 22px;
-  font-size: 1rem;
-  border-radius: var(--radius-sm);
-}
-
-#press-result {
-  text-align: center;
-  font-size: 1.05em;
-  font-weight: 600;
-  margin-top: 10px;
-  min-height: 1.4em;
-}
-
-@media (prefers-color-scheme: dark) {
-  #press-ui {
-    background: #2a1800;
-    border-color: #a05000;
-    color: #f0b060;
-  }
-  #press-ui h3 { color: #f0b060; }
-}
+/* ================================================================ The Press */
+#press-ui { margin: 14px 0; padding: 16px; border: 1px solid var(--gold); border-left: 5px solid var(--gold); border-radius: var(--radius-md); background: linear-gradient(var(--night-2), var(--night-sunk)); }
+#press-ui h3 { margin: 0 0 8px; font-family: var(--font-display); font-weight: 700; color: var(--gold); }
+#press-ui p { color: var(--ink-soft) !important; }
+#press-drawn { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; letter-spacing: 4px; text-align: center; min-height: 2rem; margin: 8px 0; color: var(--ink); }
+#press-pot { text-align: center; font-size: 1.15em; font-weight: 700; color: var(--gold); margin-bottom: 12px; font-variant-numeric: tabular-nums; }
+#press-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+#press-result { text-align: center; font-size: 1.05em; font-weight: 700; margin-top: 10px; min-height: 1.4em; }
