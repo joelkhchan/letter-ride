@@ -158,27 +158,41 @@ wiring additions are prerequisites, not implementation detail, and must land fir
       modsEverApplied: [],  // set, for the Enchanter achievement
       // ... extend as catalog needs
     },
-    completed: [],      // achievement ids
-    bountyGrid: {},     // keyed `${stakeId}:${deckId}` -> true
+    completed: [],            // achievement ids satisfied (Meta uncollected by default)
+    claimedAchievements: [],  // achievement ids whose Meta has been collected
+    bountyEarned: {},         // `${stakeId}:${deckId}` cells won (Meta uncollected)
+    bountyClaimed: {},        // `${stakeId}:${deckId}` cells whose Meta has been collected
   }
   ```
 - `makeProfile()`, `loadProfile(storage)`, `saveProfile(profile, storage)`.
 - Pure updaters: `recordPlay(profile, ctx)`, `recordRunEnd(profile, runSummary)`.
 
-### 5.2 Reward flow (orchestrated in `main.js`)
+### 5.2 Reward flow: collect-on-click (orchestrated in `main.js`)
 
-When `checkAchievements` returns new ids: add each id to `profile.completed`, and
-`metaState.meta += def.metaReward`. Two stores are touched (profile + meta), `main.js` is the only
-place that wires them. UI shows an unlock toast + the existing Web Audio chime. Persist both stores
-via the existing `saveAll()`.
+**Rewards are NOT paid automatically.** Completing an achievement marks it `completed` (Meta
+pending); winning a bounty cell marks it `bountyEarned`. The player then opens the Achievements
+screen and **collects** each reward by clicking it: `collectAchievement(profile, id, config)` /
+`collectBounty(profile, key, config)` add the Meta to `metaState.meta` and record the claim in
+`profile.claimedAchievements` / `profile.bountyClaimed`. Collecting is the ONLY path that adds
+achievement/bounty Meta. This separates the feat (the completion moment, celebrated by an unlock
+toast) from the payout (a deliberate collect action), reinforcing the competence-feedback framing.
+
+State per achievement: locked (predicate not satisfied) -> completed (satisfied, uncollected) ->
+claimed (collected). Bounty cells mirror this with earned -> claimed. `main.js` wires the two stores
+(profile + meta) on collect and persists via `saveAll()`. The base per-run drip
+(`perRoundCleared`/`winBonus`) still auto-pays at run end; only achievement and bounty Meta are
+collected. UI affordances (per-row Collect buttons, a pending-Meta badge on the menu) are part of
+the UI task; `collectableAchievements` / `collectableBounties` / `pendingMeta` helpers back them.
 
 ### 5.3 Stake x deck bounty grid
 
-- Lives in `profile.bountyGrid`, keyed `${stakeId}:${deckId}` (both ids must be present on the run
-  at win time per the 5.0 wiring; `deckId` is not on the run today). On a run **win**, the
-  `(stake, deck)` cell pays a one-time bounty (`config.BOUNTY` keyed by stake tier).
+- Lives in `profile.bountyEarned` / `profile.bountyClaimed`, keyed `${stakeId}:${deckId}` (both
+  ids must be present on the run at win time per the 5.0 wiring; `deckId` is not on the run today).
+  On a run **win**, the `(stake, deck)` cell is marked **earned** (no Meta yet); the bounty
+  (`config.META.bounty` keyed by stake tier) is paid only when the player **collects** it on the
+  Achievements screen (5.2).
 - **Lower-tier auto-grant:** winning stake N with deck D marks cells for all stakes `<= N` with
-  deck D as granted; only the highest is surfaced in the UI. No wall of grey.
+  deck D as earned; only the highest is surfaced in the UI. No wall of grey.
 - This is the difficulty long-tail. It is the sole replacement for the removed per-run `metaMult`.
 
 ### 5.4 UI (`src/ui.js` renders, `src/main.js` orchestrates — no rules in UI)

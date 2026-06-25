@@ -1126,3 +1126,32 @@ Update the catalog test's allowed-bucket set to include `'progression'`:
   const lvl = levelFor((s.lifetimeScore) || 0, config);
   // in statsPanel: `Rank <b>${lvl.name}</b>${lvl.nextAt ? ` (next at ${lvl.nextAt} lifetime Score)` : ' (max)'}`
 ```
+
+---
+
+## Addendum B: collect-on-click rewards (folded into Tasks 3, 4, 5; reshapes Task 6)
+
+Rewards are not paid automatically. Completing an achievement marks it; the player **collects** the
+Meta on the Achievements screen by clicking it. Implemented in Tasks 3-5; the Collect UI is Task 6.
+
+**Tasks 3-5 (done):**
+- `profile.js` (Task 3): `completed` + new `claimedAchievements` (array) and `bountyEarned` +
+  `bountyClaimed` (objects); `loadProfile` defaults all four. (Replaces the single `bountyGrid`.)
+- `achievements.js` (Task 4): `grantBounties(profile, stakeId, deckId)` now only MARKS earned cells
+  (lower-stake auto-grant), returns the newly-earned keys, pays nothing. New:
+  `collectAchievement(profile, id, config)` and `collectBounty(profile, key, config)` return the
+  reward and record the claim (0 if not earned/completed or already claimed); plus
+  `collectableAchievements`, `collectableBounties`, and `pendingMeta(profile, config)` for the UI.
+- `main.js` (Task 5): `markCompletions(list)` replaces the old paying `awardAchievements`; play and
+  run-end sites only mark. `endRun` marks bounties earned (no pay). New handlers
+  `onCollectAchievement(id)` / `onCollectBounty(key)` add the returned Meta and persist. The base
+  per-run drip still auto-pays.
+
+**Task 6 (UI, deferred) — reshape:**
+- Each completed-but-unclaimed achievement row renders a **Collect (+N Meta)** button wired to
+  `handlers.onCollectAchievement(id)`; claimed rows read "collected"; locked rows show the feat.
+- Bounty grid cells that are earned-but-unclaimed render as **claimable** (click to collect via
+  `onCollectBounty(key)`); claimed cells are filled/quiet.
+- The main-menu "Achievements" button shows a **pending-Meta badge** when `pendingMeta(profile,
+  config) > 0` (the "you have rewards to collect" nudge), since nothing pays automatically.
+- The unlock toast (when built) says "Unlocked", never a payout (the payout is the collect action).
