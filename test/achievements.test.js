@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { ACHIEVEMENTS, checkAchievements, cellKey, grantBounties } from '../src/achievements.js';
+import { ACHIEVEMENTS, checkAchievements, cellKey, grantBounties, collectAchievement, collectBounty, collectableAchievements, collectableBounties, pendingMeta } from '../src/achievements.js';
 import { makeProfile } from '../src/profile.js';
 import { CONFIG } from '../src/config.js';
 
@@ -41,15 +41,40 @@ test('completeness predicate compares against the live roster and never re-pays'
   assert.ok(!checkAchievements(p, { ...base, allRelicIds: ['a','b','c'] }, CONFIG).map(a=>a.id).includes('curator'));
 });
 
-test('grantBounties auto-grants lower stakes for the same deck, once', () => {
+test('grantBounties marks earned cells (lower stakes auto), no Meta paid yet', () => {
   const p = makeProfile();
-  const r1 = grantBounties(p, 2, 'standard', CONFIG);
-  assert.deepEqual(r1.granted.sort(), ['0:standard','1:standard','2:standard']);
-  assert.equal(r1.meta, CONFIG.META.bounty[0] + CONFIG.META.bounty[1] + CONFIG.META.bounty[2]);
-  const r2 = grantBounties(p, 1, 'standard', CONFIG);
-  assert.deepEqual(r2.granted, []);
-  assert.equal(r2.meta, 0);
+  const earned = grantBounties(p, 2, 'standard');
+  assert.deepEqual(earned.sort(), ['0:standard','1:standard','2:standard']);
+  assert.ok(p.bountyEarned['2:standard'] && !p.bountyClaimed['2:standard']);
+  assert.deepEqual(grantBounties(p, 1, 'standard'), []);   // already earned
   assert.equal(cellKey(1, 'standard'), '1:standard');
+});
+
+test('collectBounty pays once, only after it is earned', () => {
+  const p = makeProfile();
+  grantBounties(p, 1, 'standard');
+  assert.equal(collectBounty(p, '1:standard', CONFIG), CONFIG.META.bounty[1]);
+  assert.ok(p.bountyClaimed['1:standard']);
+  assert.equal(collectBounty(p, '1:standard', CONFIG), 0);   // already claimed
+  assert.equal(collectBounty(p, '2:standard', CONFIG), 0);   // not earned
+});
+
+test('collectAchievement pays the reward once, only after completion', () => {
+  const p = makeProfile();
+  assert.equal(collectAchievement(p, 'firstWin', CONFIG), 0);   // not completed
+  p.completed.push('firstWin');
+  assert.equal(collectAchievement(p, 'firstWin', CONFIG), CONFIG.META.achievement.reward.onboarding);
+  assert.ok(p.claimedAchievements.includes('firstWin'));
+  assert.equal(collectAchievement(p, 'firstWin', CONFIG), 0);   // already claimed
+});
+
+test('collectable lists surface uncollected items and pendingMeta sums them', () => {
+  const p = makeProfile();
+  p.completed.push('firstWin');           // onboarding reward
+  grantBounties(p, 0, 'standard');        // bounty[0]
+  assert.deepEqual(collectableAchievements(p, CONFIG).map(a => a.id), ['firstWin']);
+  assert.deepEqual(collectableBounties(p, CONFIG).map(b => b.key), ['0:standard']);
+  assert.equal(pendingMeta(p, CONFIG), CONFIG.META.achievement.reward.onboarding + CONFIG.META.bounty[0]);
 });
 
 test('reaching a lifetime level unlocks the matching progression achievement', () => {

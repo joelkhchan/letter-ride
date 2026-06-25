@@ -112,19 +112,57 @@ export function checkAchievements(profile, ctx, config) {
 
 export function cellKey(stakeId, deckId) { return `${stakeId}:${deckId}`; }
 
-// Mutates profile.bountyGrid: grants the (stake,deck) cell and all lower stakes for that deck.
-// Returns the newly granted keys and the total Meta to award.
-export function grantBounties(profile, stakeId, deckId, config) {
-  if (deckId == null) return { granted: [], meta: 0 };
-  const granted = [];
-  let meta = 0;
+const bountyReward = (key, config) => config.META.bounty[Number(key.split(':')[0])] || 0;
+
+// Rewards are NOT paid automatically. Completing an achievement or winning a bounty cell marks it
+// "earned"; the player collects the Meta on the Achievements screen (collectAchievement /
+// collectBounty), which is the only path that adds Meta.
+
+// Mark the (stake,deck) cell and all lower stakes for that deck as EARNED (no Meta paid yet).
+// Returns the newly-earned keys.
+export function grantBounties(profile, stakeId, deckId) {
+  if (deckId == null) return [];
+  const earned = [];
   for (let s = 0; s <= stakeId; s++) {
     const key = cellKey(s, deckId);
-    if (!profile.bountyGrid[key]) {
-      profile.bountyGrid[key] = true;
-      granted.push(key);
-      meta += config.META.bounty[s] || 0;
-    }
+    if (!profile.bountyEarned[key]) { profile.bountyEarned[key] = true; earned.push(key); }
   }
-  return { granted, meta };
+  return earned;
+}
+
+// Collect one achievement's Meta. Returns the reward (0 if not completed or already claimed).
+export function collectAchievement(profile, id, config) {
+  if (!profile.completed.includes(id) || profile.claimedAchievements.includes(id)) return 0;
+  const def = ACHIEVEMENTS.find(a => a.id === id);
+  if (!def) return 0;
+  profile.claimedAchievements.push(id);
+  return rewardFor(def, config);
+}
+
+// Collect one bounty cell's Meta. Returns the reward (0 if not earned or already claimed).
+export function collectBounty(profile, key, config) {
+  if (!profile.bountyEarned[key] || profile.bountyClaimed[key]) return 0;
+  profile.bountyClaimed[key] = true;
+  return bountyReward(key, config);
+}
+
+// UI helpers: what is collectable right now, and the total pending Meta (for a menu badge).
+export function collectableAchievements(profile, config) {
+  const claimed = new Set(profile.claimedAchievements);
+  return profile.completed.filter(id => !claimed.has(id)).map(id => {
+    const def = ACHIEVEMENTS.find(a => a.id === id);
+    return def ? { id, name: def.name, reward: rewardFor(def, config) } : null;
+  }).filter(Boolean);
+}
+
+export function collectableBounties(profile, config) {
+  return Object.keys(profile.bountyEarned)
+    .filter(k => !profile.bountyClaimed[k])
+    .map(k => ({ key: k, reward: bountyReward(k, config) }));
+}
+
+export function pendingMeta(profile, config) {
+  const a = collectableAchievements(profile, config).reduce((s, x) => s + x.reward, 0);
+  const b = collectableBounties(profile, config).reduce((s, x) => s + x.reward, 0);
+  return a + b;
 }

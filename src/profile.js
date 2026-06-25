@@ -11,8 +11,10 @@ export function makeProfile() {
       bestWordScore: 0, bestWord: '', bestRunScore: 0,
       relicsEverUsed: [], modsEverApplied: [],
     },
-    completed: [],
-    bountyGrid: {},
+    completed: [],            // achievement ids whose predicate fired (Meta uncollected by default)
+    claimedAchievements: [],  // achievement ids whose Meta has been collected
+    bountyEarned: {},         // `${stake}:${deck}` cells won (Meta uncollected)
+    bountyClaimed: {},        // `${stake}:${deck}` cells whose Meta has been collected
   };
 }
 
@@ -23,10 +25,13 @@ export function loadProfile(storage) {
     const data = JSON.parse(raw);
     if (typeof data !== 'object' || data === null) return makeProfile();
     const base = makeProfile();
+    const obj = (v) => (v && typeof v === 'object') ? v : {};
     return {
       stats: { ...base.stats, ...(data.stats || {}) },
       completed: Array.isArray(data.completed) ? data.completed : [],
-      bountyGrid: (data.bountyGrid && typeof data.bountyGrid === 'object') ? data.bountyGrid : {},
+      claimedAchievements: Array.isArray(data.claimedAchievements) ? data.claimedAchievements : [],
+      bountyEarned: obj(data.bountyEarned),
+      bountyClaimed: obj(data.bountyClaimed),
     };
   } catch {
     return makeProfile();

@@ -38,6 +38,20 @@ test('loadProfile tolerates corruption and round-trips', () => {
   assert.equal(again.stats.wins, 1);
 });
 
+test('makeProfile seeds the claim-model fields; loadProfile defaults them', () => {
+  const p = makeProfile();
+  assert.deepEqual(p.completed, []);
+  assert.deepEqual(p.claimedAchievements, []);
+  assert.deepEqual(p.bountyEarned, {});
+  assert.deepEqual(p.bountyClaimed, {});
+  const s = memStore();
+  s.setItem('letterRide.profile', JSON.stringify({ completed: ['x'] }));   // partial old shape
+  const loaded = loadProfile(s);
+  assert.deepEqual(loaded.completed, ['x']);
+  assert.deepEqual(loaded.claimedAchievements, []);
+  assert.deepEqual(loaded.bountyClaimed, {});
+});
+
 test('lifetimeScore accumulates and levelFor maps it to a tier', () => {
   const p = makeProfile();
   recordPlay(p, { word: 'CAT', score: 3000 });

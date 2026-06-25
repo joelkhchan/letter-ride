@@ -9,7 +9,7 @@ import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
 import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
-import { checkAchievements, grantBounties } from './achievements.js';
+import { checkAchievements, grantBounties, collectAchievement, collectBounty } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
 import { renderRun, renderMeta, renderMenu, renderSettings, renderAchievements, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx, startMusic, stopMusic, resumeAudio } from './audio.js';
@@ -34,14 +34,11 @@ try {
 
   const saveAll = () => { saveMeta(meta, window.localStorage); saveTelemetry(telemetry, window.localStorage); saveProfile(profile, window.localStorage); if (run) saveRun(run, window.localStorage); };
 
-  // Apply newly-completed achievements + bounty Meta: pay Meta, mark completed. Returns Meta gained.
-  // The visual celebration (toast + chime) is added with the deferred achievements UI task;
-  // awards persist regardless, so Meta accrues and the meta-shop reflects it now.
-  function awardAchievements(list, bountyMeta = 0) {
-    let gained = bountyMeta;
-    for (const a of list) { profile.completed.push(a.id); gained += a.reward; }
-    if (gained > 0) meta.meta += gained;
-    return gained;
+  // Mark newly-completed achievements. Meta is NOT paid here: the player collects it on the
+  // Achievements screen (onCollectAchievement / onCollectBounty). The visual unlock toast is
+  // added with the deferred achievements UI task.
+  function markCompletions(list) {
+    for (const a of list) if (!profile.completed.includes(a.id)) profile.completed.push(a.id);
   }
   const render = () => {
     if (view === 'run') stopMusic(); else if (gestured) startMusic();   // music on the front-of-game screens
@@ -70,8 +67,8 @@ try {
     const roundsCleared = won ? run.targets.length : run.roundIndex;
     // Update lifetime sets FIRST so completeness predicates (curator/enchanter) see this run's ids.
     profileRecordRunEnd(profile, { won, roundsCleared, runScore: run.roundTotal, relicIds, modIds });
-    const bounty = won ? grantBounties(profile, run.stake?.id ?? 0, run.deck?.id ?? null, CONFIG) : { meta: 0 };
-    const gained = awardAchievements(checkAchievements(profile, {
+    if (won) grantBounties(profile, run.stake?.id ?? 0, run.deck?.id ?? null);   // mark earned; collected later
+    markCompletions(checkAchievements(profile, {
       phase: 'end', won, roundIndex: run.roundIndex,
       boughtAnythingThisRun: !!run.boughtAnythingThisRun,
       discardedThisRun: !!run.discardedThisRun,
@@ -81,8 +78,8 @@ try {
       relicsCount: relicIds.length, modsCount: modIds.length,
       stakeId: run.stake?.id ?? 0,
       allRelicIds: ALL_RELIC_IDS, allModIds: ALL_MOD_IDS,
-    }, CONFIG), bounty.meta);
-    meta.meta += earned; run.lastMetaEarned = earned + gained;   // drip + achievement/bounty payouts
+    }, CONFIG));
+    meta.meta += earned; run.lastMetaEarned = earned;   // base drip auto-pays; achievement/bounty Meta is collected on the Achievements screen
     window.localStorage.removeItem('letterRide.run'); run = null; view = 'meta'; saveAll(); render();
   }
 
@@ -106,7 +103,7 @@ try {
       // Track the run's best line for the end-of-run broadside (in-memory; not persisted).
       if (!run.bestPlay || r.scored.score > run.bestPlay.score) run.bestPlay = { word: playedWord, score: r.scored.score };
       profileRecordPlay(profile, { word: playedWord, score: r.scored.score });
-      awardAchievements(checkAchievements(profile, {
+      markCompletions(checkAchievements(profile, {
         phase: 'play',
         letters: sel.map(s => s.letter.toUpperCase()),
         word: playedWord.toUpperCase(),
@@ -201,6 +198,9 @@ try {
     onOpenSettings() { view = 'settings'; render(); },
     onOpenMetaShop() { view = 'meta'; render(); },
     onOpenAchievements() { view = 'achievements'; render(); },
+    // Collect an earned-but-unclaimed reward on the Achievements screen (the only path that pays Meta).
+    onCollectAchievement(id) { const r = collectAchievement(profile, id, CONFIG); if (r > 0) meta.meta += r; saveAll(); render(); return r; },
+    onCollectBounty(key) { const r = collectBounty(profile, key, CONFIG); if (r > 0) meta.meta += r; saveAll(); render(); return r; },
     onBackToMenu() { view = 'menu'; render(); },
     onExitToMenu() { view = 'menu'; render(); },   // run stays saved; Resume continues it
     onAbandonRun() {
