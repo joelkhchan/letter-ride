@@ -318,3 +318,27 @@ Per the project working agreement, balance numbers are surfaced, not silently ch
 - Related memory/docs: `achievements-future`, `balance-tuning-state`, `skill-vs-luck-principle`,
   `roadmap-march-discipline`; the design spec's Meta section and Deferred wishlist; the competitive
   research and research appendix (Letterlike "too stingy" criticism; "leash not a crutch").
+
+---
+
+## 9. Addendum: lifetime level (added 2026-06-25)
+
+A lifetime **level** derived from **cumulative Score across all runs**, as a second meta-progression
+surface alongside the meta-shop. Decisions:
+
+- **Driver:** cumulative round Score across every run (`profile.stats.lifetimeScore`). Named
+  `lifetimeScore`, never "points", to avoid colliding with the in-round Points scoring term.
+- **Reward:** the level itself is **pure prestige** (a displayed rank, no spendable currency, no
+  in-run power, so the three-currency rule and the skill-vs-luck pillar hold). Meta flows **only**
+  through "reach level X" achievements via the existing payout path, never from the level directly.
+- **Tiers:** five working names (Novice / Apprentice / Journeyman / Expert / Artisan) with
+  Score thresholds, both TUNE. **The names are brand language owned by the parallel branding
+  session** and live in one config constant (`LEVELS.names`); this addendum retires the old
+  Apprentice/Journeyman/Master-Printer Broadside ranks conceptually, but the Broadside rank-text
+  swap is left to branding to avoid two branches editing the same display copy.
+- **Achievements:** four progression achievements ("reach Apprentice/Journeyman/Expert/Artisan")
+  pay ascending Meta via `rewardOverride`. They are phase-agnostic (fire whenever the level is
+  reached). This grows the catalog to ~29 across five buckets (adds a `progression` bucket).
+
+Implementation deltas are in the plan's **Addendum A** (config `LEVELS`, profile `lifetimeScore`
++ `levelFor`, the four progression achievements, deferred UI rank display).

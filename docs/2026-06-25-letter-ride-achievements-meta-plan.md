@@ -1043,3 +1043,86 @@ git commit -m "feat: achievements screen + feat-first unlock toast"
 - All three new `test/meta.test.js` tests and the `test/run.test.js` additions are written against the files' existing fixtures and imports. Do NOT re-import already-imported bindings (it is a duplicate-binding SyntaxError); add only the one new `import { CONFIG }` line in `meta.test.js`.
 - `ui.js` already imports audio as `play as sfx` (top of the file), so the toast's `sfx('cash')` works without a new import; confirm before relying on it.
 - Per the staleness warning at the top, re-locate every src edit by symbol before pasting.
+
+---
+
+## Addendum A: Lifetime level (read alongside Tasks 1, 3, 4, 6)
+
+A lifetime **level** derived from cumulative Score across all runs. The level is pure prestige (no spendable currency, no in-run power, so the three-currency rule and the skill pillar hold); Meta flows only through "reach level X" achievements via the normal payout path. The internal accumulator is named `lifetimeScore` (NOT "points", to avoid colliding with the in-round Points scoring term). Tier **names are branding's call** and live in one config constant (`LEVELS.names`); the achievement display names below mirror them and must be kept in sync when branding finalizes. This addendum also retires the old Apprentice/Journeyman/Master-Printer Broadside ranks conceptually, but the actual Broadside rank-text swap is left to the branding session to avoid both branches editing the same display copy.
+
+**Task 1 (config):** add a top-level `LEVELS` key (sibling of `STAKES`/`DECKS`) and extend the achievement reward config:
+```js
+  LEVELS: {
+    names: ['Novice', 'Apprentice', 'Journeyman', 'Expert', 'Artisan'],   // TUNE names (branding owns final)
+    thresholds: [0, 3000, 9000, 20000, 40000],                            // TUNE: cumulative lifetime Score per tier
+  },
+```
+In `META.achievement`, add a `progression` bucket default and the level overrides:
+```js
+      reward: { onboarding: 3, mastery: 12, diversity: 8, discovery: 5, progression: 10 },  // TUNE
+      rewardOverride: { winStake2: 25, reachApprentice: 5, reachJourneyman: 10, reachExpert: 15, reachArtisan: 25 },  // TUNE
+```
+
+**Task 3 (profile.js):** add `lifetimeScore: 0` to `makeProfile().stats` (and to the `loadProfile` stats spread, which already merges `...base.stats`). Accumulate it in `recordPlay`:
+```js
+export function recordPlay(profile, ctx) {
+  const s = profile.stats;
+  s.wordsPlayed += 1;
+  s.lifetimeScore += ctx.score || 0;
+  if ((ctx.score || 0) > s.bestWordScore) { s.bestWordScore = ctx.score || 0; s.bestWord = ctx.word || ''; }
+}
+```
+Export a pure level helper:
+```js
+export function levelFor(lifetimeScore, config) {
+  const t = config.LEVELS.thresholds, names = config.LEVELS.names;
+  let i = 0;
+  for (let k = 0; k < t.length; k++) if (lifetimeScore >= t[k]) i = k;
+  return { index: i, name: names[i], nextAt: t[i + 1] ?? null };
+}
+```
+Add a test:
+```js
+test('lifetimeScore accumulates and levelFor maps it to a tier', () => {
+  const p = makeProfile();
+  recordPlay(p, { word: 'CAT', score: 3000 });
+  assert.equal(p.stats.lifetimeScore, 3000);
+  const cfg = { LEVELS: { names: ['Novice','Apprentice','Journeyman','Expert','Artisan'], thresholds: [0,3000,9000,20000,40000] } };
+  assert.equal(levelFor(2999, cfg).name, 'Novice');
+  assert.equal(levelFor(3000, cfg).index, 1);
+  assert.equal(levelFor(3000, cfg).name, 'Apprentice');
+  assert.equal(levelFor(3000, cfg).nextAt, 9000);
+  assert.equal(levelFor(99999, cfg).nextAt, null);   // top tier
+});
+```
+
+**Task 4 (achievements.js):** import the helper and add four progression achievements (phase-agnostic: they fire whenever the lifetime level is reached, at either check site, deduped by `completed`). At the top:
+```js
+import { levelFor } from './profile.js';
+```
+A helper near `dominantArchetype`:
+```js
+const levelIndex = (p, cfg) => levelFor((p.stats && p.stats.lifetimeScore) || 0, cfg).index;
+```
+Append to `ACHIEVEMENTS` (names mirror `LEVELS.names`; keep in sync with branding):
+```js
+  // --- Progression / lifetime rank (Meta via rewardOverride; the level itself is prestige only) ---
+  { id: 'reachApprentice', bucket: 'progression', name: 'Apprentice', desc: 'Reach the Apprentice rank.',
+    predicate: (p, c, cfg) => levelIndex(p, cfg) >= 1 },
+  { id: 'reachJourneyman', bucket: 'progression', name: 'Journeyman', desc: 'Reach the Journeyman rank.',
+    predicate: (p, c, cfg) => levelIndex(p, cfg) >= 2 },
+  { id: 'reachExpert',     bucket: 'progression', name: 'Expert',     desc: 'Reach the Expert rank.',
+    predicate: (p, c, cfg) => levelIndex(p, cfg) >= 3 },
+  { id: 'reachArtisan',    bucket: 'progression', name: 'Artisan',    desc: 'Reach the Artisan rank.',
+    predicate: (p, c, cfg) => levelIndex(p, cfg) >= 4 },
+```
+Update the catalog test's allowed-bucket set to include `'progression'`:
+```js
+  const buckets = new Set(['onboarding','mastery','diversity','discovery','progression']);
+```
+
+**Task 6 (UI, still deferred until branding merges):** in `renderAchievements`, import `levelFor`, add `['progression', 'Ranks']` to the `buckets` array, and add a level line to the stats panel using the goal-gradient (current rank + distance to next):
+```js
+  const lvl = levelFor((s.lifetimeScore) || 0, config);
+  // in statsPanel: `Rank <b>${lvl.name}</b>${lvl.nextAt ? ` (next at ${lvl.nextAt} lifetime Score)` : ' (max)'}`
+```
