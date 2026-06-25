@@ -16,6 +16,9 @@ let selectedDeckId = 'standard';
 let selectedStakeId = null;  // will be set to config.STAKES[0].id on first render
 let lastShownScore = null;   // for score count-up animation
 let _scoreRafId = null;      // active rAF handle (cancel on skip)
+let _pulling = false;        // SP2 "the pull" reveal in progress
+let _pullTimers = [];        // pending setTimeout ids (cancel on skip)
+let _pullRaf = null;         // active pull tween rAF (cancel on skip)
 
 export function bindControls(h) { handlers = h; }
 
@@ -365,6 +368,108 @@ function animateScoreCountUp(from, to) {
   _scoreRafId = requestAnimationFrame(frame);
 }
 
+// --- The Pull (Phase 4 SP2): staged commit->score reveal ----------------------
+// Pure UI feel over the existing scorebug/staging. Reads the scoreWord result and
+// counts Points -> Mult -> Score up in phases, presses the staged word, then settles
+// via onDone(). Tap anywhere fast-forwards; respects prefers-reduced-motion. The
+// timings (ms) are feel-tunable presentation, not game balance.
+const PULL = { press: 190, points: 330, mult: 300, score: 440, hold: 320, skipHold: 130 };
+
+export function isPulling() { return _pulling; }
+
+function _clearPullTimers() {
+  _pullTimers.forEach(clearTimeout); _pullTimers = [];
+  if (_pullRaf !== null) { cancelAnimationFrame(_pullRaf); _pullRaf = null; }
+}
+function _pullAfter(ms, fn) { _pullTimers.push(setTimeout(fn, ms)); }
+function _pullTween(el, from, to, ms, fmt) {
+  if (_pullRaf !== null) { cancelAnimationFrame(_pullRaf); _pullRaf = null; }
+  if (!el) return;
+  if (from === to) { el.textContent = fmt(to); return; }
+  const start = performance.now();
+  const step = now => {
+    const t = Math.min((now - start) / ms, 1);
+    const eased = 1 - Math.pow(1 - t, 3);          // ease-out
+    el.textContent = fmt(from + (to - from) * eased);
+    if (t < 1) _pullRaf = requestAnimationFrame(step);
+    else _pullRaf = null;
+  };
+  _pullRaf = requestAnimationFrame(step);
+}
+const _multStr = m => `×${m % 1 === 0 ? m : (Math.round(m * 100) / 100).toFixed(2)}`;
+function _pullDetail(bd) {
+  const parts = [`Base ${bd.base || 0}`];
+  if (bd.lengthBonus > 0) parts.push(`+${bd.lengthBonus} length`);
+  for (const p of (bd.pointParts || [])) parts.push(`+${p.amount} ${p.label}`);
+  const mp = [];
+  if ((bd.addMultParts || []).length) mp.push(bd.addMultParts.map(p => `+${p.amount} ${p.label}`).join(', '));
+  if ((bd.timesMultParts || []).length) mp.push(bd.timesMultParts.map(p => `×${p.amount} ${p.label}`).join(', '));
+  return parts.join(' ') + (mp.length ? ` · ${mp.join('; ')}` : '');
+}
+
+// Animate the commit->score reveal in place, then onDone() to settle (re-render).
+export function animatePull(sel, scored, onDone) {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const bug = document.getElementById('scorebug');
+  const stage = document.getElementById('staging');
+  if (reduce || !scored || !bug) { if (onDone) onDone(); return; }
+
+  _pulling = true;
+  let finished = false;
+  const intFmt = v => String(Math.round(v));
+  const bd = scored.breakdown || {};
+  const hasMult = ((bd.addMultParts || []).length + (bd.timesMultParts || []).length) > 0;
+
+  bug.classList.add('pulling');
+  bug.innerHTML =
+    `<span class="sb-word">${sel.map(s => s.letter).join('')}</span>` +
+    `<span class="sb-formula"><span id="pull-pts">0</span> Points <span id="pull-mult">×1</span> Mult = <b><span id="pull-score">0</span></b> Score</span>` +
+    `<span class="sb-detail" id="pull-detail">${_pullDetail(bd)}</span>`;
+  const ptsEl = document.getElementById('pull-pts');
+  const multEl = document.getElementById('pull-mult');
+  const scoreEl = document.getElementById('pull-score');
+  const detailEl = document.getElementById('pull-detail');
+  if (detailEl) detailEl.style.opacity = '0';
+
+  const settle = () => {
+    if (finished) return;
+    finished = true;
+    _clearPullTimers();
+    document.removeEventListener('click', onTap, { capture: true });
+    _pulling = false;
+    if (onDone) onDone();
+  };
+  const showFinals = () => {
+    if (ptsEl) ptsEl.textContent = intFmt(scored.points);
+    if (multEl) multEl.textContent = _multStr(scored.mult);
+    if (scoreEl) { scoreEl.textContent = intFmt(scored.score); scoreEl.classList.add('pull-pop'); }
+    if (detailEl) detailEl.style.opacity = '1';
+  };
+  function onTap(e) {
+    e.stopPropagation(); e.preventDefault();
+    _clearPullTimers();
+    showFinals();
+    _pullAfter(PULL.skipHold, settle);
+  }
+  document.addEventListener('click', onTap, { capture: true });
+
+  if (stage) { stage.classList.add('pull-pressing'); _pullAfter(PULL.press, () => stage.classList.remove('pull-pressing')); }
+
+  let t = PULL.press;
+  _pullAfter(t, () => _pullTween(ptsEl, 0, scored.points, PULL.points, intFmt));
+  t += PULL.points;
+  _pullAfter(t, () => {
+    if (detailEl) detailEl.style.opacity = '1';
+    if (hasMult) _pullTween(multEl, 1, scored.mult, PULL.mult, _multStr);
+    else if (multEl) multEl.textContent = _multStr(scored.mult);
+  });
+  t += hasMult ? PULL.mult : 80;
+  _pullAfter(t, () => _pullTween(scoreEl, 0, scored.score, PULL.score, intFmt));
+  t += PULL.score;
+  _pullAfter(t, () => { if (scoreEl) scoreEl.classList.add('pull-pop'); });
+  _pullAfter(t + PULL.hold, settle);
+}
+
 export function renderRun(run) {
   lastRun = run;
 
@@ -492,6 +597,7 @@ export function renderRun(run) {
 // Wilds are still placed by tap only; typing only matches real-letter tiles.
 export function handleRunKey(e) {
   if (!lastRun || lastRun.status !== 'playing') return;
+  if (_pulling) return;     // ignore keyboard input mid-pull
 
   if (/^[a-zA-Z]$/.test(e.key)) {
     const L = e.key.toUpperCase();

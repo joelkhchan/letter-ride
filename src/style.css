@@ -164,3 +164,24 @@ button { font-family: var(--font-body); color: var(--ink); }
 #press-pot { text-align: center; font-size: 1.15em; font-weight: 700; color: var(--gold); margin-bottom: 12px; font-variant-numeric: tabular-nums; }
 #press-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 #press-result { text-align: center; font-size: 1.05em; font-weight: 700; margin-top: 10px; min-height: 1.4em; }
+
+/* ================================================================ The Pull (SP2) */
+/* In-place commit->score reveal. Presentation only; respects reduced-motion. */
+#staging.pull-pressing { animation: pull-press 190ms ease-out; }
+@keyframes pull-press {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(0.86) translateY(3px); color: var(--gold); }
+  100% { transform: scale(1); }
+}
+#scorebug.pulling { border-top-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 6px 18px rgba(0,0,0,0.6); }
+#scorebug.pulling #pull-score { display: inline-block; font-size: 1.55em; }
+#pull-score.pull-pop { animation: pull-pop 280ms cubic-bezier(.2,1.5,.4,1); }
+@keyframes pull-pop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+#pull-detail { transition: opacity 220ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  #staging.pull-pressing, #pull-score.pull-pop { animation: none; }
+}

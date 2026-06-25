@@ -9,7 +9,7 @@ import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
-import { renderRun, renderMeta, bindControls, flashInvalid, handleRunKey } from './ui.js';
+import { renderRun, renderMeta, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 
 try {
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
@@ -62,7 +62,8 @@ try {
   }
 
   bindControls({
-    onSubmit(sel) { const r = playWord(run, sel); if (!r.ok) return flashInvalid(r.reason);
+    onSubmit(sel) { if (isPulling()) return;
+      const r = playWord(run, sel); if (!r.ok) return flashInvalid(r.reason);
       recordPlay(telemetry, { letters: sel.map(s => s.letter.toUpperCase()), word: sel.map(s => s.letter).join('').toUpperCase(), selection: sel, wordsPlayedThisRound: run.wordsPlayedThisRound, enablers: run.relics.filter(rv => rv.enabler).map(rv => rv.enabler) }, r.scored?.score ?? 0);
       run.lastPlay = { word: sel.map(s => s.letter).join(''), score: r.scored.score };
       if (run.status === 'roundCleared') {
@@ -73,7 +74,7 @@ try {
           recordOffers(telemetry, extractOfferIds(run.shop));
         }
       }
-      saveAll(); render(); return r; },
+      saveAll(); animatePull(sel, r.scored, render); return r; },
     onDiscard(sel) { discard(run, sel); saveAll(); render(); },
     onBuy(offer, opts = {}) {
       const r = purchase(run, offer, opts);
