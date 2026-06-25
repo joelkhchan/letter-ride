@@ -543,7 +543,7 @@ export function renderRun(run) {
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
       <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
-      <button id="mute-btn" title="${isMuted() ? 'Sound off (tap for on)' : 'Sound on (tap for off)'}" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">${isMuted() ? '🔇' : '🔊'}</button>
+      <button id="mute-btn" class="${isMuted() ? 'muted' : ''}" title="${isMuted() ? 'Sound off (tap for on)' : 'Sound on (tap for off)'}" style="font-size:0.95em;padding:2px 8px;border-radius:50%;cursor:pointer;">&#9834;</button>
     </div>
     ${relicsModsPanelHtml(run, stagedBreakdown)}
     ${lastPlayHtml}
@@ -612,6 +612,7 @@ export function handleRunKey(e) {
     const tile = lastRun.rack.find(t => t.letter === L && !selection.some(s => s.tile.id === t.id));
     if (tile) {
       selection.push({ tile, letter: L });
+      sfx('tap');
       e.preventDefault();
       renderRun(lastRun);
     }

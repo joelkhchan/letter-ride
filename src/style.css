@@ -66,6 +66,8 @@ h1 { color: var(--gold); }
 }
 #score-total { font-family: var(--font-display); font-weight: 700; font-size: 1.5em; color: var(--gold); }
 #coins { font-weight: 700; color: var(--gold); }
+#mute-btn { color: var(--gold); border: 1px solid var(--line); background: var(--night-2); line-height: 1; }
+#mute-btn.muted { text-decoration: line-through; opacity: 0.5; color: var(--ink-soft); }
 
 /* ================================================================ Tiles (sorts) */
 #rack { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0; }

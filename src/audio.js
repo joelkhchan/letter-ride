@@ -64,7 +64,7 @@ function noise(c, { dur = 0.1, gain = 0.15, delay = 0, type = 'lowpass', freq = 
 // The SFX set. Warm + tactile; modest gains so simultaneous tones stay well clear of clipping.
 const SFX = {
   // tile select: a soft, short type-sort click
-  tap(c)      { tone(c, { type: 'triangle', freq: 1400, dur: 0.045, gain: 0.09 }); },
+  tap(c)      { tone(c, { type: 'sine', freq: 330, freqEnd: 250, dur: 0.065, gain: 0.10, attack: 0.012 }); },
   // commit / the platen coming down: a low thunk + a mechanical transient
   chunk(c)    { tone(c, { type: 'sine', freq: 150, freqEnd: 55, dur: 0.18, gain: 0.28 });
                 noise(c, { dur: 0.06, gain: 0.14, type: 'lowpass', freq: 1100 }); },
