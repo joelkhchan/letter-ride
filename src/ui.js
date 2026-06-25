@@ -503,6 +503,8 @@ export function renderRun(run) {
   const inRack = id => selection.some(s => s.tile.id === id);
   const staged = selection.map(s => s.letter).join('');
   const done = run.status !== 'playing';
+  // Rack tile values reflect the active boss warp (e.g. The Mute zeroes vowels) so the badge matches scoring.
+  const rackTileValues = (run.boss && BOSSES[run.boss]) ? bossTileValues(run.tileValues, BOSSES[run.boss]) : (run.tileValues || {});
 
   // Currency counter (only in Tier 1; coins field exists on run after Task 10).
   const coinsHtml = (typeof run.coins === 'number')
@@ -565,7 +567,7 @@ export function renderRun(run) {
         const modBadge = t.mods && t.mods.length
           ? `<span class="mod-badge">${t.mods.map(m => (m.name || m.id)[0].toUpperCase()).join('')}</span>`
           : '';
-        const tileVal = t.letter === '*' ? '' : `<span class="tile-val">${(run.tileValues || {})[t.letter] ?? 0}</span>`;
+        const tileVal = t.letter === '*' ? '' : `<span class="tile-val">${rackTileValues[t.letter] ?? 0}</span>`;
         const titleAttr = t.mods && t.mods.length
           ? ` title="${t.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ')}"`
           : '';
@@ -687,12 +689,11 @@ function renderNodeChoice(run) {
     </div>
     ${relicsModsPanelHtml(run)}
     <div id="node-choice">
-      ${eventCardHtml ? `<div class="node-prompt">Choose one stop. Taking the event <b>skips the shop</b> this round.</div>` : ''}
       <button class="node-card" id="pick-shop">
         <div class="node-card-title">Shop</div>
         <div class="node-card-desc">${shopDesc}</div>
       </button>
-      ${eventCardHtml}
+      ${eventCardHtml ? `<div class="node-or">OR</div>${eventCardHtml}` : ''}
     </div>
     <div id="msg"></div>`;
 
