@@ -55,7 +55,7 @@ export const CONFIG = {
   },
   LEVELS: {
     names: ['Novice', 'Apprentice', 'Journeyman', 'Expert', 'Artisan'],   // TUNE names (branding owns final)
-    thresholds: [0, 3000, 9000, 20000, 40000],                            // TUNE: cumulative lifetime Score per tier
+    thresholds: [0, 4000, 12000, 28000, 60000],                           // TUNE: cumulative lifetime Score per tier (raised from 3k/9k/20k/40k per analyze:meta; ~Apprentice 3 / Journeyman 9 / Expert 21 / Artisan 46 runs for a competent line)
   },
   DECKS: {
     standard:   { id: 'standard',   name: 'Standard',    desc: 'Balanced starter. Good for learning.',                                                              startingBag: null },  // null => CONFIG.STARTING_BAG
