@@ -10,6 +10,8 @@
 
 **Status:** This plan implements a **banked, Tier-4+ deferred** feature. Do NOT execute it until the roadmap reaches the deferred wishlist and the author greenlights it. The spec is `docs/2026-06-25-letter-ride-achievements-meta-design.md`.
 
+> **Staleness warning (read before executing):** This plan is banked for Tier 4+, so the core loop will have drifted by execution time. Every line number and quoted OLD-string snippet below is anchored to the `worktree-achievements-meta` branch at authoring time. **Re-locate each edit by its surrounding symbol (function name + an adjacent unique line), not by line number, before pasting.** If a quoted OLD block no longer matches verbatim, stop and re-derive the edit against the current code.
+
 ## Global Constraints
 
 - **Vanilla JS, ES modules, no build step, no framework.** Match existing hand-rolled style.
@@ -38,22 +40,25 @@
 
 ### Task 1: Meta-economy config + migration
 
+> **Note on `metaMult`:** removing the per-run stake multiplier is deliberately deferred to **Task 5**, co-located with the bounty-grid wiring that replaces it. Task 1 leaves `STAKES[*].metaMult` and the `main.js:52` read intact, so harder stakes keep their current payout until the replacement exists in the same commit (per design Section 8 ordering).
+
 **Files:**
-- Modify: `src/config.js:36-63` (META, STAKES, LOADOUT)
+- Modify: `src/config.js` — the `META` block (LOADOUT trim + new keys); does NOT touch `STAKES` (see note)
 - Modify: `src/meta.js:4-14` (makeMetaState), `:20-30` (loadMeta), `:47-59` (buildLoadout)
-- Modify: `src/main.js:52` (endRun earned line)
-- Test: `test/meta.test.js`
+- Modify: `test/meta.test.js` (new tests + update three existing tests)
 
 **Interfaces:**
-- Produces: `config.META.achievement = { reward: {onboarding,mastery,diversity,discovery}, bigWordScore, bigRoundScore, efficientWords, manyMods, manyRelics }`, `config.META.bounty = {0,1,2}`; `metaState.schemaVersion = 2`; `metaState.loadout = { extraDiscards }`.
-- Consumes (later tasks): `buildLoadout` returns `{ extraDiscards }`; `metaEarned` is no longer multiplied by stake.
+- Produces: `config.META.achievement = { reward: {onboarding,mastery,diversity,discovery}, rewardOverride: {winStake2}, bigWordScore, bigRoundScore, efficientWords, manyMods, manyRelics }`, `config.META.bounty = {0,1,2}`; `metaState.schemaVersion = 2`; `metaState.loadout = { extraDiscards }`.
+- Consumes (later tasks): `buildLoadout` returns `{ extraDiscards, startRelics: [] }`.
 
 - [ ] **Step 1: Write the failing test** (append to `test/meta.test.js`)
 
+First add ONE new import at the TOP of the file (alongside the existing `import ... from '../src/meta.js'`; do NOT re-import the meta.js bindings — they are already imported and a duplicate binding is a SyntaxError):
 ```js
-import { makeMetaState, loadMeta, buildLoadout } from '../src/meta.js';
 import { CONFIG } from '../src/config.js';
-
+```
+Then append these tests:
+```js
 test('loadMeta refunds Meta spent on removed loadout perks exactly once', () => {
   const store = new Map();
   // Simulate an OLD save: schemaVersion absent, perks bought.
@@ -75,8 +80,8 @@ test('loadMeta refunds Meta spent on removed loadout perks exactly once', () => 
   assert.equal(m2.meta, 41);
 });
 
-test('config no longer carries metaMult or removed loadout perks', () => {
-  assert.ok(CONFIG.STAKES.every(s => s.metaMult === undefined));
+test('config drops removed loadout perks and adds achievement/bounty blocks', () => {
+  // (metaMult removal is asserted in Task 5, where it is actually removed.)
   assert.equal(CONFIG.LOADOUT.startCoins, undefined);
   assert.equal(CONFIG.LOADOUT.startRelic, undefined);
   assert.ok(CONFIG.LOADOUT.extraDiscards);
@@ -114,6 +119,7 @@ Replace `META.unlockCost` line and add new keys (within `META`):
     unlockCost: { relic: 25, mod: 20, deck: 35, stake: 15 },   // TUNE: raised to absorb the larger faucet
     achievement: {
       reward: { onboarding: 3, mastery: 12, diversity: 8, discovery: 5 },  // TUNE: Meta by bucket
+      rewardOverride: { winStake2: 25 },   // TUNE: per-achievement overrides (id -> Meta)
       bigWordScore: 150,    // TUNE
       bigRoundScore: 400,   // TUNE
       efficientWords: 12,   // TUNE: win in <= N total words
@@ -124,15 +130,7 @@ Replace `META.unlockCost` line and add new keys (within `META`):
   },
 ```
 
-Replace the `STAKES` block (drop every `metaMult`):
-
-```js
-  STAKES: [
-    { id: 0, name: 'Stake 0', targetMult: 1.0,  playsDelta: 0,  discardsDelta: 0 },
-    { id: 1, name: 'Stake 1', targetMult: 1.25, playsDelta: 0,  discardsDelta: 0 },
-    { id: 2, name: 'Stake 2', targetMult: 1.5,  playsDelta: -1, discardsDelta: 0 },
-  ],
-```
+(Leave `STAKES` unchanged in Task 1; its `metaMult` removal happens in Task 5.)
 
 Replace the `LOADOUT` block (keep only `extraDiscards`):
 
@@ -200,28 +198,44 @@ export function buildLoadout(metaState, config, RELICS) {
 }
 ```
 
-- [ ] **Step 5: Edit `src/main.js:52`** — drop the stake multiplier.
+- [ ] **Step 5: Update the THREE existing `test/meta.test.js` tests that assert the old loadout shape.**
 
-Change:
+These pre-existing tests fail against the new `makeMetaState`/`buildLoadout` and MUST be edited (not just appended to):
+
+In the `makeMetaState seeds...` test, change the loadout assertion:
 ```js
-    const earned = Math.round(metaEarned(run, CONFIG) * (run.stake?.metaMult || 1));
+  assert.deepEqual(m.loadout, { extraDiscards: 0, startCoins: 0, startRelic: 0 });
 ```
 to:
 ```js
-    const earned = metaEarned(run, CONFIG);
+  assert.deepEqual(m.loadout, { extraDiscards: 0 });
 ```
+
+Replace the whole `buildLoadout translates levels into run values` test with:
+```js
+test('buildLoadout returns only extraDiscards (startCoins/startRelic removed)', () => {
+  const cfg = { LOADOUT: { extraDiscards: { max:2 } } };
+  const m = { loadout: { extraDiscards: 1 } };
+  const lo = buildLoadout(m, cfg, {});
+  assert.equal(lo.extraDiscards, 1);
+  assert.deepEqual(lo.startRelics, []);
+  assert.equal(lo.startCoins, undefined);
+});
+```
+
+The two `purchaseMeta ...` tests and the `metaShopOffers ...` test build their own local `cfg2` that still includes `startCoins`/`startRelic`, so they exercise `purchaseMeta`/`metaShopOffers` generically and still pass unchanged — leave them as-is.
 
 - [ ] **Step 6: Run tests to verify pass**
 
 Run: `npm test -- test/meta.test.js`
-Expected: PASS (all three new tests + existing meta tests).
-Then `npm test` — expected: full suite green (no other module depended on `metaMult` or the removed perks).
+Expected: PASS (the 3 new tests + the 3 updated tests + the unchanged ones).
+Then `npm test` — expected: full suite green (the only modules touched are config/meta; no other test depended on the removed perks; `metaMult` is untouched until Task 5).
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/config.js src/meta.js src/main.js test/meta.test.js
-git commit -m "feat: meta-economy refactor — drop metaMult, trim loadout, refund migration"
+git add src/config.js src/meta.js test/meta.test.js
+git commit -m "feat: trim loadout to extraDiscards + refund migration + achievement config"
 ```
 
 ---
@@ -240,34 +254,36 @@ git commit -m "feat: meta-economy refactor — drop metaMult, trim loadout, refu
 
 - [ ] **Step 1: Write the failing test** (append to `test/run.test.js`)
 
-```js
-import { newRun, playWord, discard } from '../src/run.js';
-// Reuse the file's existing fixture helpers (tiny dictionary + bag). The pattern below
-// assumes a `makeTestRun()` style helper already used in this file; if not, build a run via
-// newRun({ config, dictionary, seed: 1, targets: [1], deck: { id: 'standard', startingBag: ['C','A','T'] } }).
+This file already imports `newRun, playWord, discard` (line 4) and defines `seatCat(run)` (seats a CAT selection in `run.rack` and returns it), `config`, `dict`, and `resetTileIds`. Do NOT re-import them (duplicate bindings are a SyntaxError). Append, using those existing fixtures:
 
-test('run tracks totalWordsThisRun and discardedThisRun', () => {
-  const run = makeTestRun({ targets: [9999] });   // unreachable target so the round stays open
-  const sel = selectWord(run, 'CAT');              // existing helper that maps letters->rack tiles
-  playWord(run, sel);
+```js
+test('run tracks totalWordsThisRun and archetypeTally on a play', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.target = 100;                       // unreachable in one CAT, so the round stays open
+  playWord(run, seatCat(run));            // CAT, length 3 -> shortWord archetype
   assert.equal(run.totalWordsThisRun, 1);
   assert.equal(run.discardedThisRun, false);
-  discard(run, [{ tile: run.rack[0], letter: run.rack[0].letter }]);
+  assert.ok(run.archetypeTally.shortWord >= 1);
+});
+
+test('discard sets discardedThisRun', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  const sel = seatCat(run);               // rack now holds C, A, T
+  discard(run, [sel[0]]);                 // discard one seated tile
   assert.equal(run.discardedThisRun, true);
 });
 
-test('archetypeTally accumulates and flawlessSoFar flips on a final-play clear', () => {
-  const run = makeTestRun({ targets: [1] });       // clears on first word
-  run.playsLeft = 1;                               // force "final play" condition
-  const sel = selectWord(run, 'CAT');
-  playWord(run, sel);
+test('flawlessSoFar flips false on a final-play clear', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.target = 5; run.playsLeft = 1;      // CAT clears exactly, on the last play
+  playWord(run, seatCat(run));
   assert.equal(run.status, 'roundCleared');
-  assert.equal(run.flawlessSoFar, false);          // cleared on the last play -> not flawless
-  assert.ok(run.archetypeTally.shortWord >= 1);    // CAT is length 3
+  assert.equal(run.flawlessSoFar, false);
 });
 ```
-
-(Use whatever fixture/selection helpers `test/run.test.js` already defines; the assertions are the contract.)
 
 - [ ] **Step 2: Run it to verify failure**
 
@@ -597,8 +613,9 @@ const isPlay = (c) => c.phase === 'play';
 const isEnd  = (c) => c.phase === 'end';
 const has = (letters, ch) => (letters || []).includes(ch);
 
-// Each entry: { id, bucket, name, desc, predicate(profile, ctx, config). reward defaults to
-// config.META.achievement.reward[bucket]; an explicit `reward` overrides. }
+// Each entry: { id, bucket, name, desc, predicate(profile, ctx, config) }. The Meta reward
+// is config-driven (no literals in the catalog): config.META.achievement.rewardOverride[id]
+// if present, else config.META.achievement.reward[bucket]. This keeps every number in config.
 export const ACHIEVEMENTS = [
   // --- Onboarding (small) ---
   { id: 'firstRound',     bucket: 'onboarding', name: 'First Impression', desc: 'Clear your first round.',
@@ -621,7 +638,7 @@ export const ACHIEVEMENTS = [
     predicate: (p, c, cfg) => isPlay(c) && (c.score || 0) >= cfg.META.achievement.bigWordScore },
   { id: 'winStake1',      bucket: 'mastery', name: 'Pressrun',     desc: 'Win on Stake 1.',
     predicate: (p, c) => isEnd(c) && c.won && (c.stakeId || 0) >= 1 },
-  { id: 'winStake2',      bucket: 'mastery', name: 'Master Printer', desc: 'Win on Stake 2.', reward: 25,
+  { id: 'winStake2',      bucket: 'mastery', name: 'Master Printer', desc: 'Win on Stake 2.',  // reward via rewardOverride.winStake2
     predicate: (p, c) => isEnd(c) && c.won && (c.stakeId || 0) >= 2 },
   { id: 'bigRound',       bucket: 'mastery', name: 'Engine Room',  desc: 'Score big in a single round.',
     predicate: (p, c, cfg) => isPlay(c) && c.status === 'roundCleared' && (c.roundTotal || 0) >= cfg.META.achievement.bigRoundScore },
@@ -643,7 +660,7 @@ export const ACHIEVEMENTS = [
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'shortWord' },
   { id: 'winLong',        bucket: 'diversity', name: 'Long Hauler',    desc: 'Win with a long-word build.',
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'longWord' },
-  { id: 'winManyMods',    bucket: 'diversity', name: 'Enchanter’s Run', desc: 'Win using several tile-mods.',
+  { id: 'winManyMods',    bucket: 'diversity', name: "Enchanter's Run", desc: 'Win using several tile-mods.',
     predicate: (p, c, cfg) => isEnd(c) && c.won && (c.modsCount || 0) >= cfg.META.achievement.manyMods },
   { id: 'winManyRelics',  bucket: 'diversity', name: 'Relic Hound',    desc: 'Win with several relics.',
     predicate: (p, c, cfg) => isEnd(c) && c.won && (c.relicsCount || 0) >= cfg.META.achievement.manyRelics },
@@ -660,7 +677,8 @@ export const ACHIEVEMENTS = [
 ];
 
 function rewardFor(def, config) {
-  return def.reward ?? config.META.achievement.reward[def.bucket];
+  const a = config.META.achievement;
+  return (a.rewardOverride && a.rewardOverride[def.id]) ?? a.reward[def.bucket];
 }
 
 // Pure: returns newly-completed achievements (not already in profile.completed). No mutation.
@@ -802,13 +820,30 @@ Change `saveAll` (line 32) to also persist the profile:
       stakeId: run.stake?.id ?? 0,
       allRelicIds: ALL_RELIC_IDS, allModIds: ALL_MOD_IDS,
     };
-    awardAchievements(checkAchievements(profile, endCtx, CONFIG), bounty.meta);
-    run.lastMetaEarned = earned + (run._lastAwardGained || 0);   // (display only; optional)
+    const gained = awardAchievements(checkAchievements(profile, endCtx, CONFIG), bounty.meta);
+    run.lastMetaEarned = earned + gained;   // meta screen shows drip + achievement/bounty payouts
     window.localStorage.removeItem('letterRide.run'); run = null; view = 'meta'; saveAll(); render();
   }
 ```
 
-(The `run._lastAwardGained` line is cosmetic; if the meta screen does not need the combined figure, drop it. `awardAchievements` returns the gained amount if you want to surface it.)
+Note: `endRun` is reached only via `onRunEnd` (main.js), which the run UI surfaces only at terminal status (`run.status` is `'won'` or `'lost'`). If you ever wire another caller, gate it on terminal status, otherwise run-end achievements (`firstWin`, the `win*` family) silently never fire.
+
+**Now remove the stake `metaMult` (deferred from Task 1, co-located here with its bounty-grid replacement so harder stakes never pay less without a replacement in the same commit):**
+
+In `src/config.js`, replace the `STAKES` block (drop every `metaMult`):
+```js
+  STAKES: [
+    { id: 0, name: 'Stake 0', targetMult: 1.0,  playsDelta: 0,  discardsDelta: 0 },
+    { id: 1, name: 'Stake 1', targetMult: 1.25, playsDelta: 0,  discardsDelta: 0 },
+    { id: 2, name: 'Stake 2', targetMult: 1.5,  playsDelta: -1, discardsDelta: 0 },
+  ],
+```
+The `endRun` replacement above already computes `const earned = metaEarned(run, CONFIG);` with no `* metaMult`, so the single runtime read (formerly `main.js:52`) is dropped in this same step. Add one assertion to `test/meta.test.js`:
+```js
+test('STAKES no longer carry metaMult', () => {
+  assert.ok(CONFIG.STAKES.every(s => s.metaMult === undefined));
+});
+```
 
 - [ ] **Step 6: Pass the profile to the achievements screen render.** Change line 38:
 ```js
@@ -829,8 +864,8 @@ Use the `browser-smoke` skill to gate this if available.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/main.js
-git commit -m "feat: wire achievement checks + bounty grid into run/play orchestration"
+git add src/main.js src/config.js test/meta.test.js
+git commit -m "feat: wire achievement checks + bounty grid, remove stake metaMult"
 ```
 
 ---
@@ -857,22 +892,33 @@ export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = 
     ['diversity', 'Build Diversity'],
     ['discovery', 'Discovery'],
   ];
-  const rewardFor = (a) => a.reward ?? config.META.achievement.reward[a.bucket];
+  const ach = config.META.achievement;
+  const rewardFor = (a) => (ach.rewardOverride && ach.rewardOverride[a.id]) ?? ach.reward[a.bucket];
+  // Minimal progress for the two countable discovery achievements (the data is on hand).
+  // Richer per-achievement progress bars are deferred to the tuning/polish pass (see Self-Review).
+  const progressFor = (a) => {
+    if (a.id === 'curator')   return `${(profile.stats.relicsEverUsed || []).length}/${allRelicIds.length}`;
+    if (a.id === 'enchanter') return `${(profile.stats.modsEverApplied || []).length}/${allModIds.length}`;
+    return '';
+  };
   // Feat-first rows: name + desc lead; Meta shown small and muted (competence-feedback framing).
   const rowsFor = (bucket) => (ACHIEVEMENTS || [])
     .filter(a => a.bucket === bucket)
     .map(a => {
       const got = done.has(a.id);
+      const prog = progressFor(a);
+      const meta = got ? 'earned' : `${prog ? prog + ' · ' : ''}+${rewardFor(a)} Meta`;
       return `<div class="ach-row ${got ? 'done' : 'locked'}">
         <span class="ach-name">${a.name}</span>
         <span class="ach-desc">${a.desc}</span>
-        <span class="ach-meta">${got ? 'earned' : `+${rewardFor(a)} Meta`}</span>
+        <span class="ach-meta">${meta}</span>
       </div>`;
     }).join('');
   const sections = buckets.map(([k, label]) =>
     `<div class="ach-section"><h3>${label}</h3>${rowsFor(k)}</div>`).join('');
 
-  // Bounty grid: stakes x unlocked decks. Lower tiers auto-granted, so only the cell state shows.
+  // Bounty grid: stakes x ALL decks (locked decks render as dimmed future goals). Lower tiers
+  // auto-granted, so a row shows only the highest earned cell as filled.
   const stakes = config.STAKES.map(s => s.id);
   const decks = Object.keys(config.DECKS);
   const gridRows = decks.map(d => {
@@ -980,11 +1026,20 @@ git commit -m "feat: achievements screen + feat-first unlock toast"
 - Stake x deck bounty grid, lower-tier auto-grant → Task 4 `grantBounties`, Task 5 wiring, Task 6 grid render. Covered.
 - Loadout trimmed to extraDiscards + migration/refund → Task 1. Covered.
 - Rich lifetime profile store → Task 3 + stats panel in Task 6. Covered.
-- Prerequisite wiring (deckId, run accumulators, extended play-ctx, metaMult code edit) → Tasks 1, 2, 5. Covered.
+- Prerequisite wiring (deckId, run accumulators, extended play-ctx) → Tasks 2, 5. metaMult code edit → Task 5 (deferred from Task 1 for economy-safety). Covered.
 - Completeness predicate vs growing roster; double-award guard → Task 4 + tests. Covered.
+- Spec 5.4 progress bars → **partially covered**: countable discovery achievements (curator/enchanter) show an `N/total` count in Task 6; richer per-achievement progress bars (and the backing counters) are **deferred to the tuning/polish pass**. Not a silent drop.
+
+**Known deferrals & dependencies:**
+- **Progress bars** beyond the two countable discovery achievements are deferred (above). The feat-first toast + muted Meta (Task 6) carries the competence-feedback framing in the meantime.
+- **No profile-reset path** is built: the profile is the authoritative player-facing store (unlike the freely-resettable dev telemetry). The Task 6 stats panel is the player-facing source; the existing dev "Balance Stats" overlay (`ui.js`) stays dev-only, so divergent run/win counts between the two are expected, not a bug.
+- **Tuning order (for the playtest pass):** the raised `unlockCost` values were anchored to placeholder achievement rewards + bounties. Tune the faucet first (reward/bounty per run), measure the actual Meta-per-run, THEN set `unlockCost`. Costs cannot be validated before the reward side is fixed.
 
 **Placeholder scan:** No "TBD/TODO/handle edge cases" left; all code blocks are concrete. Numeric balance values are explicit constants tagged TUNE (intentional per the spec).
 
-**Type consistency:** `checkAchievements(profile, ctx, config)` and the ctx field names (`phase`, `status`, `playsLeft`, `prevRoundTotal`, `archetypeTally`, `allRelicIds`, `allModIds`, `stakeId`, `relicsCount`, `modsCount`) are produced in Task 5 exactly as consumed in Task 4. `grantBounties`/`cellKey` signatures match between Tasks 4 and 5. `recordPlay`/`recordRunEnd` are imported under aliases (`profileRecordPlay`/`profileRecordRunEnd`) in main.js to avoid colliding with the telemetry imports of the same names — verified the alias is used at every call site.
+**Type consistency:** `checkAchievements(profile, ctx, config)` and the ctx field names (`phase`, `status`, `playsLeft`, `prevRoundTotal`, `archetypeTally`, `allRelicIds`, `allModIds`, `stakeId`, `relicsCount`, `modsCount`) are produced in Task 5 exactly as consumed in Task 4. `grantBounties`/`cellKey` signatures match between Tasks 4 and 5. The reward path is config-driven via `rewardFor` (Task 4) reading `rewardOverride[id] ?? reward[bucket]`, mirrored in the Task 6 render. `recordPlay`/`recordRunEnd` are imported under aliases (`profileRecordPlay`/`profileRecordRunEnd`) in main.js to avoid colliding with the telemetry imports of the same names.
 
-**Notes for the implementer:** `test/run.test.js` helper names (`makeTestRun`, `selectWord`) are placeholders for whatever that file already provides; use the file's real fixtures. Confirm `ui.js` already imports `play as sfx` from `./audio.js` before relying on it in the toast (add the import if absent).
+**Notes for the implementer:**
+- All three new `test/meta.test.js` tests and the `test/run.test.js` additions are written against the files' existing fixtures and imports. Do NOT re-import already-imported bindings (it is a duplicate-binding SyntaxError); add only the one new `import { CONFIG }` line in `meta.test.js`.
+- `ui.js` already imports audio as `play as sfx` (top of the file), so the toast's `sfx('cash')` works without a new import; confirm before relying on it.
+- Per the staleness warning at the top, re-locate every src edit by symbol before pasting.
