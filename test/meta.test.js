@@ -125,3 +125,7 @@ test('buildLoadout returns only extraDiscards', () => {
   assert.equal(lo.extraDiscards, 2);
   assert.deepEqual(lo.startRelics, []);
 });
+
+test('STAKES no longer carry metaMult', () => {
+  assert.ok(CONFIG.STAKES.every(s => s.metaMult === undefined));
+});

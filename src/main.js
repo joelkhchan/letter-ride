@@ -8,6 +8,8 @@ import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
+import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
+import { checkAchievements, grantBounties } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
 import { renderRun, renderMeta, renderMenu, renderSettings, renderAchievements, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx, startMusic, stopMusic, resumeAudio } from './audio.js';
@@ -17,6 +19,7 @@ try {
   const dictionary = await loadFromFile('assets/enable1.txt', blocklist);
   const meta = loadMeta(window.localStorage, CONFIG);
   let telemetry = loadTelemetry(window.localStorage);
+  const profile = loadProfile(window.localStorage);
   let run = loadRun(window.localStorage, { config: CONFIG, dictionary });   // resume an in-progress run if any
   let view = 'menu';   // boot to the main menu; Resume picks up an in-progress run
   let gestured = false;   // music can only start after a user gesture (autoplay policy)
@@ -29,7 +32,17 @@ try {
     });
   }
 
-  const saveAll = () => { saveMeta(meta, window.localStorage); saveTelemetry(telemetry, window.localStorage); if (run) saveRun(run, window.localStorage); };
+  const saveAll = () => { saveMeta(meta, window.localStorage); saveTelemetry(telemetry, window.localStorage); saveProfile(profile, window.localStorage); if (run) saveRun(run, window.localStorage); };
+
+  // Apply newly-completed achievements + bounty Meta: pay Meta, mark completed. Returns Meta gained.
+  // The visual celebration (toast + chime) is added with the deferred achievements UI task;
+  // awards persist regardless, so Meta accrues and the meta-shop reflects it now.
+  function awardAchievements(list, bountyMeta = 0) {
+    let gained = bountyMeta;
+    for (const a of list) { profile.completed.push(a.id); gained += a.reward; }
+    if (gained > 0) meta.meta += gained;
+    return gained;
+  }
   const render = () => {
     if (view === 'run') stopMusic(); else if (gestured) startMusic();   // music on the front-of-game screens
     if (view === 'run') return renderRun(run);
@@ -49,13 +62,27 @@ try {
     view = 'run'; saveAll(); render();
   }
   function endRun() {
-    const earned = Math.round(metaEarned(run, CONFIG) * (run.stake?.metaMult || 1));
-    meta.meta += earned; run.lastMetaEarned = earned;       // for the meta screen to show
-    const ownedIds = [
-      ...run.relics.map(r => r.id),
-      ...[...new Set(run.bag.tiles.flatMap(t => t.mods.map(m => m.id)))],
-    ];
-    recordRunEnd(telemetry, { won: run.status === 'won', ownedIds });
+    const earned = metaEarned(run, CONFIG);                 // stake metaMult removed; bounties replace it
+    const relicIds = run.relics.map(r => r.id);
+    const modIds = [...new Set(run.bag.tiles.flatMap(t => t.mods.map(m => m.id)))];
+    recordRunEnd(telemetry, { won: run.status === 'won', ownedIds: [...relicIds, ...modIds] });
+    const won = run.status === 'won';
+    const roundsCleared = won ? run.targets.length : run.roundIndex;
+    // Update lifetime sets FIRST so completeness predicates (curator/enchanter) see this run's ids.
+    profileRecordRunEnd(profile, { won, roundsCleared, runScore: run.roundTotal, relicIds, modIds });
+    const bounty = won ? grantBounties(profile, run.stake?.id ?? 0, run.deck?.id ?? null, CONFIG) : { meta: 0 };
+    const gained = awardAchievements(checkAchievements(profile, {
+      phase: 'end', won, roundIndex: run.roundIndex,
+      boughtAnythingThisRun: !!run.boughtAnythingThisRun,
+      discardedThisRun: !!run.discardedThisRun,
+      totalWordsThisRun: run.totalWordsThisRun || 0,
+      flawlessSoFar: run.flawlessSoFar !== false,
+      archetypeTally: run.archetypeTally || {},
+      relicsCount: relicIds.length, modsCount: modIds.length,
+      stakeId: run.stake?.id ?? 0,
+      allRelicIds: ALL_RELIC_IDS, allModIds: ALL_MOD_IDS,
+    }, CONFIG), bounty.meta);
+    meta.meta += earned; run.lastMetaEarned = earned + gained;   // drip + achievement/bounty payouts
     window.localStorage.removeItem('letterRide.run'); run = null; view = 'meta'; saveAll(); render();
   }
 
@@ -78,6 +105,20 @@ try {
       run.lastPlay = { word: playedWord, score: r.scored.score };
       // Track the run's best line for the end-of-run broadside (in-memory; not persisted).
       if (!run.bestPlay || r.scored.score > run.bestPlay.score) run.bestPlay = { word: playedWord, score: r.scored.score };
+      profileRecordPlay(profile, { word: playedWord, score: r.scored.score });
+      awardAchievements(checkAchievements(profile, {
+        phase: 'play',
+        letters: sel.map(s => s.letter.toUpperCase()),
+        word: playedWord.toUpperCase(),
+        score: r.scored.score,
+        wordsPlayedThisRound: run.wordsPlayedThisRound,
+        status: run.status,
+        playsLeft: run.playsLeft,
+        prevRoundTotal: run.roundTotal - r.scored.score,
+        target: run.target,
+        roundTotal: run.roundTotal,
+        roundIndex: run.roundIndex,
+      }, CONFIG));
       if (run.status === 'roundCleared') {
         offerNode(run);
         if (run.nodeEventId === null) {
