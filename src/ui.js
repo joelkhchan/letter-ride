@@ -7,7 +7,7 @@ import { ARCHETYPES, honeModifiers } from './archetypes.js';
 import { passageOf, tierOf, isBossRound } from './run.js';
 import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 import { EVENTS } from './events.js';
-import { play as sfx, isMuted, toggleMuted } from './audio.js';
+import { play as sfx, isMuted, toggleMuted, isMusicMuted, toggleMusic } from './audio.js';
 import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 import { getPref, togglePref } from './settings.js';
 
@@ -1095,6 +1095,7 @@ export function renderSettings(hasRun) {
       <div class="menu-title small">Settings</div>
       <div class="menu-buttons">
         <button id="set-sound" class="menu-btn">Sound effects: ${isMuted() ? 'Off' : 'On'}</button>
+        <button id="set-music" class="menu-btn">Music: ${isMusicMuted() ? 'Off' : 'On'}</button>
         <button id="set-motion" class="menu-btn">Reduced motion: ${getPref('reducedMotion') ? 'On' : 'Off'}</button>
         <button id="set-fast" class="menu-btn">Fast scoring: ${getPref('fastScoring') ? 'On' : 'Off'}</button>
         ${hasRun ? `<button id="set-abandon" class="menu-btn danger">Abandon current run</button>` : ''}
@@ -1103,6 +1104,7 @@ export function renderSettings(hasRun) {
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('set-sound', () => { toggleMuted(); renderSettings(hasRun); });
+  on('set-music', () => { toggleMusic(); renderSettings(hasRun); });
   on('set-motion', () => { togglePref('reducedMotion'); renderSettings(hasRun); });
   on('set-fast', () => { togglePref('fastScoring'); renderSettings(hasRun); });
   on('set-abandon', () => handlers.onAbandonRun?.());

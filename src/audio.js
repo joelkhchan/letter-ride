@@ -18,8 +18,7 @@ export function setMuted(m) {
 }
 export function toggleMuted() { setMuted(!muted); return muted; }
 
-function ac() {
-  if (muted) return null;
+function getCtx() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
@@ -28,6 +27,8 @@ function ac() {
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
 }
+function ac() { return muted ? null : getCtx(); }   // SFX gate (separate from music)
+export function resumeAudio() { getCtx(); }          // unlock the context on first user gesture
 
 // A decaying oscillator tone, with an optional pitch glide (freqEnd).
 function tone(c, { type = 'sine', freq = 440, freqEnd = null, dur = 0.15, gain = 0.2, delay = 0, attack = 0.005 }) {
@@ -85,4 +86,47 @@ export function play(name) {
   if (!c) return;
   const fn = SFX[name];
   if (fn) { try { fn(c); } catch {} }
+}
+
+// --- Title music: a slow synthesized ambient pad. No files; its own mute (separate from SFX).
+// A gentle chord cycle, soft + slow, that loops while on the front-of-game screens. Tunable via
+// the constants. Swappable for a curated track later (the brand plan).
+const MKEY = 'letterRide.musicMuted';
+let musicMuted = (() => { try { return window.localStorage.getItem(MKEY) === '1'; } catch { return false; } })();
+let _musicOn = false, _musicTimer = null, _musicChord = 0;
+const MUSIC_CHORDS = [
+  [146.83, 220.00, 261.63],   // Dm
+  [174.61, 220.00, 261.63],   // F
+  [130.81, 196.00, 246.94],   // C (G B)
+  [164.81, 220.00, 277.18],   // A (E C#)
+];
+const MUSIC_CHORD_MS = 5200;
+
+function _playChord(c, freqs) {
+  const t0 = c.currentTime, dur = MUSIC_CHORD_MS / 1000 + 0.8;
+  for (const f of freqs) {
+    const osc = c.createOscillator(), g = c.createGain();
+    osc.type = 'triangle'; osc.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(0.05, t0 + 1.6);          // slow swell
+    g.gain.setValueAtTime(0.05, t0 + dur - 1.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);   // slow release
+    osc.connect(g).connect(c.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.05);
+  }
+}
+function _scheduleMusic() {
+  if (!_musicOn || musicMuted) return;
+  const c = getCtx();
+  if (c && c.state === 'running') { _playChord(c, MUSIC_CHORDS[_musicChord % MUSIC_CHORDS.length]); _musicChord++; }
+  _musicTimer = setTimeout(_scheduleMusic, MUSIC_CHORD_MS);
+}
+export function startMusic() { if (musicMuted || _musicOn) return; _musicOn = true; _scheduleMusic(); }
+export function stopMusic() { _musicOn = false; if (_musicTimer) { clearTimeout(_musicTimer); _musicTimer = null; } }
+export function isMusicMuted() { return musicMuted; }
+export function toggleMusic() {
+  musicMuted = !musicMuted;
+  try { window.localStorage.setItem(MKEY, musicMuted ? '1' : '0'); } catch {}
+  if (musicMuted) stopMusic(); else startMusic();
+  return musicMuted;
 }

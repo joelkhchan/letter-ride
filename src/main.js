@@ -10,7 +10,7 @@ import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildL
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
 import { renderRun, renderMeta, renderMenu, renderSettings, renderAchievements, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
-import { play as sfx } from './audio.js';
+import { play as sfx, startMusic, stopMusic, resumeAudio } from './audio.js';
 
 try {
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
@@ -19,6 +19,7 @@ try {
   let telemetry = loadTelemetry(window.localStorage);
   let run = loadRun(window.localStorage, { config: CONFIG, dictionary });   // resume an in-progress run if any
   let view = 'menu';   // boot to the main menu; Resume picks up an in-progress run
+  let gestured = false;   // music can only start after a user gesture (autoplay policy)
 
   function extractOfferIds(shop) {
     return (shop?.offers || []).flatMap(o => {
@@ -30,6 +31,7 @@ try {
 
   const saveAll = () => { saveMeta(meta, window.localStorage); saveTelemetry(telemetry, window.localStorage); if (run) saveRun(run, window.localStorage); };
   const render = () => {
+    if (view === 'run') stopMusic(); else if (gestured) startMusic();   // music on the front-of-game screens
     if (view === 'run') return renderRun(run);
     if (view === 'meta') return renderMeta(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS, () => summarize(telemetry));
     if (view === 'settings') return renderSettings(!!run);
@@ -166,6 +168,8 @@ try {
     },
   });
   window.addEventListener('keydown', (e) => { if (view === 'run') handleRunKey(e); });
+  // First user gesture unlocks audio + starts title music (unless on a run or muted).
+  window.addEventListener('pointerdown', () => { gestured = true; resumeAudio(); if (view !== 'run') startMusic(); }, { once: true });
   render();
 } catch (err) {
   document.getElementById('app').textContent = 'Failed to start Letter Ride: ' + err.message + ' — check that assets/enable1.txt is present and served.';
