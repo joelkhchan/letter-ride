@@ -187,3 +187,11 @@ button { font-family: var(--font-body); color: var(--ink); }
 @media (prefers-reduced-motion: reduce) {
   #staging.pull-pressing, #pull-score.pull-pop { animation: none; }
 }
+
+/* ================================================================ The Broadside (SP4) */
+#broadside-screen { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 6px 0 12px; }
+#broadside-canvas { width: 100%; max-width: 330px; height: auto; border-radius: 6px; box-shadow: 0 8px 26px rgba(0,0,0,0.6); }
+#broadside-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+#broadside-actions button { font-size: 1rem; font-weight: 700; padding: 11px 19px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: linear-gradient(var(--night-2), var(--night)); color: var(--ink); cursor: pointer; transition: border-color 0.1s; }
+#broadside-actions button:hover { border-color: var(--gold); }
+#save-broadside { border-color: var(--gold) !important; color: var(--gold) !important; }

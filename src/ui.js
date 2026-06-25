@@ -8,6 +8,7 @@ import { passageOf, tierOf, isBossRound } from './run.js';
 import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 import { EVENTS } from './events.js';
 import { play as sfx, isMuted, toggleMuted } from './audio.js';
+import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -270,9 +271,9 @@ function showHelpOverlay() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:200;padding:16px;box-sizing:border-box;';
 
   const box = document.createElement('div');
-  box.style.cssText = 'background:#fff;border-radius:10px;padding:20px 24px;max-width:380px;width:100%;font-size:0.97em;line-height:1.5;';
+  box.style.cssText = 'background:var(--night-2);color:var(--ink);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:10px;padding:20px 24px;max-width:380px;width:100%;font-size:0.97em;line-height:1.55;box-shadow:0 12px 32px rgba(0,0,0,0.6);box-sizing:border-box;';
   box.innerHTML = `
-    <h3 style="margin:0 0 10px;">How it works</h3>
+    <h3 style="margin:0 0 10px;color:var(--gold);font-family:var(--font-display);">How it works</h3>
     <p>A run is <b>4 Passages</b>. Each Passage has 3 encounters: <b>Word</b>, <b>Phrase</b>, then a <b>Sentence</b> (a boss with a special rule). Clear each round's Score target to advance.</p>
     <p><b>Score = Points × Mult.</b></p>
     <p>Each tile is worth <b>Points</b> (shown on the tile). Longer words add bonus Points.</p>
@@ -284,7 +285,7 @@ function showHelpOverlay() {
 
   const closeBtn = document.createElement('button');
   closeBtn.textContent = 'Close';
-  closeBtn.style.cssText = 'padding:10px 28px;font-size:1em;border-radius:6px;cursor:pointer;';
+  closeBtn.style.cssText = 'padding:10px 28px;font-size:1em;font-weight:700;border-radius:6px;cursor:pointer;border:1px solid var(--gold);background:var(--night-2);color:var(--gold);';
   closeBtn.onclick = () => overlay.remove();
   overlay.appendChild(closeBtn);
 
@@ -479,6 +480,9 @@ export function animatePull(sel, scored, onDone) {
 export function renderRun(run) {
   lastRun = run;
 
+  // Run end: show the broadside (trophy card) instead of the playing layout.
+  if (run.status === 'won' || run.status === 'lost') { renderBroadside(run); return; }
+
   // Node routing: after a round clear, show node choice, event UI, or shop.
   if (run.status === 'roundCleared') {
     if (run.shop) { renderShop(run); return; }
@@ -630,6 +634,28 @@ export function handleRunKey(e) {
     selection = [];
     renderRun(lastRun);
   }
+}
+
+// The end-of-run trophy card (SP4). Drawn to a canvas (see broadside.js) so it can be
+// saved/shared as an image; matches the live theme. Shown for status won | lost.
+function renderBroadside(run) {
+  const s = buildSummary(run);
+  app().innerHTML = `
+    <div id="broadside-screen">
+      <canvas id="broadside-canvas" width="680" height="800" role="img" aria-label="${s.header}. ${s.rank}. ${s.resultLine}. Best line ${s.bestWord || 'none'}, ${s.bestScore} Score."></canvas>
+      <div id="broadside-actions">
+        <button id="save-broadside">Save image</button>
+        <button id="new">Back to menu</button>
+      </div>
+    </div>`;
+  const canvas = document.getElementById('broadside-canvas');
+  const draw = () => drawBroadside(canvas, s);
+  draw();                                                          // immediate (fallback font if needed)
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);   // redraw once Zilla loads
+  const save = document.getElementById('save-broadside');
+  if (save) save.onclick = () => shareBroadside(canvas);
+  const back = document.getElementById('new');
+  if (back) back.onclick = () => { selection = []; lastShownScore = null; handlers.onRunEnd?.(); };
 }
 
 function renderNodeChoice(run) {
@@ -998,7 +1024,7 @@ function showStatsOverlay(summary) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:200;padding:16px;box-sizing:border-box;overflow-y:auto;';
 
   const box = document.createElement('div');
-  box.style.cssText = 'background:#fff;border-radius:10px;padding:20px 24px;max-width:420px;width:100%;font-size:0.93em;line-height:1.5;max-height:80vh;overflow-y:auto;';
+  box.style.cssText = 'background:var(--night-2);color:var(--ink);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:10px;padding:20px 24px;max-width:420px;width:100%;font-size:0.93em;line-height:1.5;max-height:80vh;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,0.6);box-sizing:border-box;';
 
   const pct = (r) => (r * 100).toFixed(1) + '%';
   const rowsHtml = summary.items.length
@@ -1013,11 +1039,11 @@ function showStatsOverlay(summary) {
     : '<tr><td colspan="4">(no data yet)</td></tr>';
 
   box.innerHTML = `
-    <h3 style="margin:0 0 10px;">Balance Stats</h3>
+    <h3 style="margin:0 0 10px;color:var(--gold);font-family:var(--font-display);">Balance Stats</h3>
     <p>Runs: <b>${summary.runs}</b> &nbsp; Wins: <b>${summary.wins}</b> &nbsp; Win rate: <b>${pct(summary.winRate)}</b></p>
     <p>Avg word length: <b>${summary.avgWordLen.toFixed(1)}</b></p>
     <table style="width:100%;border-collapse:collapse;font-size:0.9em;">
-      <thead><tr style="border-bottom:1px solid #ccc;">
+      <thead><tr style="border-bottom:1px solid var(--line);">
         <th style="text-align:left;">Item</th>
         <th style="text-align:left;">Pick rate</th>
         <th style="text-align:left;">Win rate</th>
@@ -1029,7 +1055,7 @@ function showStatsOverlay(summary) {
 
   const closeBtn = document.createElement('button');
   closeBtn.textContent = 'Close';
-  closeBtn.style.cssText = 'padding:10px 28px;font-size:1em;border-radius:6px;cursor:pointer;';
+  closeBtn.style.cssText = 'padding:10px 28px;font-size:1em;font-weight:700;border-radius:6px;cursor:pointer;border:1px solid var(--gold);background:var(--night-2);color:var(--gold);';
   closeBtn.onclick = () => overlay.remove();
   overlay.appendChild(closeBtn);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
