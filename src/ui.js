@@ -3,9 +3,9 @@ import { metaShopOffers } from './meta.js';
 import { RELICS } from './relics.js';
 import { getMod } from './tiles.js';
 import { scoreWord } from './scoring.js';
-import { ARCHETYPES } from './archetypes.js';
-import { passageOf, tierOf } from './run.js';
-import { BOSSES } from './bosses.js';
+import { ARCHETYPES, honeModifiers } from './archetypes.js';
+import { passageOf, tierOf, isBossRound } from './run.js';
+import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 import { EVENTS } from './events.js';
 
 const app = () => document.getElementById('app');
@@ -49,7 +49,7 @@ function offerLabel(offer) {
       return `Enchant a tile: ${mod?.name || offer.modId} · ${mod?.desc || ''} · $${offer.cost}`;
     }
     case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} · $${offer.cost}`;
-    case 'thinLetter':       return `Thin a tile · $${offer.cost}`;
+    case 'thinLetter':       return `Remove a tile from your bag · $${offer.cost}`;
     case 'recastTile':       return `Recast a tile to a letter you choose · $${offer.cost}`;
     case 'transferMods':     return `Move a tile's mods onto another (destroys it) · $${offer.cost}`;
     case 'buyRelic': {
@@ -268,6 +268,7 @@ function showHelpOverlay() {
   box.style.cssText = 'background:#fff;border-radius:10px;padding:20px 24px;max-width:380px;width:100%;font-size:0.97em;line-height:1.5;';
   box.innerHTML = `
     <h3 style="margin:0 0 10px;">How it works</h3>
+    <p>A run is <b>4 Passages</b>. Each Passage has 3 encounters: <b>Word</b>, <b>Phrase</b>, then a <b>Sentence</b> (a boss with a special rule). Clear each round's Score target to advance.</p>
     <p><b>Score = Points × Mult.</b></p>
     <p>Each tile is worth <b>Points</b> (shown on the tile). Longer words add bonus Points.</p>
     <p><b>Relics</b> and <b>tile mods</b> add Points or Mult. Buy them in the shop with <b>$</b>.</p>
@@ -287,7 +288,7 @@ function showHelpOverlay() {
 }
 
 // Build live scorebug HTML from a pre-computed scoreWord result.
-function scorePreviewHtml(sel, result) {
+function scorePreviewHtml(sel, result, bossNote = '') {
   if (!sel.length || !result) return '';
   const bd = result.breakdown;
 
@@ -308,7 +309,7 @@ function scorePreviewHtml(sel, result) {
 
   return `<div id="scorebug">
     <span class="sb-word">${word}</span>
-    <span class="sb-formula">${result.points} Points ${multStr} Mult${multDetail} = <b>${result.score}</b> Score</span>
+    <span class="sb-formula">${result.points} Points ${multStr} Mult${multDetail}${bossNote ? ` ${bossNote}` : ''} = <b>${result.score}</b> Score</span>
     <span class="sb-detail">${pointsPart}</span>
   </div>`;
 }
@@ -399,19 +400,34 @@ export function renderRun(run) {
   let preview = '';
   let stagedBreakdown = null;
   if (!done && selection.length) {
-    const scored = scoreWord(selection, {
-      tileValues: run.tileValues,
+    // Faithful preview: mirror playWord's scoring (boss warp, hone, snowball stacks, and the
+    // prospective chain length) so the previewed Score equals what you actually get on submit.
+    const boss = run.boss ? BOSSES[run.boss] : null;
+    const cf = selection[0]?.letter?.toUpperCase();
+    const chainLength = (run.lastWord && run.lastWord.lastLetter === cf) ? (run.chainLength || 0) + 1 : 1;
+    const scored0 = scoreWord(selection, {
+      tileValues: bossTileValues(run.tileValues, boss),
       lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
-      relics: run.relics || [],
-      context: { wordsPlayedThisRound: run.wordsPlayedThisRound },
+      relics: [...(run.relics || []), ...honeModifiers(run.honeLevels)],
+      context: {
+        wordsPlayedThisRound: run.wordsPlayedThisRound,
+        enablers: (run.relics || []).filter(r => r.enabler).map(r => r.enabler),
+        relicState: run.relicState,
+        chainLength,
+      },
     });
+    const scored = applyBossToScore(scored0, boss);
+    let bossNote = '';
+    if (boss?.warp.verb === 'tax') bossNote = `&minus;${boss.warp.points} (${boss.name})`;
+    else if (boss?.warp.verb === 'cap' && scored0.mult > boss.warp.maxMult) bossNote = `(${boss.name}: Mult capped &times;${boss.warp.maxMult})`;
+    else if (boss?.warp.verb === 'disable') bossNote = `(${boss.name})`;
     stagedBreakdown = scored.breakdown;
-    preview = scorePreviewHtml(selection, scored);
+    preview = scorePreviewHtml(selection, scored, bossNote);
   }
 
   app().innerHTML = `
     <div id="hud">
-      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)}</div>
+      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; encounter ${(run.roundIndex % 3) + 1}/3 &middot; ${tierOf(run.roundIndex)}${isBossRound(run.roundIndex) ? ' (boss)' : ''}</div>
       <div><span id="score-total">${run.roundTotal}</span> / ${run.target} Score</div>
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
@@ -518,12 +534,13 @@ function renderNodeChoice(run) {
 
   app().innerHTML = `
     <div id="hud">
-      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} &middot; Node</div>
+      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)}${isBossRound(run.roundIndex) ? ' (boss)' : ''} cleared</div>
       <div><b>${run.roundTotal}</b> / ${run.target} Score</div>
       <div id="coins">$${coins}</div>
     </div>
     ${relicsModsPanelHtml(run)}
     <div id="node-choice">
+      ${eventCardHtml ? `<div class="node-prompt">Choose one stop. Taking the event <b>skips the shop</b> this round.</div>` : ''}
       <button class="node-card" id="pick-shop">
         <div class="node-card-title">Shop</div>
         <div class="node-card-desc">${shopDesc}</div>
@@ -757,7 +774,7 @@ function renderPress(run) {
     ${relicsModsPanelHtml(run)}
     <div id="press-ui">
       <h3>The Press</h3>
-      <p style="font-size:0.9em;color:#7a3c00;margin:0 0 8px;">Draw letters for $. Bank to keep; press your luck. Bust on a repeat -- lose it all.</p>
+      <p style="font-size:0.9em;color:#7a3c00;margin:0 0 8px;">Each <b>Draw</b> reveals a letter and adds its point value to the pot. <b>Bank</b> takes the pot as $; or Draw again to push your luck. Draw a letter you have already drawn and you <b>bust</b>, losing the whole pot.</p>
       <div id="press-drawn">${drawnDisplay}</div>
       <div id="press-pot">Pot: $${pot}</div>
       <div id="press-controls">
@@ -808,11 +825,8 @@ function renderShop(run) {
   const offersHtml = shop.offers.map((offer, i) => {
     const label = offerLabel(offer);
     const disabled = !canAfford(offer.cost) ? 'disabled' : '';
-    const info = offerInfoData(offer);
-    const infoBtn = info
-      ? `<button class="shop-offer-info" data-shop-idx="${i}" aria-label="More info" tabindex="0">?</button>`
-      : '';
-    return `<div class="shop-offer-row">${infoBtn}<button class="shop-offer" data-idx="${i}" ${disabled}>${label}</button></div>`;
+    // The offer label already states the effect + cost inline, so no separate info button is needed.
+    return `<div class="shop-offer-row"><button class="shop-offer" data-idx="${i}" ${disabled}>${label}</button></div>`;
   }).join('');
 
   const rerollDisabled = !canAfford(shop.rerollCost) ? 'disabled' : '';
@@ -851,17 +865,6 @@ function renderShop(run) {
       else if (needsTilePicker(offer)) showTilePicker(run, offer);
       else reportBuy(handlers.onBuy?.(offer));
     };
-
-    // Wire info (?) button if present.
-    const infoBtn = app().querySelector(`.shop-offer-info[data-shop-idx="${i}"]`);
-    if (infoBtn) {
-      const info = offerInfoData(offer);
-      infoBtn.onclick = (e) => {
-        e.stopPropagation();
-        showDescPopover(infoBtn, info.name, info.desc);
-      };
-      infoBtn.dataset.popoverKey = `shop-info-${i}`;
-    }
   });
 
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
