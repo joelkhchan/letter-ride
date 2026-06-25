@@ -10,6 +10,7 @@ import { EVENTS } from './events.js';
 import { play as sfx, isMuted, toggleMuted, isMusicMuted, toggleMusic } from './audio.js';
 import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 import { getPref, togglePref } from './settings.js';
+import { relicSealHtml } from './icons.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -214,13 +215,13 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
         const contrib = contributions[r.name] || '·';
         const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
         const safeName = (r.name || '').replace(/"/g, '&quot;');
-        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${r.name}: <b>${contrib}</b></span>`;
+        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${r.name}: <b>${contrib}</b></span>`;
       }).join(' · ');
     } else {
       relicsText = run.relics.map(r => {
         const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
         const safeName = (r.name || '').replace(/"/g, '&quot;');
-        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${r.name}</span>`;
+        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${r.name}</span>`;
       }).join(' · ');
     }
   } else {
@@ -969,8 +970,10 @@ function renderShop(run) {
   const offersHtml = shop.offers.map((offer, i) => {
     const label = offerLabel(offer);
     const disabled = !canAfford(offer.cost) ? 'disabled' : '';
-    // The offer label already states the effect + cost inline, so no separate info button is needed.
-    return `<div class="shop-offer-row"><button class="shop-offer" data-idx="${i}" ${disabled}>${label}</button></div>`;
+    // Relic offers get their Tier-A seal; the label already states the effect + cost inline.
+    const seal = offer.type === 'buyRelic' ? relicSealHtml(offer.relicId, { size: 'md' }) : '';
+    const text = offer.type === 'buyRelic' ? label.replace(/^Relic: /, '') : label;
+    return `<div class="shop-offer-row"><button class="shop-offer${seal ? ' has-seal' : ''}" data-idx="${i}" ${disabled}>${seal}${text}</button></div>`;
   }).join('');
 
   const rerollDisabled = !canAfford(shop.rerollCost) ? 'disabled' : '';

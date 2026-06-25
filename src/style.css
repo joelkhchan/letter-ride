@@ -108,6 +108,25 @@ h1 { color: var(--gold); }
 .none-label { color: var(--ink-soft); font-style: italic; }
 .tappable-chip { display: inline-block; cursor: pointer; border-radius: 4px; padding: 1px 4px; transition: background 0.1s; }
 .tappable-chip:hover, .tappable-chip:focus-visible { background: var(--gold-wash); outline: 1px solid var(--gold); }
+
+/* ---- Tier-A relic seals: engraved aged-gold medallions (icon system decided 2026-06-25) ---- */
+.relic-seal { display: inline-grid; place-items: center; vertical-align: middle; flex: 0 0 auto;
+  border-radius: 50%; position: relative;
+  background: radial-gradient(circle at 38% 30%, var(--glow), var(--night-sunk) 72%);
+  border: 1.5px solid var(--gold-deep); box-shadow: inset 0 0 0 2px var(--night), 0 1px 3px rgba(0,0,0,0.5); }
+.relic-seal--sm { width: 24px; height: 24px; margin-right: 5px; }
+.relic-seal--md { width: 40px; height: 40px; }
+.relic-seal .seal-glyph { width: 58%; height: 58%;
+  background: linear-gradient(155deg, #c9a55e, #8a6a18);  /* clipped to glyph by the inline mask set in icons.js */
+  filter: drop-shadow(0 0.5px 0 rgba(0,0,0,0.55)); }
+.relic-seal .seal-letter { font-family: var(--font-display); font-weight: 700; line-height: 1;
+  background: linear-gradient(155deg, #c9a55e, #8a6a18);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0.5px 0 rgba(0,0,0,0.5)); }
+.relic-seal--sm .seal-letter { font-size: 14px; }
+.relic-seal--md .seal-letter { font-size: 24px; }
+.relic-entry { white-space: nowrap; }
+.shop-offer.has-seal { display: flex; align-items: center; gap: 11px; }
 #desc-popover { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; padding: 8px 11px; background: var(--night-2); border: 1px solid var(--gold); border-radius: var(--radius-sm); box-shadow: 0 4px 12px rgba(0,0,0,0.6); font-size: 0.86rem; line-height: 1.45; max-width: 330px; position: relative; }
 .desc-pop-name { font-weight: 700; flex-shrink: 0; margin-right: 4px; color: var(--gold); }
 .desc-pop-text { color: var(--ink-soft); flex: 1; }
