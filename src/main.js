@@ -12,7 +12,7 @@ import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd
 import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingMeta } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
 import { renderRun, renderMeta, renderMenu, renderSettings, renderAchievements, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
-import { play as sfx, startMusic, stopMusic, resumeAudio } from './audio.js';
+import { play as sfx, resumeAudio } from './audio.js';
 
 try {
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
@@ -22,7 +22,6 @@ try {
   const profile = loadProfile(window.localStorage);
   let run = loadRun(window.localStorage, { config: CONFIG, dictionary });   // resume an in-progress run if any
   let view = 'menu';   // boot to the main menu; Resume picks up an in-progress run
-  let gestured = false;   // music can only start after a user gesture (autoplay policy)
 
   function extractOfferIds(shop) {
     return (shop?.offers || []).flatMap(o => {
@@ -41,7 +40,6 @@ try {
     for (const a of list) if (!profile.completed.includes(a.id)) { profile.completed.push(a.id); achievementToast(a); }
   }
   const render = () => {
-    if (view === 'run') stopMusic(); else if (gestured) startMusic();   // music on the front-of-game screens
     if (view === 'run') return renderRun(run);
     if (view === 'meta') return renderMeta(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS, () => summarize(telemetry));
     if (view === 'settings') return renderSettings(!!run);
@@ -210,8 +208,8 @@ try {
     },
   });
   window.addEventListener('keydown', (e) => { if (view === 'run') handleRunKey(e); });
-  // First user gesture unlocks audio + starts title music (unless on a run or muted).
-  window.addEventListener('pointerdown', () => { gestured = true; resumeAudio(); if (view !== 'run') startMusic(); }, { once: true });
+  // First user gesture unlocks the audio context for SFX (browser autoplay policy).
+  window.addEventListener('pointerdown', () => { resumeAudio(); }, { once: true });
   render();
 } catch (err) {
   document.getElementById('app').textContent = 'Failed to start Letter Ride: ' + err.message + ' — check that assets/enable1.txt is present and served.';

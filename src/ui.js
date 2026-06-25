@@ -7,11 +7,12 @@ import { ARCHETYPES, honeModifiers } from './archetypes.js';
 import { passageOf, tierOf, isBossRound } from './run.js';
 import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 import { EVENTS } from './events.js';
-import { play as sfx, isMuted, toggleMuted, isMusicMuted, toggleMusic } from './audio.js';
+import { play as sfx, isMuted, toggleMuted } from './audio.js';
 import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 import { getPref, togglePref } from './settings.js';
 import { levelFor } from './profile.js';
 import { pendingMeta } from './achievements.js';
+import { relicSealHtml, bossSealHtml, metaSealHtml, lineIconHtml } from './icons.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -216,13 +217,13 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
         const contrib = contributions[r.name] || '·';
         const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
         const safeName = (r.name || '').replace(/"/g, '&quot;');
-        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${r.name}: <b>${contrib}</b></span>`;
+        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${r.name}: <b>${contrib}</b></span>`;
       }).join(' · ');
     } else {
       relicsText = run.relics.map(r => {
         const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
         const safeName = (r.name || '').replace(/"/g, '&quot;');
-        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${r.name}</span>`;
+        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${r.name}</span>`;
       }).join(' · ');
     }
   } else {
@@ -253,7 +254,7 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
         const a = ARCHETYPES[id];
         const safeDesc = (a?.desc || '').replace(/"/g, '&quot;');
         const safeName = (a?.name || id).replace(/"/g, '&quot;');
-        return `<span class="hone-entry tappable-chip" data-pop-name="${safeName} Lv${lvl}" data-pop-desc="${safeDesc}">${a?.name || id} Lv${lvl}</span>`;
+        return `<span class="hone-entry tappable-chip" data-pop-name="${safeName} Lv${lvl}" data-pop-desc="${safeDesc}">${lineIconHtml('tools')}${a?.name || id} Lv${lvl}</span>`;
       }).join(', ')
     : '<span class="none-label">none yet</span>';
 
@@ -557,7 +558,7 @@ export function renderRun(run) {
     ${lastPlayHtml}
     <div id="staging">${staged || '&nbsp;'}</div>
     ${preview}
-    ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner"><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</div>` : ''}
+    ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner">${bossSealHtml(run.boss, { size: 'md' })}<span><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</span></div>` : ''}
     ${run.chainLength > 1 ? `<div id="chain-banner">Chain &times;${run.chainLength}${run.lastWord ? ` &middot; continue with ${run.lastWord.lastLetter}` : ''}</div>` : ''}
     <div id="rack">
       ${run.rack.map(t => {
@@ -568,7 +569,7 @@ export function renderRun(run) {
         const titleAttr = t.mods && t.mods.length
           ? ` title="${t.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ')}"`
           : '';
-        return `<button class="tile ${inRack(t.id) ? 'used' : ''}" data-id="${t.id}"${titleAttr}>${t.letter}${modBadge}${tileVal}</button>`;
+        return `<button class="tile ${t.mods && t.mods.length ? 'mod ' : ''}${inRack(t.id) ? 'used' : ''}" data-id="${t.id}"${titleAttr}>${t.letter === '*' ? '<span class="tile-star"></span>' : t.letter}${modBadge}${tileVal}</button>`;
       }).join('')}
     </div>
     <div id="msg"></div>
@@ -576,8 +577,8 @@ export function renderRun(run) {
       <button id="submit" ${done ? 'disabled' : ''}>Submit</button>
       <button id="back" ${done ? 'disabled' : ''}>⌫</button>
       <button id="clear" ${done ? 'disabled' : ''}>Clear</button>
-      <button id="discard" ${done || run.discardsLeft <= 0 || selection.length === 0 ? 'disabled' : ''}>${`Discard${selection.length ? ' (' + selection.length + ')' : ''}`}</button>
-      <button id="shuffle" ${done || run.rack.length === 0 ? 'disabled' : ''}>Shuffle</button>
+      <button id="discard" ${done || run.discardsLeft <= 0 || selection.length === 0 ? 'disabled' : ''}>${lineIconHtml('trash')}${`Discard${selection.length ? ' (' + selection.length + ')' : ''}`}</button>
+      <button id="shuffle" ${done || run.rack.length === 0 ? 'disabled' : ''}>${lineIconHtml('arrows-shuffle')}Shuffle</button>
       ${run.status === 'won' ? `<div class="end">🎉 Run cleared!${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
       ${run.status === 'lost' ? `<div class="end">💀 Out of plays.${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
     </div>`;
@@ -971,8 +972,12 @@ function renderShop(run) {
   const offersHtml = shop.offers.map((offer, i) => {
     const label = offerLabel(offer);
     const disabled = !canAfford(offer.cost) ? 'disabled' : '';
-    // The offer label already states the effect + cost inline, so no separate info button is needed.
-    return `<div class="shop-offer-row"><button class="shop-offer" data-idx="${i}" ${disabled}>${label}</button></div>`;
+    // Relic offers get their Tier-A seal; the label already states the effect + cost inline.
+    const seal = offer.type === 'buyRelic' ? relicSealHtml(offer.relicId, { size: 'md' }) : '';
+    const hone = offer.type === 'hone' ? lineIconHtml('tools') : '';
+    const text = offer.type === 'buyRelic' ? label.replace(/^Relic: /, '')
+      : offer.type === 'hone' ? label.replace(/^Hone: /, '') : label;
+    return `<div class="shop-offer-row"><button class="shop-offer${seal || hone ? ' has-seal' : ''}" data-idx="${i}" ${disabled}>${seal}${hone}${text}</button></div>`;
   }).join('');
 
   const rerollDisabled = !canAfford(shop.rerollCost) ? 'disabled' : '';
@@ -995,8 +1000,8 @@ function renderShop(run) {
     <div id="shop">
       <div id="shop-offers">${offersHtml}</div>
       <div id="shop-actions">
-        <button id="reroll" ${rerollDisabled}>Reroll ($${shop.rerollCost})</button>
-        <button id="continue">Continue →</button>
+        <button id="reroll" ${rerollDisabled}>${lineIconHtml('refresh')}Reroll ($${shop.rerollCost})</button>
+        <button id="continue">${lineIconHtml('player-track-next')}Continue</button>
       </div>
     </div>
     <div id="msg"></div>`;
@@ -1076,13 +1081,13 @@ export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
       <div class="menu-tagline">a word game with a luck streak</div>
       <div class="menu-rule">&#10086;</div>
       <div class="menu-buttons">
-        ${hasRun ? `<button id="menu-resume" class="menu-btn primary">Resume Run</button>` : ''}
-        <button id="menu-new" class="menu-btn${hasRun ? '' : ' primary'}">New Run</button>
-        <button id="menu-metashop" class="menu-btn">Meta Shop</button>
-        <button id="menu-settings" class="menu-btn">Settings</button>
-        <button id="menu-achievements" class="menu-btn">Achievements${badge}</button>
+        ${hasRun ? `<button id="menu-resume" class="menu-btn primary">${lineIconHtml('player-play')}Resume Run</button>` : ''}
+        <button id="menu-new" class="menu-btn${hasRun ? '' : ' primary'}">${lineIconHtml('plus')}New Run</button>
+        <button id="menu-metashop" class="menu-btn">${lineIconHtml('building-store')}Meta Shop</button>
+        <button id="menu-settings" class="menu-btn">${lineIconHtml('settings')}Settings</button>
+        <button id="menu-achievements" class="menu-btn">${lineIconHtml('trophy')}Achievements${badge}</button>
       </div>
-      <div class="menu-meta">Meta: ${metaTotal}</div>
+      <div class="menu-meta">${metaSealHtml({ size: 'sm' })}<span>Meta: ${metaTotal}</span></div>
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('menu-resume', () => handlers.onResume?.());
@@ -1098,7 +1103,6 @@ export function renderSettings(hasRun) {
       <div class="menu-title small">Settings</div>
       <div class="menu-buttons">
         <button id="set-sound" class="menu-btn">Sound effects: ${isMuted() ? 'Off' : 'On'}</button>
-        <button id="set-music" class="menu-btn">Music: ${isMusicMuted() ? 'Off' : 'On'}</button>
         <button id="set-motion" class="menu-btn">Reduced motion: ${getPref('reducedMotion') ? 'On' : 'Off'}</button>
         <button id="set-fast" class="menu-btn">Fast scoring: ${getPref('fastScoring') ? 'On' : 'Off'}</button>
         ${hasRun ? `<button id="set-abandon" class="menu-btn danger">Abandon current run</button>` : ''}
@@ -1107,7 +1111,6 @@ export function renderSettings(hasRun) {
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('set-sound', () => { toggleMuted(); renderSettings(hasRun); });
-  on('set-music', () => { toggleMusic(); renderSettings(hasRun); });
   on('set-motion', () => { togglePref('reducedMotion'); renderSettings(hasRun); });
   on('set-fast', () => { togglePref('fastScoring'); renderSettings(hasRun); });
   on('set-abandon', () => handlers.onAbandonRun?.());
@@ -1262,7 +1265,7 @@ export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
   app().innerHTML = `
     <div id="meta-screen">
       <h2>Letter Ride <button id="meta-help-btn" title="How it works" style="font-size:0.6em;padding:2px 8px;border-radius:50%;cursor:pointer;vertical-align:middle;">?</button></h2>
-      <div id="meta-balance">Meta: ${meta.meta}</div>
+      <div id="meta-balance">${metaSealHtml({ size: 'sm' })}<span>Meta: ${meta.meta}</span></div>
       <div id="deck-picker">
         <div><b>Bag:</b></div>
         <div id="deck-buttons">${deckButtonsHtml}</div>
