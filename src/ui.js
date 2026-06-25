@@ -548,6 +548,7 @@ export function renderRun(run) {
       ${coinsHtml}
       <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
       <button id="mute-btn" class="${isMuted() ? 'muted' : ''}" title="${isMuted() ? 'Sound off (tap for on)' : 'Sound on (tap for off)'}" style="font-size:0.95em;padding:2px 8px;border-radius:50%;cursor:pointer;">&#9834;</button>
+      <button id="exit-btn" title="Main menu (your run is saved)" style="font-size:0.72em;padding:3px 10px;border-radius:10px;cursor:pointer;">Menu</button>
     </div>
     ${relicsModsPanelHtml(run, stagedBreakdown)}
     ${lastPlayHtml}
@@ -601,6 +602,7 @@ export function renderRun(run) {
   on('shuffle', () => { handlers.onShuffle?.(); });
   on('help-btn', () => showHelpOverlay());
   on('mute-btn', () => { toggleMuted(); renderRun(run); });
+  on('exit-btn', () => handlers.onExitToMenu?.());
   wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
@@ -645,7 +647,7 @@ function renderBroadside(run) {
       <canvas id="broadside-canvas" width="680" height="800" role="img" aria-label="${s.header}. ${s.rank}. ${s.resultLine}. Best line ${s.bestWord || 'none'}, ${s.bestScore} Score."></canvas>
       <div id="broadside-actions">
         <button id="save-broadside">Save image</button>
-        <button id="new">Back to menu</button>
+        <button id="new">Continue</button>
       </div>
     </div>`;
   const canvas = document.getElementById('broadside-canvas');
@@ -1062,6 +1064,54 @@ function showStatsOverlay(summary) {
   document.body.appendChild(overlay);
 }
 
+// ---- Front-of-game shell: main menu / settings / achievements ---------------
+export function renderMenu(hasRun, metaTotal = 0) {
+  app().innerHTML = `
+    <div id="main-menu">
+      <div class="menu-title">Letter Ride</div>
+      <div class="menu-tagline">a word game with a luck streak</div>
+      <div class="menu-buttons">
+        ${hasRun ? `<button id="menu-resume" class="menu-btn primary">Resume Run</button>` : ''}
+        <button id="menu-new" class="menu-btn${hasRun ? '' : ' primary'}">New Run</button>
+        <button id="menu-settings" class="menu-btn">Settings</button>
+        <button id="menu-achievements" class="menu-btn">Achievements</button>
+      </div>
+      <div class="menu-meta">Meta: ${metaTotal}</div>
+    </div>`;
+  const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  on('menu-resume', () => handlers.onResume?.());
+  on('menu-new', () => handlers.onNewRun?.());
+  on('menu-settings', () => handlers.onOpenSettings?.());
+  on('menu-achievements', () => handlers.onOpenAchievements?.());
+}
+
+export function renderSettings(hasRun) {
+  app().innerHTML = `
+    <div id="menu-screen">
+      <div class="menu-title small">Settings</div>
+      <div class="menu-buttons">
+        <button id="set-sound" class="menu-btn">Sound: ${isMuted() ? 'Off' : 'On'}</button>
+        ${hasRun ? `<button id="set-abandon" class="menu-btn danger">Abandon current run</button>` : ''}
+        <button id="set-back" class="menu-btn">Back</button>
+      </div>
+    </div>`;
+  const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  on('set-sound', () => { toggleMuted(); renderSettings(hasRun); });
+  on('set-abandon', () => handlers.onAbandonRun?.());
+  on('set-back', () => handlers.onBackToMenu?.());
+}
+
+export function renderAchievements() {
+  app().innerHTML = `
+    <div id="menu-screen">
+      <div class="menu-title small">Achievements</div>
+      <p class="menu-note">Coming soon. Earn ranks and milestones across runs; achievements will award Meta to spend in the shop.</p>
+      <div class="rank-ladder"><span>Apprentice</span><span>&rarr;</span><span>Journeyman</span><span>&rarr;</span><span>Master Printer</span></div>
+      <div class="menu-buttons"><button id="ach-back" class="menu-btn">Back</button></div>
+    </div>`;
+  const e = document.getElementById('ach-back'); if (e) e.onclick = () => handlers.onBackToMenu?.();
+}
+
 export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
   // Reset selectedStakeId if null or no longer valid.
   if (!selectedStakeId || !meta.unlockedStakes.includes(selectedStakeId)) {
@@ -1128,6 +1178,7 @@ export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
         <div id="stake-buttons">${stakeButtonsHtml}</div>
       </div>
       <button id="start-run">Start Run</button>
+      <button id="meta-menu-btn">Main Menu</button>
       <button id="stats-btn">Stats</button>
       <hr>
       <div id="meta-shop">
@@ -1174,4 +1225,5 @@ export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
   // Wire stats button on meta screen.
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('stats-btn', () => showStatsOverlay(getStats?.()));
+  on('meta-menu-btn', () => handlers.onBackToMenu?.());
 }

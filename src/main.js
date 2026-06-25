@@ -9,7 +9,7 @@ import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
-import { renderRun, renderMeta, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
+import { renderRun, renderMeta, renderMenu, renderSettings, renderAchievements, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx } from './audio.js';
 
 try {
@@ -18,7 +18,7 @@ try {
   const meta = loadMeta(window.localStorage, CONFIG);
   let telemetry = loadTelemetry(window.localStorage);
   let run = loadRun(window.localStorage, { config: CONFIG, dictionary });   // resume an in-progress run if any
-  let view = run ? 'run' : 'meta';
+  let view = 'menu';   // boot to the main menu; Resume picks up an in-progress run
 
   function extractOfferIds(shop) {
     return (shop?.offers || []).flatMap(o => {
@@ -29,7 +29,13 @@ try {
   }
 
   const saveAll = () => { saveMeta(meta, window.localStorage); saveTelemetry(telemetry, window.localStorage); if (run) saveRun(run, window.localStorage); };
-  const render = () => view === 'run' ? renderRun(run) : renderMeta(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS, () => summarize(telemetry));
+  const render = () => {
+    if (view === 'run') return renderRun(run);
+    if (view === 'meta') return renderMeta(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS, () => summarize(telemetry));
+    if (view === 'settings') return renderSettings(!!run);
+    if (view === 'achievements') return renderAchievements();
+    return renderMenu(!!run, meta.meta);   // 'menu'
+  };
   const pool = () => poolFromMeta(meta);
 
   function startRun(deckId, stakeId) {
@@ -141,6 +147,22 @@ try {
     // meta screen actions:
     onMetaBuy(offer) { const r = purchaseMeta(meta, offer, CONFIG); saveAll(); render(); return r; },
     onStartRun(deckId, stakeId) { startRun(deckId, stakeId); },
+    // Menu navigation:
+    onResume() { if (run) { view = 'run'; render(); } },
+    onNewRun() {
+      if (run && run.status !== 'won' && run.status !== 'lost'
+          && !window.confirm('Start a new run? Your current run will be lost.')) return;
+      view = 'meta'; render();
+    },
+    onOpenSettings() { view = 'settings'; render(); },
+    onOpenAchievements() { view = 'achievements'; render(); },
+    onBackToMenu() { view = 'menu'; render(); },
+    onExitToMenu() { view = 'menu'; render(); },   // run stays saved; Resume continues it
+    onAbandonRun() {
+      if (!window.confirm('Abandon your current run?')) return;
+      window.localStorage.removeItem('letterRide.run'); run = null;
+      view = 'menu'; render();
+    },
   });
   window.addEventListener('keydown', (e) => { if (view === 'run') handleRunKey(e); });
   render();
