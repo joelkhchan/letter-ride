@@ -96,6 +96,10 @@ h1 { color: var(--gold); }
 /* per-mod identity: small gold initials struck top-left (swappable accent layer) */
 .mod-badge { position: absolute; top: 2px; left: 4px; font-family: var(--font-display); font-size: 0.52rem; font-weight: 700; letter-spacing: 0.4px; line-height: 1; color: var(--gold); text-shadow: 0 1px 1px rgba(0,0,0,0.5); }
 .tile-val { position: absolute; bottom: 2px; right: 5px; font-size: 0.92rem; font-weight: 700; color: var(--gold-deep); line-height: 1; font-variant-numeric: tabular-nums; }
+/* wild tile: a struck gold star instead of a letter (works on ivory + the inked-navy modded face) */
+.tile-star { width: 56%; height: 56%; background: linear-gradient(155deg, #d8b86a, #8a6a18);
+  -webkit-mask: url('../assets/icons/ui/wild-star.svg') center / contain no-repeat; mask: url('../assets/icons/ui/wild-star.svg') center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.45)); }
 
 /* ================================================================ Banners */
 #boss-banner { display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; font-family: var(--font-body); font-weight: 700; padding: 9px 14px; margin: 8px 0 4px; border: 1px solid var(--coral); border-left: 5px solid var(--coral); border-radius: var(--radius-sm); background: linear-gradient(#5e2c36, #371c23); color: #ffd6c6; box-shadow: 0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06); font-size: 0.97rem; }

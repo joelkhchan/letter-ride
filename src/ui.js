@@ -567,7 +567,7 @@ export function renderRun(run) {
         const titleAttr = t.mods && t.mods.length
           ? ` title="${t.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ')}"`
           : '';
-        return `<button class="tile ${t.mods && t.mods.length ? 'mod ' : ''}${inRack(t.id) ? 'used' : ''}" data-id="${t.id}"${titleAttr}>${t.letter}${modBadge}${tileVal}</button>`;
+        return `<button class="tile ${t.mods && t.mods.length ? 'mod ' : ''}${inRack(t.id) ? 'used' : ''}" data-id="${t.id}"${titleAttr}>${t.letter === '*' ? '<span class="tile-star"></span>' : t.letter}${modBadge}${tileVal}</button>`;
       }).join('')}
     </div>
     <div id="msg"></div>
@@ -575,8 +575,8 @@ export function renderRun(run) {
       <button id="submit" ${done ? 'disabled' : ''}>Submit</button>
       <button id="back" ${done ? 'disabled' : ''}>⌫</button>
       <button id="clear" ${done ? 'disabled' : ''}>Clear</button>
-      <button id="discard" ${done || run.discardsLeft <= 0 || selection.length === 0 ? 'disabled' : ''}>${`Discard${selection.length ? ' (' + selection.length + ')' : ''}`}</button>
-      <button id="shuffle" ${done || run.rack.length === 0 ? 'disabled' : ''}>Shuffle</button>
+      <button id="discard" ${done || run.discardsLeft <= 0 || selection.length === 0 ? 'disabled' : ''}>${lineIconHtml('trash')}${`Discard${selection.length ? ' (' + selection.length + ')' : ''}`}</button>
+      <button id="shuffle" ${done || run.rack.length === 0 ? 'disabled' : ''}>${lineIconHtml('arrows-shuffle')}Shuffle</button>
       ${run.status === 'won' ? `<div class="end">🎉 Run cleared!${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
       ${run.status === 'lost' ? `<div class="end">💀 Out of plays.${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
     </div>`;
@@ -998,8 +998,8 @@ function renderShop(run) {
     <div id="shop">
       <div id="shop-offers">${offersHtml}</div>
       <div id="shop-actions">
-        <button id="reroll" ${rerollDisabled}>Reroll ($${shop.rerollCost})</button>
-        <button id="continue">Continue →</button>
+        <button id="reroll" ${rerollDisabled}>${lineIconHtml('refresh')}Reroll ($${shop.rerollCost})</button>
+        <button id="continue">${lineIconHtml('player-track-next')}Continue</button>
       </div>
     </div>
     <div id="msg"></div>`;

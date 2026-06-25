@@ -62,6 +62,12 @@ MIT does not require visible attribution; listed for provenance. Recolored via C
 | `ui/building-store.svg` | building-store | Meta Shop |
 | `ui/settings.svg` | settings | Settings |
 | `ui/trophy.svg` | trophy | Achievements |
+| `ui/trash.svg` | trash | Discard |
+| `ui/arrows-shuffle.svg` | arrows-shuffle | Shuffle |
+| `ui/refresh.svg` | refresh | Reroll |
+| `ui/player-track-next.svg` | player-track-next | Continue |
+
+`ui/wild-star.svg` is original to Letter Ride (the same hand-drawn star as Wildcard Rares), used for wild tiles. No third-party attribution needed.
 
 > The wider exploration set (other elements, Tabler line candidates) lives in the uncommitted
 > `candidates/` scratch folder used to build the comparison galleries; only the shipped relic
