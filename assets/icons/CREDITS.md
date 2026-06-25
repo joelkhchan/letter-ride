@@ -39,6 +39,16 @@ a struck Zilla Slab letter "A", and Wildcard Rares (`relic-wildcardRares.svg`) i
 
 All of the above are by their named authors, sourced from https://game-icons.net, licensed CC BY 3.0.
 
+## Boss + Meta-currency glyphs — game-icons.net, CC BY 3.0
+
+| File | Original glyph | Author |
+|---|---|---|
+| `bosses/boss-mute.svg` | silence | Lorc |
+| `bosses/boss-ceiling.svg` | stone-block | Lorc |
+| `bosses/boss-toll.svg` | gate | Delapouite |
+| `bosses/boss-vise.svg` | clamp | Delapouite |
+| `ui/meta.svg` | medal | Lorc |
+
 > The wider exploration set (other elements, Tabler line candidates) lives in the uncommitted
 > `candidates/` scratch folder used to build the comparison galleries; only the shipped relic
 > glyphs above are committed and require attribution.

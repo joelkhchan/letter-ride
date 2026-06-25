@@ -10,7 +10,7 @@ import { EVENTS } from './events.js';
 import { play as sfx, isMuted, toggleMuted, isMusicMuted, toggleMusic } from './audio.js';
 import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 import { getPref, togglePref } from './settings.js';
-import { relicSealHtml } from './icons.js';
+import { relicSealHtml, bossSealHtml, metaSealHtml } from './icons.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -556,7 +556,7 @@ export function renderRun(run) {
     ${lastPlayHtml}
     <div id="staging">${staged || '&nbsp;'}</div>
     ${preview}
-    ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner"><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</div>` : ''}
+    ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner">${bossSealHtml(run.boss, { size: 'md' })}<span><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</span></div>` : ''}
     ${run.chainLength > 1 ? `<div id="chain-banner">Chain &times;${run.chainLength}${run.lastWord ? ` &middot; continue with ${run.lastWord.lastLetter}` : ''}</div>` : ''}
     <div id="rack">
       ${run.rack.map(t => {
@@ -1082,7 +1082,7 @@ export function renderMenu(hasRun, metaTotal = 0) {
         <button id="menu-settings" class="menu-btn">Settings</button>
         <button id="menu-achievements" class="menu-btn">Achievements</button>
       </div>
-      <div class="menu-meta">Meta: ${metaTotal}</div>
+      <div class="menu-meta">${metaSealHtml({ size: 'sm' })}<span>Meta: ${metaTotal}</span></div>
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('menu-resume', () => handlers.onResume?.());
@@ -1181,7 +1181,7 @@ export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
   app().innerHTML = `
     <div id="meta-screen">
       <h2>Letter Ride <button id="meta-help-btn" title="How it works" style="font-size:0.6em;padding:2px 8px;border-radius:50%;cursor:pointer;vertical-align:middle;">?</button></h2>
-      <div id="meta-balance">Meta: ${meta.meta}</div>
+      <div id="meta-balance">${metaSealHtml({ size: 'sm' })}<span>Meta: ${meta.meta}</span></div>
       <div id="deck-picker">
         <div><b>Bag:</b></div>
         <div id="deck-buttons">${deckButtonsHtml}</div>
