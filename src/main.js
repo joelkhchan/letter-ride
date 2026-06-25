@@ -13,6 +13,7 @@ import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, col
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
 import { renderRun, renderMeta, renderMenu, renderSettings, renderAchievements, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx, resumeAudio } from './audio.js';
+import { logEvent } from './playlog.js';
 
 try {
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
@@ -22,6 +23,8 @@ try {
   const profile = loadProfile(window.localStorage);
   let run = loadRun(window.localStorage, { config: CONFIG, dictionary });   // resume an in-progress run if any
   let view = 'menu';   // boot to the main menu; Resume picks up an in-progress run
+  // Compact run snapshot attached to each logged event (dev playtest log; see src/playlog.js).
+  const snap = () => run ? { round: run.roundIndex, target: run.target, roundTotal: run.roundTotal, coins: run.coins, plays: run.playsLeft, discards: run.discardsLeft, boss: run.boss || null, chain: run.chainLength || 1 } : {};
 
   function extractOfferIds(shop) {
     return (shop?.offers || []).flatMap(o => {
@@ -54,6 +57,7 @@ try {
     const targets = applyStakeTargets(CONFIG.ROUND_TARGETS, stake);
     const loadout = buildLoadout(meta, CONFIG, RELICS);
     run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets, deck: { id: deck.id, startingBag: deck.startingBag }, stake, loadout });
+    logEvent('run_start', { deck: deckId, stake: stakeId, targets: run.targets, relics: run.relics.map(r => r.id), bagSize: run.bag.tiles.length });
     view = 'run'; saveAll(); render();
   }
   function endRun() {
@@ -78,6 +82,7 @@ try {
       allRelicIds: ALL_RELIC_IDS, allModIds: ALL_MOD_IDS,
     }, CONFIG));
     meta.meta += earned; run.lastMetaEarned = earned;   // base drip auto-pays; achievement/bounty Meta is collected on the Achievements screen
+    logEvent('run_end', { won, roundsCleared, runScore: run.roundTotal, relics: relicIds, mods: modIds, metaEarned: earned });
     window.localStorage.removeItem('letterRide.run'); run = null; view = 'meta'; saveAll(); render();
   }
 
@@ -100,6 +105,7 @@ try {
       run.lastPlay = { word: playedWord, score: r.scored.score };
       // Track the run's best line for the end-of-run broadside (in-memory; not persisted).
       if (!run.bestPlay || r.scored.score > run.bestPlay.score) run.bestPlay = { word: playedWord, score: r.scored.score };
+      logEvent('play', { word: playedWord, letters: sel.map(s => s.letter), score: r.scored.score, points: r.scored.points, mult: r.scored.mult, breakdown: r.scored.breakdown, status: run.status, ...snap() });
       profileRecordPlay(profile, { word: playedWord, score: r.scored.score });
       markCompletions(checkAchievements(profile, {
         phase: 'play',
@@ -123,9 +129,10 @@ try {
         }
       }
       saveAll(); animatePull(sel, r.scored, render); return r; },
-    onDiscard(sel) { discard(run, sel); saveAll(); render(); },
+    onDiscard(sel) { const dtiles = sel.map(s => s.letter); discard(run, sel); logEvent('discard', { tiles: dtiles, ...snap() }); saveAll(); render(); },
     onBuy(offer, opts = {}) {
       const r = purchase(run, offer, opts);
+      logEvent('purchase', { offer: offer.type, id: offer.relicId || offer.modId || offer.letter || null, cost: offer.cost, ok: r.ok, coins: run.coins });
       if (r.ok) {
         run.boughtAnythingThisRun = true;
         if (offer.type === 'buyRelic') recordPurchase(telemetry, offer.relicId);
@@ -135,9 +142,10 @@ try {
       }
       saveAll(); render(); return r;
     },
-    onReroll() { if (run.coins >= run.shop.rerollCost) { run.coins -= run.shop.rerollCost; run.shop = generateShop(run, run.rng, pool()); recordOffers(telemetry, extractOfferIds(run.shop)); saveAll(); render(); } },
+    onReroll() { if (run.coins >= run.shop.rerollCost) { run.coins -= run.shop.rerollCost; run.shop = generateShop(run, run.rng, pool()); recordOffers(telemetry, extractOfferIds(run.shop)); logEvent('reroll', { rerollCost: run.shop.rerollCost, coins: run.coins }); saveAll(); render(); } },
     onPickShop() {
       run._nodePick = 'shop';
+      logEvent('node_pick', { pick: 'shop', round: run.roundIndex });
       run.shop = generateShop(run, run.rng, pool());
       recordOffers(telemetry, extractOfferIds(run.shop));
       saveAll(); render();
@@ -146,6 +154,7 @@ try {
       const ev = EVENTS[run.nodeEventId];
       if (!ev) return;
       run._nodePick = 'event';
+      logEvent('node_pick', { pick: 'event', event: run.nodeEventId });
       if (ev.interactive) {
         pressStart(run);
       }
@@ -168,7 +177,7 @@ try {
       run.nodeResolved = true;
       saveAll(); render();
     },
-    onContinue() { run.nodeEventId = null; run._nodePick = null; run.press = null; run._pressLastPot = null; run.shop = null; run.nodeResolved = false; nextRound(run); if (isBossRound(run.roundIndex)) sfx('boss'); saveAll(); render(); },
+    onContinue() { run.nodeEventId = null; run._nodePick = null; run.press = null; run._pressLastPot = null; run.shop = null; run.nodeResolved = false; nextRound(run); if (isBossRound(run.roundIndex)) sfx('boss'); logEvent('round_advance', { round: run.roundIndex, boss: run.boss || null, ...snap() }); saveAll(); render(); },
     // Shuffle: cosmetically reorder the rack using Math.random (not run.rng).
     // Rack order has no effect on scoring or future draws, so this is purely visual.
     // Using run.rng here would desync the seeded RNG stream and make a run's outcome

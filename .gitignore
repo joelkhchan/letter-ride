@@ -5,6 +5,7 @@ android/
 .superpowers/
 www/
 .playwright-mcp/
+logs/
 
 # eval-harness build scratch
 .sdd/

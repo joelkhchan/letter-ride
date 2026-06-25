@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node --test",
     "serve": "npx --yes serve .",
+    "playtest": "node scripts/dev-server.js",
     "analyze": "node scripts/analyze-builds.js",
     "analyze:sim": "node scripts/analyze-sim.js",
     "analyze:sim-v2": "node scripts/analyze-sim-v2.js",
