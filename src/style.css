@@ -201,6 +201,7 @@ button { font-family: var(--font-body); color: var(--ink); }
 .menu-title { font-family: var(--font-display); font-weight: 700; font-size: 2.8rem; color: var(--gold); letter-spacing: 1px; }
 .menu-title.small { font-size: 1.8rem; }
 .menu-tagline { color: var(--ink-soft); font-size: 1rem; margin-top: -8px; }
+.menu-rule { color: var(--gold); font-size: 1.5rem; line-height: 1; opacity: 0.85; margin: 2px 0; }
 .menu-buttons { display: flex; flex-direction: column; gap: 11px; width: 100%; max-width: 280px; margin-top: 8px; }
 .menu-btn { font-size: 1.05rem; font-weight: 700; padding: 13px 18px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: linear-gradient(var(--night-2), var(--night)); color: var(--ink); cursor: pointer; transition: border-color 0.1s, background 0.1s; }
 .menu-btn:hover { border-color: var(--gold); background: linear-gradient(#22304e, var(--night-sunk)); }

@@ -9,6 +9,7 @@ import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 import { EVENTS } from './events.js';
 import { play as sfx, isMuted, toggleMuted } from './audio.js';
 import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
+import { getPref, togglePref } from './settings.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -413,7 +414,7 @@ function _pullDetail(bd) {
 // Animate the commit->score reveal in place, then onDone() to settle (re-render).
 export function animatePull(sel, scored, onDone) {
   sfx('chunk');                                   // the platen comes down (plays even in reduced-motion)
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduce = getPref('reducedMotion') || getPref('fastScoring') || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const bug = document.getElementById('scorebug');
   const stage = document.getElementById('staging');
   if (reduce || !scored || !bug) { if (onDone) onDone(); return; }
@@ -1070,9 +1071,11 @@ export function renderMenu(hasRun, metaTotal = 0) {
     <div id="main-menu">
       <div class="menu-title">Letter Ride</div>
       <div class="menu-tagline">a word game with a luck streak</div>
+      <div class="menu-rule">&#10086;</div>
       <div class="menu-buttons">
         ${hasRun ? `<button id="menu-resume" class="menu-btn primary">Resume Run</button>` : ''}
         <button id="menu-new" class="menu-btn${hasRun ? '' : ' primary'}">New Run</button>
+        <button id="menu-metashop" class="menu-btn">Meta Shop</button>
         <button id="menu-settings" class="menu-btn">Settings</button>
         <button id="menu-achievements" class="menu-btn">Achievements</button>
       </div>
@@ -1081,6 +1084,7 @@ export function renderMenu(hasRun, metaTotal = 0) {
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('menu-resume', () => handlers.onResume?.());
   on('menu-new', () => handlers.onNewRun?.());
+  on('menu-metashop', () => handlers.onOpenMetaShop?.());
   on('menu-settings', () => handlers.onOpenSettings?.());
   on('menu-achievements', () => handlers.onOpenAchievements?.());
 }
@@ -1090,13 +1094,17 @@ export function renderSettings(hasRun) {
     <div id="menu-screen">
       <div class="menu-title small">Settings</div>
       <div class="menu-buttons">
-        <button id="set-sound" class="menu-btn">Sound: ${isMuted() ? 'Off' : 'On'}</button>
+        <button id="set-sound" class="menu-btn">Sound effects: ${isMuted() ? 'Off' : 'On'}</button>
+        <button id="set-motion" class="menu-btn">Reduced motion: ${getPref('reducedMotion') ? 'On' : 'Off'}</button>
+        <button id="set-fast" class="menu-btn">Fast scoring: ${getPref('fastScoring') ? 'On' : 'Off'}</button>
         ${hasRun ? `<button id="set-abandon" class="menu-btn danger">Abandon current run</button>` : ''}
         <button id="set-back" class="menu-btn">Back</button>
       </div>
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('set-sound', () => { toggleMuted(); renderSettings(hasRun); });
+  on('set-motion', () => { togglePref('reducedMotion'); renderSettings(hasRun); });
+  on('set-fast', () => { togglePref('fastScoring'); renderSettings(hasRun); });
   on('set-abandon', () => handlers.onAbandonRun?.());
   on('set-back', () => handlers.onBackToMenu?.());
 }

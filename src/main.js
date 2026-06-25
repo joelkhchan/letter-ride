@@ -155,6 +155,7 @@ try {
       view = 'meta'; render();
     },
     onOpenSettings() { view = 'settings'; render(); },
+    onOpenMetaShop() { view = 'meta'; render(); },
     onOpenAchievements() { view = 'achievements'; render(); },
     onBackToMenu() { view = 'menu'; render(); },
     onExitToMenu() { view = 'menu'; render(); },   // run stays saved; Resume continues it

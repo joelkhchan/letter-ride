@@ -1,0 +1,22 @@
+// src/settings.js
+// UI / gameplay preferences, persisted to localStorage. Presentation-layer only (not game
+// rules, not the run/meta saves). Kept tiny and extensible: add a key to DEFAULTS and it is
+// readable/toggleable everywhere via getPref/togglePref.
+
+const KEY = 'letterRide.prefs';
+const DEFAULTS = {
+  reducedMotion: false,   // skip animations (accessibility)
+  fastScoring: false,     // skip the pull reveal, show the score instantly
+};
+
+let prefs = (() => {
+  try { return { ...DEFAULTS, ...JSON.parse(window.localStorage.getItem(KEY) || '{}') }; }
+  catch { return { ...DEFAULTS }; }
+})();
+
+export function getPref(k) { return prefs[k]; }
+export function setPref(k, v) {
+  prefs[k] = v;
+  try { window.localStorage.setItem(KEY, JSON.stringify(prefs)); } catch {}
+}
+export function togglePref(k) { setPref(k, !prefs[k]); return prefs[k]; }
