@@ -10,7 +10,7 @@ import { EVENTS } from './events.js';
 import { play as sfx, isMuted, toggleMuted, isMusicMuted, toggleMusic } from './audio.js';
 import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 import { getPref, togglePref } from './settings.js';
-import { relicSealHtml, bossSealHtml, metaSealHtml } from './icons.js';
+import { relicSealHtml, bossSealHtml, metaSealHtml, lineIconHtml } from './icons.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -252,7 +252,7 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
         const a = ARCHETYPES[id];
         const safeDesc = (a?.desc || '').replace(/"/g, '&quot;');
         const safeName = (a?.name || id).replace(/"/g, '&quot;');
-        return `<span class="hone-entry tappable-chip" data-pop-name="${safeName} Lv${lvl}" data-pop-desc="${safeDesc}">${a?.name || id} Lv${lvl}</span>`;
+        return `<span class="hone-entry tappable-chip" data-pop-name="${safeName} Lv${lvl}" data-pop-desc="${safeDesc}">${lineIconHtml('tools')}${a?.name || id} Lv${lvl}</span>`;
       }).join(', ')
     : '<span class="none-label">none yet</span>';
 
@@ -972,8 +972,10 @@ function renderShop(run) {
     const disabled = !canAfford(offer.cost) ? 'disabled' : '';
     // Relic offers get their Tier-A seal; the label already states the effect + cost inline.
     const seal = offer.type === 'buyRelic' ? relicSealHtml(offer.relicId, { size: 'md' }) : '';
-    const text = offer.type === 'buyRelic' ? label.replace(/^Relic: /, '') : label;
-    return `<div class="shop-offer-row"><button class="shop-offer${seal ? ' has-seal' : ''}" data-idx="${i}" ${disabled}>${seal}${text}</button></div>`;
+    const hone = offer.type === 'hone' ? lineIconHtml('tools') : '';
+    const text = offer.type === 'buyRelic' ? label.replace(/^Relic: /, '')
+      : offer.type === 'hone' ? label.replace(/^Hone: /, '') : label;
+    return `<div class="shop-offer-row"><button class="shop-offer${seal || hone ? ' has-seal' : ''}" data-idx="${i}" ${disabled}>${seal}${hone}${text}</button></div>`;
   }).join('');
 
   const rerollDisabled = !canAfford(shop.rerollCost) ? 'disabled' : '';
@@ -1076,11 +1078,11 @@ export function renderMenu(hasRun, metaTotal = 0) {
       <div class="menu-tagline">a word game with a luck streak</div>
       <div class="menu-rule">&#10086;</div>
       <div class="menu-buttons">
-        ${hasRun ? `<button id="menu-resume" class="menu-btn primary">Resume Run</button>` : ''}
-        <button id="menu-new" class="menu-btn${hasRun ? '' : ' primary'}">New Run</button>
-        <button id="menu-metashop" class="menu-btn">Meta Shop</button>
-        <button id="menu-settings" class="menu-btn">Settings</button>
-        <button id="menu-achievements" class="menu-btn">Achievements</button>
+        ${hasRun ? `<button id="menu-resume" class="menu-btn primary">${lineIconHtml('player-play')}Resume Run</button>` : ''}
+        <button id="menu-new" class="menu-btn${hasRun ? '' : ' primary'}">${lineIconHtml('plus')}New Run</button>
+        <button id="menu-metashop" class="menu-btn">${lineIconHtml('building-store')}Meta Shop</button>
+        <button id="menu-settings" class="menu-btn">${lineIconHtml('settings')}Settings</button>
+        <button id="menu-achievements" class="menu-btn">${lineIconHtml('trophy')}Achievements</button>
       </div>
       <div class="menu-meta">${metaSealHtml({ size: 'sm' })}<span>Meta: ${metaTotal}</span></div>
     </div>`;

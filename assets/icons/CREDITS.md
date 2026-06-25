@@ -49,6 +49,20 @@ All of the above are by their named authors, sourced from https://game-icons.net
 | `bosses/boss-vise.svg` | clamp | Delapouite |
 | `ui/meta.svg` | medal | Lorc |
 
+## General UI glyphs — Tabler Icons (MIT, https://github.com/tabler/tabler-icons/blob/main/LICENSE)
+
+MIT does not require visible attribution; listed for provenance. Recolored via CSS mask (currentColor).
+
+| File | Tabler glyph | Used for |
+|---|---|---|
+| `ui/coins.svg` | coins | in-run $ (HUD) |
+| `ui/tools.svg` | tools | hones |
+| `ui/player-play.svg` | player-play | Resume Run |
+| `ui/plus.svg` | plus | New Run |
+| `ui/building-store.svg` | building-store | Meta Shop |
+| `ui/settings.svg` | settings | Settings |
+| `ui/trophy.svg` | trophy | Achievements |
+
 > The wider exploration set (other elements, Tabler line candidates) lives in the uncommitted
 > `candidates/` scratch folder used to build the comparison galleries; only the shipped relic
 > glyphs above are committed and require attribution.

@@ -34,3 +34,10 @@ export function bossSealHtml(bossId, { size = 'md' } = {}) {
 export function metaSealHtml({ size = 'sm' } = {}) {
   return seal(glyphMark('assets/icons/ui/meta.svg'), size);
 }
+
+// Tier-B general UI: a bare Tabler line glyph, 1em, inheriting the surrounding text colour
+// (currentColor). For coins/$, hones, menu nav, settings, etc. File at assets/icons/ui/<name>.svg.
+export function lineIconHtml(name) {
+  const src = `assets/icons/ui/${name}.svg`;
+  return `<span class="lr-line" style="-webkit-mask:url('${src}') center/contain no-repeat;mask:url('${src}') center/contain no-repeat" aria-hidden="true"></span>`;
+}

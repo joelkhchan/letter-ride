@@ -67,6 +67,7 @@ h1 { color: var(--gold); }
 }
 #score-total { font-family: var(--font-display); font-weight: 700; font-size: 1.5em; color: var(--gold); }
 #coins { font-weight: 700; color: var(--gold); }
+#coins::before { content: ''; display: inline-block; width: 0.92em; height: 0.92em; margin-right: 5px; vertical-align: -0.12em; background: currentColor; -webkit-mask: url('../assets/icons/ui/coins.svg') center / contain no-repeat; mask: url('../assets/icons/ui/coins.svg') center / contain no-repeat; }
 #mute-btn { color: var(--gold); border: 1px solid var(--line); background: var(--night-2); line-height: 1; }
 #mute-btn.muted { text-decoration: line-through; opacity: 0.5; color: var(--ink-soft); }
 
@@ -135,6 +136,8 @@ h1 { color: var(--gold); }
 .relic-seal--md .seal-letter { font-size: 24px; }
 .relic-entry { white-space: nowrap; }
 .shop-offer.has-seal { display: flex; align-items: center; gap: 11px; }
+/* Tier-B general UI: a bare Tabler line glyph, 1em, inheriting text colour (currentColor). */
+.lr-line { display: inline-block; width: 1em; height: 1em; background: currentColor; vertical-align: -0.13em; flex: 0 0 auto; }
 #desc-popover { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; padding: 8px 11px; background: var(--night-2); border: 1px solid var(--gold); border-radius: var(--radius-sm); box-shadow: 0 4px 12px rgba(0,0,0,0.6); font-size: 0.86rem; line-height: 1.45; max-width: 330px; position: relative; }
 .desc-pop-name { font-weight: 700; flex-shrink: 0; margin-right: 4px; color: var(--gold); }
 .desc-pop-text { color: var(--ink-soft); flex: 1; }
@@ -230,7 +233,7 @@ button { font-family: var(--font-body); color: var(--ink); }
 .menu-tagline { color: var(--ink-soft); font-size: 1rem; margin-top: -8px; }
 .menu-rule { color: var(--gold); font-size: 1.5rem; line-height: 1; opacity: 0.85; margin: 2px 0; }
 .menu-buttons { display: flex; flex-direction: column; gap: 11px; width: 100%; max-width: 280px; margin-top: 8px; }
-.menu-btn { font-size: 1.05rem; font-weight: 700; padding: 13px 18px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: linear-gradient(var(--night-2), var(--night)); color: var(--ink); cursor: pointer; transition: border-color 0.1s, background 0.1s; }
+.menu-btn { display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 1.05rem; font-weight: 700; padding: 13px 18px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: linear-gradient(var(--night-2), var(--night)); color: var(--ink); cursor: pointer; transition: border-color 0.1s, background 0.1s; }
 .menu-btn:hover { border-color: var(--gold); background: linear-gradient(#22304e, var(--night-sunk)); }
 .menu-btn.primary { border-color: var(--gold); color: var(--gold); }
 .menu-btn.danger:hover { border-color: var(--coral); color: var(--coral); }
