@@ -153,6 +153,24 @@ test('newRun applies a stake (plays delta) and loadout (extra discards, start co
   assert.equal(run.discardsLeft, config.DISCARDS_PER_ROUND + 1);
 });
 
+test('loadout round1ExtraPlay adds a play on round 1 only (not later rounds)', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1, loadout: { round1ExtraPlay: 1 } });
+  assert.equal(run.playsLeft, config.PLAYS_PER_ROUND + 1);   // round-1 bonus applied
+  nextRound(run);
+  assert.equal(run.playsLeft, config.PLAYS_PER_ROUND);       // gone from round 2 onward
+});
+
+test('loadout freeRerolls seeds per-shop free rerolls, refreshed by offerNode', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1, loadout: { freeRerolls: 2 } });
+  assert.equal(run.loadoutFreeRerolls, 2);
+  assert.equal(run.freeRerollsLeft, 2);
+  run.freeRerollsLeft = 0;     // simulate spending them in a shop
+  offerNode(run);              // reaching the next node refreshes the allowance
+  assert.equal(run.freeRerollsLeft, 2);
+});
+
 test('a hone level adds its archetype bonus to a matching word', () => {
   resetTileIds();
   const run = newRun({ config, dictionary: dict, seed: 1 });

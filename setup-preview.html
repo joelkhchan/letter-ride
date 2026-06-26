@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letter Ride — New Run screen (revamp preview)</title>
+<style>
+  @font-face{ font-family:'Zilla Slab'; font-weight:400; font-display:swap; src:url('assets/fonts/zilla-slab-latin-400.woff2') format('woff2'); }
+  @font-face{ font-family:'Zilla Slab'; font-weight:700; font-display:swap; src:url('assets/fonts/zilla-slab-latin-700.woff2') format('woff2'); }
+  :root{
+    --night:#0d182e; --night-2:#172741; --night-sunk:#112036; --glow:#20355a; --line:#2e405f; --line-dim:#233351;
+    --ink:#f1ebd9; --ink-soft:#a9b4c9; --gold:#c4a052; --gold-deep:#9c7a1e; --gold-wash:#202f4b;
+    --coral:#e8795a; --teal:#4fb89c; --tile-a:#f4eed8; --tile-b:#dccba6; --tile-ink:#16203a;
+    --font-display:'Zilla Slab','Georgia',serif;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; padding:20px; color:var(--ink); font-family:var(--font-display); line-height:1.45;
+    background-color:var(--night);
+    /* (C) stronger depth + a faint letterpress paper grain layered over the navy */
+    background-image:
+      radial-gradient(135% 110% at 50% -14%, var(--glow) 0%, transparent 52%),
+      radial-gradient(95% 75% at 88% 118%, var(--night-2) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    background-blend-mode:normal,normal,soft-light;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* (C) the content sits in a hairline gold frame with corner ornaments — echoes the broadside card */
+  .frame{ position:relative; max-width:860px; margin:0 auto; padding:46px 30px 34px;
+    border:1px solid var(--line); border-radius:14px;
+    background:linear-gradient(180deg, rgba(32,48,80,0.30), rgba(13,24,46,0.10)); }
+  .frame::before, .frame::after{ content:''; position:absolute; width:22px; height:22px; border:2px solid var(--gold); opacity:0.7; }
+  .frame::before{ top:9px; left:9px; border-right:0; border-bottom:0; border-radius:6px 0 0 0; }
+  .frame::after{ bottom:9px; right:9px; border-left:0; border-top:0; border-radius:0 0 6px 0; }
+
+  .back{ position:absolute; top:14px; left:14px; width:38px; height:38px; display:grid; place-items:center;
+    border-radius:50%; border:1px solid var(--line); background:var(--night-2); color:var(--gold); font-size:18px; cursor:pointer; }
+  .title{ font-family:var(--font-display); font-weight:700; font-size:2.1rem; color:var(--gold); margin:0 0 2px; letter-spacing:0.5px; }
+  .help{ font-size:0.5em; border:1px solid var(--line); border-radius:50%; padding:2px 8px; vertical-align:middle; color:var(--ink-soft); }
+  .sub{ color:var(--ink-soft); margin:0 0 14px; }
+  .sec-h{ font-size:0.72rem; text-transform:uppercase; letter-spacing:1.6px; color:var(--gold); margin:16px 0 8px; }
+
+  .layout{ display:flex; gap:22px; align-items:flex-start; }
+  .picks{ flex:1 1 60%; min-width:0; }
+  .preview{ flex:1 1 40%; position:sticky; top:14px; }
+  @media (max-width:760px){ .layout{ flex-direction:column; } .preview{ position:static; width:100%; } }
+
+  /* (A) card craft: gold top-rule, elevation, hover lift, clear selected state */
+  .card-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .card-row{ display:flex; flex-wrap:wrap; gap:10px; }
+  .card{ position:relative; text-align:left; cursor:pointer; color:var(--ink);
+    background:linear-gradient(180deg, var(--night-2), var(--night-sunk));
+    border:1px solid var(--line); border-top:3px solid var(--gold-deep); border-radius:10px;
+    padding:11px 13px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), 0 3px 9px rgba(0,0,0,0.45);
+    transition:transform 0.11s, border-color 0.11s, box-shadow 0.11s; }
+  .card:hover{ transform:translateY(-2px); border-top-color:var(--gold); box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 7px 16px rgba(0,0,0,0.5); }
+  .card.sel{ border-color:var(--gold); border-top-color:var(--gold); background:linear-gradient(180deg, var(--gold-wash), var(--night-sunk)); }
+  .card.sel::after{ content:'\2713'; position:absolute; top:8px; right:9px; width:19px; height:19px; border-radius:50%;
+    background:var(--gold); color:var(--night); font-size:13px; font-weight:700; display:grid; place-items:center; }
+
+  .bag-card{ display:flex; gap:12px; align-items:center; }
+  .bag-name{ font-family:var(--font-display); font-weight:700; font-size:1.12rem; color:var(--ink); display:block; }
+  .bag-desc{ font-size:0.78rem; color:var(--ink-soft); margin-top:2px; }
+
+  /* bag silhouette image (from the shipped New Run bags) */
+  .bag-wrap{ width:54px; height:54px; position:relative; display:grid; place-items:center; flex:0 0 auto; }
+  .bag-img{ width:92%; height:92%; background:var(--g); grid-area:1/1;
+    -webkit-mask:url('assets/icons/bags/swap-bag.svg') center/contain no-repeat; mask:url('assets/icons/bags/swap-bag.svg') center/contain no-repeat;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.55)); }
+  .bag-wrap.glow .bag-img{ filter:drop-shadow(0 0 8px var(--glow2)) drop-shadow(0 2px 3px rgba(0,0,0,.55)); }
+  .ghost{ grid-area:1/1; width:92%; height:92%; background:var(--g);
+    -webkit-mask:url('assets/icons/bags/swap-bag.svg') center/contain no-repeat; mask:url('assets/icons/bags/swap-bag.svg') center/contain no-repeat; }
+  .ghost.g1{ opacity:.30; transform:translate(5px,-4px); } .ghost.g2{ opacity:.15; transform:translate(8px,-7px); }
+  .bag-spark{ position:absolute; top:1px; right:3px; font-size:13px; color:#fff7d8; z-index:2; text-shadow:0 0 6px var(--glow2,#fff); }
+
+  /* stake card: head (name + meter) + desc */
+  .stake-card{ flex:1 1 150px; }
+  .stake-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .stake-name{ font-weight:700; font-size:1rem; }
+  .meter{ display:inline-flex; gap:4px; }
+  .pip{ width:8px; height:8px; border-radius:50%; background:var(--line); }
+  .pip.on{ background:var(--gold); }
+  .stake-desc{ font-size:0.76rem; color:var(--ink-soft); margin-top:5px; }
+  /* (D) danger tint: higher stakes go coral */
+  .card.danger{ border-top-color:var(--coral); }
+  .card.danger.sel{ border-color:var(--coral); }
+  .card.danger.sel::after{ background:var(--coral); }
+  .pip.on.hot{ background:var(--coral); }
+
+  /* (B) run preview panel */
+  .panel{ background:var(--night-sunk); border:1px solid var(--line); border-radius:11px; padding:14px; }
+  .tray{ display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; }
+  .tf{ position:relative; width:26px; height:30px; border-radius:4px; background:linear-gradient(180deg, var(--tile-a), var(--tile-b));
+    color:var(--tile-ink); display:grid; place-items:center; font-weight:700; font-size:0.86rem; box-shadow:0 1px 2px rgba(0,0,0,0.5); }
+  .tf i{ position:absolute; right:2px; bottom:0; font-size:0.5rem; font-style:normal; opacity:0.7; }
+  .tf.wild{ background:linear-gradient(180deg,#f0d98a,#c79a3a); color:#5a3d05; }
+  .mixbar{ display:flex; height:8px; border-radius:5px; overflow:hidden; margin:2px 0 10px; border:1px solid var(--line-dim); }
+  .mixbar i{ display:block; height:100%; }
+  .mix-v{ background:var(--gold); } .mix-c{ background:var(--ink-soft); } .mix-r{ background:var(--coral); } .mix-w{ background:var(--teal); }
+  .mix-legend{ font-size:0.72rem; color:var(--ink-soft); margin-bottom:12px; }
+  .stats{ display:grid; grid-template-columns:1fr 1fr; gap:7px 16px; font-size:0.86rem; }
+  .stat{ display:flex; justify-content:space-between; border-bottom:1px dotted var(--line-dim); padding-bottom:3px; }
+  .stat b{ color:var(--ink); } .stat span{ color:var(--ink-soft); }
+  .target-line{ margin-top:11px; font-size:0.95rem; color:var(--ink); }
+  .target-line b{ color:var(--gold); font-size:1.25rem; }
+  .target-line .base{ color:var(--ink-soft); text-decoration:line-through; font-size:0.95rem; margin-right:5px; }
+
+  /* (A) bold primary CTA */
+  .start-btn{ display:block; width:100%; margin-top:14px; padding:14px; border:none; border-radius:10px; cursor:pointer;
+    background:linear-gradient(180deg, #d8b25e, var(--gold-deep)); color:#241a05; font-family:var(--font-display); font-weight:700; font-size:1.15rem;
+    letter-spacing:0.5px; box-shadow:0 4px 0 #6f560f, 0 6px 14px rgba(0,0,0,0.45); transition:transform 0.08s, box-shadow 0.08s; }
+  .start-btn:hover{ transform:translateY(-1px); }
+  .start-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #6f560f, 0 3px 8px rgba(0,0,0,0.45); }
+</style>
+</head>
+<body>
+<div class="frame">
+  <button class="back">&#8592;</button>
+  <h1 class="title">New Run <span class="help">?</span></h1>
+  <p class="sub">Pick a bag and a stake, then start your run.</p>
+  <div class="layout">
+    <div class="picks">
+      <h3 class="sec-h">Bag</h3>
+      <div id="bags" class="card-grid"></div>
+      <h3 class="sec-h">Stake</h3>
+      <div id="stakes" class="card-row"></div>
+    </div>
+    <aside class="preview">
+      <h3 class="sec-h">Your run</h3>
+      <div id="run-preview" class="panel"></div>
+    </aside>
+  </div>
+</div>
+<script>
+// ---- real data (from src/config.js) ----
+const STARTING_BAG = ['A','A','A','E','E','E','I','I','O','O','U','R','S','T','L','N','D','C','M','B','P','G','H','F','Y','K'];
+const TILE_VALUES = {A:1,E:1,I:1,O:1,U:1,L:1,N:1,S:1,T:1,R:1,D:2,G:2,B:3,C:3,M:3,P:3,F:4,H:4,V:4,W:4,Y:4,K:5,J:8,X:8,Q:10,Z:10,'*':0};
+const ROUND_T0 = 40, RACK = 9, PLAYS = 4, DISC = 2;
+const DECKS = [
+  { id:'standard',   name:'Standard',    desc:'Balanced starter. Good for learning.',          bag:STARTING_BAG, g:'linear-gradient(155deg,#b89058,#6e5230)' },
+  { id:'vowelHeavy', name:'Vowel Heavy', desc:'Vowel-rich. Keeps racks playable.',              bag:['A','A','A','A','E','E','E','E','I','I','O','O','U','U','R','S','T','L','N','D','C','M','B','P','G','H'], g:'linear-gradient(155deg,#e2bd6a,#a87c2c)' },
+  { id:'wildcard',   name:'Wildcard',    desc:'Has wild tiles that play as any letter.',        bag:['A','A','A','E','E','E','I','I','O','O','U','R','S','T','L','N','D','C','M','B','P','G','H','F','*','*'], g:'linear-gradient(155deg,#ecd180,#9c7a1e)', fx:'spark', glow:'#ecd180' },
+  { id:'rareRich',   name:'Rare Cache',  desc:'Rare letters and wilds. Vowels can run dry.',    bag:['A','A','E','E','I','O','U','R','S','T','L','N','D','C','M','B','P','G','H','J','Q','X','Z','*','*','K'], g:'linear-gradient(155deg,#b3a0ee,#6a55c0)', fx:'glow spark', glow:'#8a7fd6' },
+  { id:'doubled',    name:'Echo Bag',    desc:'Duplicate-heavy. Doubled letters come up often.',bag:['A','A','E','E','E','I','I','O','O','S','S','T','T','L','L','N','N','R','R','D','D','C','M','B','P','G'], g:'linear-gradient(155deg,#79d8c0,#2c8a73)', fx:'echo', glow:'#4fb89c' },
+  { id:'lean',       name:'Lean Bag',    desc:'Fewer, high-value tiles. Vowels can run dry.',   bag:['A','E','I','O','U','R','S','T','N','L','D','C','M','B','P','K','F','H','Y','G'], g:'linear-gradient(155deg,#aeb8ca,#586a86)' },
+];
+const STAKES = [
+  { id:0, name:'Stake 0', mult:1.0,  plays:0, disc:0 },
+  { id:1, name:'Stake 1', mult:1.25, plays:0, disc:0 },
+  { id:2, name:'Stake 2', mult:1.5,  plays:-1, disc:0 },
+];
+
+let selBag = 'standard', selStake = 0;
+
+const isV = l => 'AEIOU'.includes(l), isW = l => l==='*', isR = l => 'JQXZ'.includes(l);
+const cat = l => isW(l)?4 : isV(l)?0 : isR(l)?3 : 1;
+
+function bagImg(d){
+  const fx = d.fx || '';
+  const ghosts = /echo/.test(fx) ? `<span class="ghost g1"></span><span class="ghost g2"></span>` : '';
+  const spark = /spark/.test(fx) ? `<span class="bag-spark">&#10022;</span>` : '';
+  const glow = d.glow ? `--glow2:${d.glow};` : '';
+  return `<span class="bag-wrap ${fx}" style="--g:${d.g};${glow}">${ghosts}<span class="bag-img"></span>${spark}</span>`;
+}
+
+function renderBags(){
+  document.getElementById('bags').innerHTML = DECKS.map(d => `
+    <button class="card bag-card ${d.id===selBag?'sel':''}" data-bag="${d.id}">
+      ${bagImg(d)}
+      <span><span class="bag-name">${d.name}</span><span class="bag-desc">${d.desc}</span></span>
+    </button>`).join('');
+  document.querySelectorAll('[data-bag]').forEach(b => b.onclick = () => { selBag = b.dataset.bag; renderAll(); });
+}
+
+function renderStakes(){
+  document.getElementById('stakes').innerHTML = STAKES.map(s => {
+    const danger = s.id >= 2;
+    const meter = STAKES.map((_,i) => `<span class="pip ${i<=s.id?'on':''} ${danger?'hot':''}"></span>`).join('');
+    const parts = [s.mult!==1?`Targets +${Math.round((s.mult-1)*100)}%`:'Standard targets'];
+    if(s.plays) parts.push(`${s.plays>0?'+':''}${s.plays} play/round`);
+    return `<button class="card stake-card ${danger?'danger':''} ${s.id===selStake?'sel':''}" data-stake="${s.id}">
+      <span class="stake-head"><span class="stake-name">${s.name}</span><span class="meter">${meter}</span></span>
+      <div class="stake-desc">${parts.join(' · ')}</div>
+    </button>`;
+  }).join('');
+  document.querySelectorAll('[data-stake]').forEach(b => b.onclick = () => { selStake = +b.dataset.stake; renderAll(); });
+}
+
+function renderPreview(){
+  const d = DECKS.find(x => x.id===selBag), s = STAKES.find(x => x.id===selStake);
+  const bag = d.bag.slice().sort((a,b) => cat(a)-cat(b) || (TILE_VALUES[a]-TILE_VALUES[b]) || a.localeCompare(b));
+  const tray = bag.map(l => l==='*' ? `<span class="tf wild">&#9733;</span>` : `<span class="tf">${l}<i>${TILE_VALUES[l]}</i></span>`).join('');
+  const v = d.bag.filter(isV).length, w = d.bag.filter(isW).length, r = d.bag.filter(isR).length, c = d.bag.length-v-w-r;
+  const pct = n => (n/d.bag.length*100).toFixed(1)+'%';
+  const target = Math.ceil(ROUND_T0 * s.mult);
+  document.getElementById('run-preview').innerHTML = `
+    <div class="tray">${tray}</div>
+    <div class="mixbar">
+      <i class="mix-v" style="width:${pct(v)}"></i><i class="mix-c" style="width:${pct(c)}"></i>
+      <i class="mix-r" style="width:${pct(r)}"></i><i class="mix-w" style="width:${pct(w)}"></i>
+    </div>
+    <div class="mix-legend">${v} vowels &middot; ${c} consonants${r?` &middot; ${r} rare`:''}${w?` &middot; ${w} wild`:''}</div>
+    <div class="stats">
+      <div class="stat"><span>Bag size</span><b>${d.bag.length} tiles</b></div>
+      <div class="stat"><span>Rack</span><b>${RACK}</b></div>
+      <div class="stat"><span>Plays / round</span><b>${PLAYS + s.plays}</b></div>
+      <div class="stat"><span>Discards / round</span><b>${DISC + s.disc}</b></div>
+      <div class="stat"><span>Starting $</span><b>0</b></div>
+      <div class="stat"><span>Difficulty</span><b>${s.name}</b></div>
+    </div>
+    <div class="target-line">First target: ${target!==ROUND_T0?`<span class="base">${ROUND_T0}</span>`:''}<b>${target}</b></div>
+    <button class="start-btn">Start Run &#9656;</button>`;
+}
+
+function renderAll(){ renderBags(); renderStakes(); renderPreview(); }
+renderAll();
+</script>
+</body>
+</html>

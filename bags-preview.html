@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letter Ride — Bag images (New Run)</title>
+<style>
+  @font-face{ font-family:'Zilla Slab'; font-weight:400; font-display:swap; src:url('assets/fonts/zilla-slab-latin-400.woff2') format('woff2'); }
+  @font-face{ font-family:'Zilla Slab'; font-weight:700; font-display:swap; src:url('assets/fonts/zilla-slab-latin-700.woff2') format('woff2'); }
+  :root{
+    --night:#0d182e; --night-2:#172741; --night-sunk:#112036; --line:#2e405f; --ink:#f1ebd9;
+    --ink-soft:#a9b4c9; --gold:#c4a052; --gold-deep:#9c7a1e; --font-display:'Zilla Slab',serif;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--night); color:var(--ink); font-family:var(--font-display); line-height:1.4; -webkit-font-smoothing:antialiased; }
+  header{ padding:22px 26px 10px; border-bottom:1px solid var(--line); }
+  h1{ margin:0; font-size:25px; color:var(--gold); font-weight:700; }
+  .sub{ margin:6px 0 0; color:var(--ink-soft); font-size:13.5px; max-width:880px; }
+  main{ padding:8px 26px 90px; }
+  .sec h2{ font-size:12.5px; text-transform:uppercase; letter-spacing:2px; color:var(--gold); border-bottom:1px solid var(--line); padding-bottom:6px; margin:24px 0 4px; }
+  .sec .blurb{ color:var(--ink-soft); font-size:13px; margin:2px 0 14px; }
+
+  /* a themed bag: silhouette via --bag-src, colour via --g, optional glow/echo/spark */
+  .bag-wrap{ width:88px; height:88px; position:relative; display:grid; place-items:center; flex:0 0 auto; }
+  .bag{ width:76px; height:76px; background:var(--g); position:relative; z-index:1;
+    -webkit-mask:var(--bag-src) center/contain no-repeat; mask:var(--bag-src) center/contain no-repeat;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.55)); }
+  .bag-wrap.glow .bag{ filter:drop-shadow(0 0 9px var(--glow)) drop-shadow(0 2px 3px rgba(0,0,0,.55)); }
+  .bag-wrap.echo::before{ content:''; position:absolute; width:76px; height:76px; background:var(--g); opacity:.30;
+    -webkit-mask:var(--bag-src) center/contain no-repeat; mask:var(--bag-src) center/contain no-repeat;
+    transform:translate(6px,-5px); z-index:0; }
+  .bag-wrap.echo::after{ content:''; position:absolute; width:76px; height:76px; background:var(--g); opacity:.15;
+    -webkit-mask:var(--bag-src) center/contain no-repeat; mask:var(--bag-src) center/contain no-repeat;
+    transform:translate(11px,-9px); z-index:0; }
+  .bag-spark{ position:absolute; top:6px; right:10px; font-size:17px; color:#fff7d8; z-index:2; text-shadow:0 0 7px var(--glow,#fff); }
+
+  /* deck cards (as they'd look on the Run Setup screen) */
+  .cards{ display:flex; flex-wrap:wrap; gap:14px; }
+  .deck-card{ display:flex; gap:14px; align-items:center; width:330px; background:var(--night-2); border:1px solid var(--line); border-top:3px solid var(--gold); border-radius:10px; padding:12px 14px; }
+  .deck-meta b{ font-size:15px; color:var(--ink); display:block; }
+  .deck-meta span{ font-size:12.5px; color:var(--ink-soft); display:block; margin-top:2px; }
+
+  /* silhouette comparison */
+  .sils{ display:flex; gap:30px; align-items:flex-start; }
+  .sil{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .sil small{ color:var(--ink-soft); font-size:11px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Letter Ride — bag images for New Run</h1>
+  <p class="sub">Each bag (deck) gets a satchel image themed to what's inside: leather for Standard, jewel tones + effects for the special bags (violet Rare Cache, teal Echo, gold Wildcard). The drawstring sack reads like a Scrabble bag / bag of holding. Pick the silhouette + tell me if the per-bag colours/effects feel right; then I wire it into Run Setup.</p>
+</header>
+<main id="app"></main>
+<script>
+const DIR = 'assets/icons/bags/';
+const SIL = `url('${DIR}swap-bag.svg')`;   // chosen silhouette for the deck cards
+
+const DECKS = [
+  { id:'standard',   name:'Standard',    desc:'Balanced starter. Good for learning.',
+    g:'linear-gradient(155deg,#b89058,#6e5230)', fx:'' },
+  { id:'vowelHeavy', name:'Vowel Heavy', desc:'Vowel-rich. Keeps racks playable.',
+    g:'linear-gradient(155deg,#e2bd6a,#a87c2c)', glow:'#e2bd6a', fx:'glow' },
+  { id:'wildcard',   name:'Wildcard',    desc:'Wild tiles that play as any letter.',
+    g:'linear-gradient(155deg,#ecd180,#9c7a1e)', glow:'#ecd180', fx:'spark' },
+  { id:'rareRich',   name:'Rare Cache',  desc:'Rare letters and wilds. Vowels can run dry.',
+    g:'linear-gradient(155deg,#b3a0ee,#6a55c0)', glow:'#8a7fd6', fx:'glow spark' },
+  { id:'doubled',    name:'Echo Bag',    desc:'Duplicate-heavy. Doubled letters come up often.',
+    g:'linear-gradient(155deg,#79d8c0,#2c8a73)', glow:'#4fb89c', fx:'echo' },
+  { id:'lean',       name:'Lean Bag',    desc:'Fewer, high-value tiles. Vowels can run dry.',
+    g:'linear-gradient(155deg,#aeb8ca,#586a86)', fx:'' },
+];
+
+const bag = (d, src = SIL) => `
+  <div class="bag-wrap ${d.fx}" style="--g:${d.g};--bag-src:${src};${d.glow ? `--glow:${d.glow};` : ''}">
+    <span class="bag"></span>
+    ${/spark/.test(d.fx) ? '<span class="bag-spark">&#10022;</span>' : ''}
+  </div>`;
+
+const cards = DECKS.map(d => `
+  <div class="deck-card">
+    ${bag(d)}
+    <div class="deck-meta"><b>${d.name}</b><span>${d.desc}</span></div>
+  </div>`).join('');
+
+// silhouette options (neutral gold) so you can pick the bag shape
+const gold = { g:'linear-gradient(155deg,#ecd180,#9c7a1e)', fx:'' };
+const sils = [['swap-bag','Drawstring sack (Scrabble-bag)'],['knapsack','Knapsack'],['bindle','Bindle']]
+  .map(([f, label]) => `<div class="sil">${bag(gold, `url('${DIR}${f}.svg')`)}<small>${label}</small></div>`).join('');
+
+document.getElementById('app').innerHTML = `
+  <section class="sec"><h2>The six bags (drawstring-sack silhouette, themed)</h2>
+    <p class="blurb">As they'd appear on the New Run deck picker.</p>
+    <div class="cards">${cards}</div>
+  </section>
+  <section class="sec"><h2>Silhouette options</h2>
+    <p class="blurb">Same gold tint, three shapes. The drawstring sack is the Scrabble-bag / bag-of-holding read.</p>
+    <div class="sils">${sils}</div>
+  </section>`;
+</script>
+</body>
+</html>

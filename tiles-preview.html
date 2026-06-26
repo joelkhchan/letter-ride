@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letter Ride — Modded-tile looks (round 3: inked + letter levers)</title>
+<style>
+  @font-face{ font-family:'Zilla Slab'; font-weight:400; font-display:swap; src:url('assets/fonts/zilla-slab-latin-400.woff2') format('woff2'); }
+  @font-face{ font-family:'Zilla Slab'; font-weight:700; font-display:swap; src:url('assets/fonts/zilla-slab-latin-700.woff2') format('woff2'); }
+  @font-face{ font-family:'Rye'; font-weight:400; font-display:swap; src:url('assets/fonts/rye-latin-400.woff2') format('woff2'); }
+  :root{
+    --night:#0d182e; --night-2:#172741; --line:#2e405f; --ink:#f1ebd9; --ink-soft:#a9b4c9;
+    --gold:#d9b25a; --gold-deep:#9c7a1e; --coral:#e8795a; --teal:#4fb89c; --oxblood:#9a3520;
+    --tile-a:#f4eed8; --tile-b:#dccba6; --tile-ink:#16203a; --font-display:'Zilla Slab',serif;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--night); color:var(--ink); font-family:var(--font-display); line-height:1.4; -webkit-font-smoothing:antialiased; }
+  header{ padding:22px 26px 10px; border-bottom:1px solid var(--line); }
+  h1{ margin:0; font-size:24px; color:var(--gold); font-weight:700; }
+  .sub{ margin:6px 0 0; color:var(--ink-soft); font-size:13.5px; max-width:900px; }
+  main{ padding:6px 26px 90px; }
+  .sec{ margin:26px 0 0; } .sec h2{ font-size:12.5px; text-transform:uppercase; letter-spacing:2px; color:var(--gold); border-bottom:1px solid var(--line); padding-bottom:6px; margin:0 0 3px; }
+  .sec .blurb{ color:var(--ink-soft); font-size:13px; margin:2px 0 16px; max-width:880px; }
+  .rack{ display:flex; flex-wrap:wrap; gap:22px; align-items:flex-start; }
+  .cell{ display:flex; flex-direction:column; align-items:center; gap:7px; width:96px; }
+  .cell small{ color:var(--ink-soft); font-size:11px; text-align:center; line-height:1.25; }
+
+  .tile{ position:relative; width:58px; height:64px; font-family:var(--font-display); font-size:1.7rem; font-weight:700;
+    color:var(--tile-ink); border-radius:5px; border:1px solid #c7b890; background:linear-gradient(var(--tile-a), var(--tile-b));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85), inset 0 -3px 4px rgba(120,95,40,.18), 0 3px 7px rgba(0,0,0,.55);
+    display:flex; align-items:center; justify-content:center; }
+  .tile .val{ position:absolute; bottom:2px; right:5px; font-size:.92rem; font-weight:700; color:var(--gold-deep); line-height:1; font-family:var(--font-display); }
+
+  /* letter levers */
+  .rye{ font-family:'Rye', var(--font-display); font-weight:400; font-size:1.55rem; }
+  .c-gold{ color:var(--gold-deep); } .c-ox{ color:var(--oxblood); } .c-teal{ color:#2f8f78; }
+
+  /* inked plate, lifted off the bg (lighter navy face + keyline) */
+  .ink{ color:var(--tile-a); border-color:#0a1426; }
+  .ink .val{ color:var(--gold); }
+  .ink.blend{ background:linear-gradient(#1d2d4b,#0d182e); border-color:#0a1426; }                 /* the problem: bottom melts into bg */
+  .ink.k-gold{ background:linear-gradient(#26395f,#15264a); border:1.5px solid var(--gold-deep); box-shadow:0 4px 10px rgba(0,0,0,.6); }
+  .ink.k-ivory{ background:linear-gradient(#26395f,#15264a); border:1.5px solid rgba(241,235,217,.55); box-shadow:0 4px 10px rgba(0,0,0,.6); }
+  .ink.k-ring{ background:linear-gradient(#28406b,#172d54); border:1px solid #0a1426; box-shadow:0 0 0 1.5px var(--gold), 0 4px 11px rgba(0,0,0,.65); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Letter Ride — modded tiles, round 3</h1>
+  <p class="sub">Two threads from your note: (1) keep the inked plate but lift it off the navy background, and (2) use the letter's font and/or colour as the identifier. Rye is the project's Victorian wood-type face, set against Zilla for plain tiles. A metal slug sits at the end for a live head-to-head.</p>
+</header>
+<main id="app"></main>
+<script>
+const SECTIONS = [
+  { name:'1 — Inked plate, lifted off the background', blurb:'Same idea you liked, fixed: a lighter navy face plus a keyline so it stops melting into the page. First tile is the old blended version (the problem); the rest separate it.',
+    cells:[
+      ['<button class="tile">Q<span class="val">10</span></button>', 'plain (ref)'],
+      ['<button class="tile ink blend">E<span class="val">1</span></button>', 'blended (the problem)'],
+      ['<button class="tile ink k-gold">E<span class="val">1</span></button>', 'lighter + gold keyline'],
+      ['<button class="tile ink k-ivory">E<span class="val">1</span></button>', 'lighter + ivory keyline'],
+      ['<button class="tile ink k-ring">E<span class="val">1</span></button>', 'lighter + gold ring'],
+    ]},
+  { name:'2 — The letter is the signal (ivory tile)', blurb:'No tile-material change at all: the modded letter changes font and/or colour. Wood-type (Rye) reads as "a different cut of type"; spot-ink colour reads as "a different ink."',
+    cells:[
+      ['<button class="tile">E<span class="val">1</span></button>', 'plain Zilla (ref)'],
+      ['<button class="tile"><span class="rye">E</span><span class="val">1</span></button>', 'Rye wood-type'],
+      ['<button class="tile"><span class="c-gold">E</span><span class="val">1</span></button>', 'Zilla, gold ink'],
+      ['<button class="tile"><span class="c-ox">E</span><span class="val">1</span></button>', 'Zilla, oxblood ink'],
+      ['<button class="tile"><span class="rye c-ox">E</span><span class="val">1</span></button>', 'Rye + oxblood'],
+    ]},
+  { name:'3 — Head-to-head: the leading looks', blurb:'The strongest of each thread side by side, so you can compare in one row. Mix freely: e.g. inked plate + Rye letter, or ivory tile + Rye oxblood letter (no material change).',
+    cells:[
+      ['<button class="tile">A<span class="val">1</span></button>', 'plain'],
+      ['<button class="tile ink k-gold">A<span class="val">1</span></button>', 'inked + gold keyline'],
+      ['<button class="tile ink k-gold"><span class="rye">A</span><span class="val">1</span></button>', 'inked + Rye letter'],
+      ['<button class="tile"><span class="rye c-ox">A</span><span class="val">1</span></button>', 'ivory + Rye oxblood'],
+      ['<button class="tile metal">A<span class="val" style="color:#33405c">1</span></button>', 'metal slug (D1, recap)'],
+    ]},
+];
+document.querySelectorAll && (document.getElementById('app').innerHTML = SECTIONS.map(s => `
+  <section class="sec">
+    <h2>${s.name}</h2>
+    <p class="blurb">${s.blurb}</p>
+    <div class="rack">${s.cells.map(c => `<div class="cell">${c[0]}<small>${c[1]}</small></div>`).join('')}</div>
+  </section>`).join(''));
+</script>
+<style>
+  /* metal slug recap (D1) */
+  .tile.metal{ background:linear-gradient(#9aa4b6,#646f84); color:#141b2c; border-color:#444e68;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5), inset 0 -3px 5px rgba(0,0,0,.4), 0 3px 7px rgba(0,0,0,.55);
+    text-shadow:0 1px 0 rgba(255,255,255,.45), 0 -1px 0 rgba(0,0,0,.25); }
+</style>
+</body>
+</html>

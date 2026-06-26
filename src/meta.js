@@ -61,7 +61,12 @@ export function applyStakeTargets(baseTargets, stake) {
 
 export function buildLoadout(metaState, config, RELICS) {
   const lo = metaState.loadout || {};
-  return { extraDiscards: lo.extraDiscards || 0, startRelics: [] };
+  return {
+    extraDiscards: lo.extraDiscards || 0,
+    freeRerolls: lo.freeReroll || 0,
+    round1ExtraPlay: lo.round1Play || 0,
+    startRelics: [],
+  };
 }
 
 export function metaShopOffers(metaState, config, allRelicIds, allModIds) {

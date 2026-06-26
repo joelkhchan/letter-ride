@@ -90,12 +90,14 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     roundTotal: 0,
     playsPerRound,
     discardsPerRound,
-    playsLeft: playsPerRound + sumExtraPlays(startRelics),
+    playsLeft: playsPerRound + sumExtraPlays(startRelics) + (loadout.round1ExtraPlay || 0),  // round-1-only loadout bonus; nextRound omits it
     discardsLeft: discardsPerRound,
     bag: makeBag(letters.map(l => makeTile(l))),
     tileValues: { ...config.TILE_VALUES },
     relics: startRelics,
     coins: loadout.startCoins || 0,
+    loadoutFreeRerolls: loadout.freeRerolls || 0,   // free shop rerolls granted each shop (loadout)
+    freeRerollsLeft: loadout.freeRerolls || 0,
     rack: [],
     drawPile: [],
     honeLevels: {},
@@ -124,6 +126,7 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
 // so it does NOT consume run.rng and cannot desync the shop/bag draws.
 // Not called by the engine — called by main.js when it detects roundCleared.
 export function offerNode(run) {
+  run.freeRerollsLeft = run.loadoutFreeRerolls || 0;   // refresh per-shop free rerolls on reaching the node
   const stream = makeRng((run.seed ^ 0x5bf03635 ^ run.roundIndex) >>> 0);
   const eligible = ALL_EVENT_IDS.filter(id => EVENTS[id].canOffer(run));
   run.nodeEventId = eligible.length ? shuffle(eligible, stream)[0] : null;

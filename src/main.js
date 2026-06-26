@@ -148,7 +148,15 @@ try {
       }
       saveAll(); render(); return r;
     },
-    onReroll() { if (run.coins >= run.shop.rerollCost) { run.coins -= run.shop.rerollCost; run.shop = generateShop(run, run.rng, pool()); recordOffers(telemetry, extractOfferIds(run.shop)); logEvent('reroll', { rerollCost: run.shop.rerollCost, coins: run.coins }); saveAll(); render(); } },
+    onReroll() {
+      const free = (run.freeRerollsLeft || 0) > 0;
+      if (!free && run.coins < run.shop.rerollCost) return;
+      if (free) run.freeRerollsLeft -= 1; else run.coins -= run.shop.rerollCost;
+      run.shop = generateShop(run, run.rng, pool());
+      recordOffers(telemetry, extractOfferIds(run.shop));
+      logEvent('reroll', { free, rerollCost: free ? 0 : run.shop.rerollCost, coins: run.coins, freeRerollsLeft: run.freeRerollsLeft || 0 });
+      saveAll(); render();
+    },
     onPickShop() {
       run._nodePick = 'shop';
       logEvent('node_pick', { pick: 'shop', round: run.roundIndex });

@@ -111,18 +111,23 @@ test('loadMeta refunds Meta spent on removed loadout perks exactly once', () => 
   assert.equal(m2.meta, 41);                // idempotent
 });
 
-test('config drops removed loadout perks and adds achievement/bounty blocks', () => {
+test('config drops the removed economy perks but keeps the modest loadout perks', () => {
   assert.equal(CONFIG.LOADOUT.startCoins, undefined);
   assert.equal(CONFIG.LOADOUT.startRelic, undefined);
   assert.ok(CONFIG.LOADOUT.extraDiscards);
+  assert.ok(CONFIG.LOADOUT.freeReroll);
+  assert.ok(CONFIG.LOADOUT.round1Play);
   assert.ok(CONFIG.META.achievement && CONFIG.META.bounty);
   assert.ok(CONFIG.LEVELS && Array.isArray(CONFIG.LEVELS.thresholds));
 });
 
-test('buildLoadout returns only extraDiscards', () => {
-  const m = makeMetaState(CONFIG); m.loadout.extraDiscards = 2;
+test('buildLoadout surfaces extraDiscards, freeRerolls, and round1ExtraPlay', () => {
+  const m = makeMetaState(CONFIG);
+  m.loadout.extraDiscards = 2; m.loadout.freeReroll = 1; m.loadout.round1Play = 1;
   const lo = buildLoadout(m, CONFIG, {});
   assert.equal(lo.extraDiscards, 2);
+  assert.equal(lo.freeRerolls, 1);
+  assert.equal(lo.round1ExtraPlay, 1);
   assert.deepEqual(lo.startRelics, []);
 });
 

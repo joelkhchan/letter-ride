@@ -979,7 +979,9 @@ function renderShop(run) {
     return `<div class="shop-offer-row"><button class="shop-offer${seal || hone ? ' has-seal' : ''}" data-idx="${i}" ${disabled}>${seal}${hone}${text}</button></div>`;
   }).join('');
 
-  const rerollDisabled = !canAfford(shop.rerollCost) ? 'disabled' : '';
+  const freeRerolls = run.freeRerollsLeft || 0;
+  const rerollDisabled = (freeRerolls <= 0 && !canAfford(shop.rerollCost)) ? 'disabled' : '';
+  const rerollLabel = freeRerolls > 0 ? `Reroll &middot; free (${freeRerolls})` : `Reroll ($${shop.rerollCost})`;
 
   let lastAwardHtml = '';
   if (run.lastAward && run.lastAward.length) {
@@ -999,7 +1001,7 @@ function renderShop(run) {
     <div id="shop">
       <div id="shop-offers">${offersHtml}</div>
       <div id="shop-actions">
-        <button id="reroll" ${rerollDisabled}>${lineIconHtml('refresh')}Reroll ($${shop.rerollCost})</button>
+        <button id="reroll" ${rerollDisabled}>${lineIconHtml('refresh')}${rerollLabel}</button>
         <button id="continue">${lineIconHtml('player-track-next')}Continue</button>
       </div>
     </div>

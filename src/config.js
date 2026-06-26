@@ -74,6 +74,8 @@ export const CONFIG = {
   ],
   LOADOUT: {
     extraDiscards: { name: '+1 Discard / round', max: 2, cost: 10 },
+    freeReroll:    { name: '+1 free reroll per shop', max: 2, cost: 8 },
+    round1Play:    { name: '+1 Play on round 1', max: 1, cost: 8 },
   },
   HONE: { cost: 6 },
   PROFANITY_FILTER: true,

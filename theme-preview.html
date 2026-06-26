@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letter Ride — Theme Gallery</title>
+<style>
+/* Fonts (reuse the bundled OFL faces). Add more @font-face here to try other fonts. */
+@font-face { font-family: 'Fredoka'; src: url('assets/fonts/fredoka-latin-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Fredoka'; src: url('assets/fonts/fredoka-latin-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Rye'; src: url('assets/fonts/rye-latin-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Zilla Slab'; src: url('assets/fonts/zilla-slab-latin-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Zilla Slab'; src: url('assets/fonts/zilla-slab-latin-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+
+/* ---- theme tokens (defaults overwritten live by the switcher) ---- */
+:root {
+  --bg:#03002E; --bg2:#140f48; --bg3:#0a0640; --glow:#221a66;
+  --ink:#f3edda; --inkSoft:#a9a2d2; --line:#423a86;
+  --accent:#ecc15c; --accentDeep:#b07d12; --boss:#f4825c; --chain:#47c8a8;
+  --tileA:#f6efda; --tileB:#ddceaa; --tileInk:#1b2748;
+  --fontDisplay:'Zilla Slab','Georgia',serif;
+  --fontBody:'Zilla Slab','Georgia',serif;
+  /* derived */
+  --wash: color-mix(in srgb, var(--accent) 14%, var(--bg2));
+  --bossBg: color-mix(in srgb, var(--boss) 16%, var(--bg));
+  --chainBg: color-mix(in srgb, var(--chain) 16%, var(--bg));
+}
+
+* { box-sizing: border-box; }
+body {
+  margin:0; font-family:var(--fontBody); color:var(--ink);
+  background-color:var(--bg);
+  background-image: radial-gradient(135% 110% at 50% -14%, var(--glow) 0%, transparent 52%);
+  min-height:100vh; -webkit-font-smoothing:antialiased; line-height:1.5;
+  transition: background-color .15s, color .15s;
+}
+
+/* ---- switcher bar ---- */
+#bar {
+  position:sticky; top:0; z-index:10;
+  background:rgba(0,0,0,0.55); backdrop-filter:blur(6px);
+  padding:10px 14px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  border-bottom:1px solid rgba(255,255,255,0.12);
+}
+#bar h2 { font-family:var(--fontDisplay); font-weight:600; font-size:1rem; margin:0 10px 0 0; color:#fff; }
+.sw {
+  cursor:pointer; border:1px solid rgba(255,255,255,0.25); border-radius:20px;
+  padding:5px 12px; font-size:0.82rem; color:#fff; background:rgba(255,255,255,0.06);
+  display:flex; align-items:center; gap:6px; font-family:var(--fontBody);
+}
+.sw:hover { border-color:#fff; }
+.sw.active { outline:2px solid #fff; }
+.sw .dot { width:11px; height:11px; border-radius:50%; display:inline-block; }
+#fontsel { margin-left:auto; font-size:0.8rem; color:#fff; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.25); border-radius:6px; padding:4px 8px; }
+#curname { color:#fff; font-size:0.85rem; opacity:0.85; }
+
+#stage { max-width:780px; margin:0 auto; padding:20px 16px 60px; }
+
+/* ============ representative game UI (token-driven) ============ */
+.hud {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;
+  background:linear-gradient(var(--bg2), var(--bg3)); border:1px solid var(--line); border-top:3px solid var(--accent);
+  border-radius:9px; padding:9px 15px; margin-bottom:14px; font-variant-numeric:tabular-nums;
+  box-shadow:0 2px 7px rgba(0,0,0,0.5);
+}
+.score { font-family:var(--fontDisplay); font-weight:600; font-size:1.5em; color:var(--accent); }
+.coins { font-weight:600; color:var(--accent); }
+
+.panel { background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:8px 13px; margin-bottom:10px; font-size:0.86rem; }
+.panel .lab { font-family:var(--fontDisplay); font-weight:600; }
+.panel .muted { color:var(--inkSoft); }
+
+.banner-boss { text-align:center; font-weight:600; padding:9px 14px; margin:8px 0 4px; border:1px solid var(--boss); border-left:5px solid var(--boss); border-radius:6px; background:var(--bossBg); color:var(--boss); }
+.banner-chain { text-align:center; font-weight:600; padding:8px 14px; margin:8px 0 4px; border:1px solid var(--chain); border-left:5px solid var(--chain); border-radius:6px; background:var(--chainBg); color:var(--chain); }
+
+.scorebug { display:flex; flex-direction:column; align-items:center; gap:3px; margin:8px auto; padding:11px 18px; background:linear-gradient(var(--bg2), var(--bg3)); border:1px solid var(--line); border-top:2px solid var(--accent); border-radius:6px; max-width:380px; box-shadow:0 2px 7px rgba(0,0,0,0.5); }
+.scorebug .w { font-family:var(--fontDisplay); font-weight:600; font-size:1.4rem; letter-spacing:2px; }
+.scorebug .f { font-weight:600; color:var(--accent); }
+.scorebug .d { font-size:0.82rem; color:var(--inkSoft); }
+
+.rack { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:16px 0; }
+.tile {
+  position:relative; width:58px; height:64px; font-family:var(--fontDisplay); font-size:1.7rem; font-weight:600;
+  color:var(--tileInk); border-radius:5px; border:1px solid color-mix(in srgb, var(--tileB) 70%, #000 30%);
+  background:linear-gradient(var(--tileA), var(--tileB));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -3px 4px rgba(0,0,0,0.12), 0 3px 7px rgba(0,0,0,0.55);
+  display:flex; align-items:center; justify-content:center;
+}
+.tile .badge { position:absolute; top:2px; left:3px; font-family:var(--fontBody); font-size:0.5rem; font-weight:600; background:var(--boss); color:var(--tileInk); border-radius:3px; padding:1px 3px; }
+.tile .val { position:absolute; bottom:2px; right:5px; font-size:0.92rem; font-weight:600; color:var(--accentDeep); font-variant-numeric:tabular-nums; }
+
+.btnrow { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:16px 0; }
+.btn {
+  font-family:var(--fontBody); font-size:1.05rem; font-weight:500; padding:11px 19px; border-radius:6px;
+  border:1px solid var(--line); background:linear-gradient(var(--bg2), var(--bg)); color:var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 6px rgba(0,0,0,0.5); cursor:pointer;
+}
+.btn:hover { border-color:var(--accent); }
+.btn.go { border-color:var(--accent); color:var(--accent); }
+
+.offer { display:block; width:100%; text-align:left; padding:11px 14px; margin:6px 0; border-radius:6px; border:1px solid var(--line); border-left:3px solid var(--line); background:var(--bg2); color:var(--ink); font-size:0.95rem; }
+.offer:hover { border-color:var(--accent); border-left-color:var(--accent); background:var(--wash); }
+
+.prompt { text-align:center; font-size:0.92rem; color:var(--inkSoft); padding:2px 6px; }
+.prompt b { color:var(--accent); }
+.card { display:block; width:100%; text-align:left; padding:15px 18px; margin:10px 0; border-radius:9px; border:1px solid var(--line); border-top:3px solid var(--accent); background:linear-gradient(var(--bg2), var(--bg3)); color:var(--ink); box-shadow:0 2px 7px rgba(0,0,0,0.5); }
+.card:hover { border-color:var(--accent); background:var(--wash); }
+.card .t { font-family:var(--fontDisplay); font-weight:600; font-size:1.15em; margin-bottom:4px; }
+.card .dsc { font-size:0.88em; color:var(--inkSoft); }
+h3.sec { font-family:var(--fontDisplay); font-weight:600; color:var(--accent); margin:26px 0 6px; opacity:0.75; font-size:0.95rem; letter-spacing:1px; text-transform:uppercase; }
+.title { font-family:var(--fontDisplay); font-weight:600; font-size:2rem; color:var(--accent); text-align:center; margin:6px 0 18px; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <h2>Letter Ride — Theme Gallery</h2>
+  <span id="curname"></span>
+  <select id="fontsel" title="font">
+    <option value="Zilla Slab" selected>Zilla Slab (slab)</option>
+    <option value="Fredoka">Fredoka (rounded)</option>
+    <option value="Rye">Rye (woodtype)</option>
+    <option value="system-ui">System</option>
+  </select>
+</div>
+<div id="stage">
+  <div class="title">Letter Ride</div>
+
+  <div class="hud">
+    <div>Passage 2/4 &middot; encounter 3/3 &middot; Sentence (boss)</div>
+    <div><span class="score">272</span> / 110 Score</div>
+    <div>Plays 3 &middot; Discards 0</div>
+    <div class="coins">$30</div>
+  </div>
+
+  <div class="panel">
+    <div><span class="lab">Relics:</span> Vowel Bonus &middot; Lengthy &middot; Combo Counter</div>
+    <div><span class="lab">Tile-mods:</span> A:Catalyst, L:Anchor</div>
+    <div><span class="lab">Hone:</span> <span class="muted">none yet</span></div>
+  </div>
+
+  <div class="banner-boss"><b>The Ceiling</b> &middot; Mult is capped at &times;4</div>
+  <div class="banner-chain">Chain &times;3 &middot; continue with E</div>
+
+  <div class="scorebug">
+    <span class="w">QUARTZ</span>
+    <span class="f">48 Points &times;6 Mult = 288 Score</span>
+    <span class="d">Base 33 +10 length +5 Rare Hoarder</span>
+  </div>
+
+  <div class="rack">
+    <div class="tile">A<span class="badge">C</span><span class="val">1</span></div>
+    <div class="tile">O<span class="val">1</span></div>
+    <div class="tile">I<span class="val">1</span></div>
+    <div class="tile">D<span class="val">2</span></div>
+    <div class="tile">R<span class="val">1</span></div>
+    <div class="tile">E<span class="val">1</span></div>
+    <div class="tile">Z<span class="val">10</span></div>
+    <div class="tile">K<span class="val">5</span></div>
+    <div class="tile">N<span class="val">1</span></div>
+  </div>
+  <div class="btnrow">
+    <button class="btn">Submit</button>
+    <button class="btn">Clear</button>
+    <button class="btn">Discard</button>
+    <button class="btn">Shuffle</button>
+  </div>
+
+  <h3 class="sec">Shop</h3>
+  <button class="offer">Relic: Rare Hoarder &middot; +30 Points if the word uses J, Q, X, or Z &middot; $8</button>
+  <button class="offer">Enchant a tile: Catalyst &middot; +1 Mult, always &middot; $6</button>
+  <button class="offer">Recast a tile to a letter you choose &middot; $5</button>
+  <div class="btnrow">
+    <button class="btn">Reroll ($2)</button>
+    <button class="btn go">Continue &rarr;</button>
+  </div>
+
+  <h3 class="sec">Choose a stop</h3>
+  <div class="prompt">Choose one stop. Taking the event <b>skips the shop</b> this round.</div>
+  <button class="card"><div class="t">Shop</div><div class="dsc">Earned $9 this round. Browse upgrades, relics, and letters.</div></button>
+  <button class="card"><div class="t">Event: Redaction</div><div class="dsc">Remove 2 tiles of your choice from your bag.</div></button>
+</div>
+
+<script>
+// Each palette = the token set. Add/edit freely. (light:true flips nothing structurally — tokens carry it.)
+// All variations around the chosen direction: navy + antique gold. They differ in navy depth/hue
+// and gold tone. Shared: ivory ink, ivory tiles, coral boss, teal chain.
+const PALETTES = [
+  { id:'navy',      name:'Navy + Antique Gold',       dot:'#d9b25a', t:{ bg:'#13223c', bg2:'#1d3050', bg3:'#182843', glow:'#2a4068', ink:'#f1ebd9', inkSoft:'#a9b4c9', line:'#38496a', accent:'#d9b25a', accentDeep:'#9c7a1e', boss:'#e8795a', chain:'#4fb89c', tileA:'#f4eed8', tileB:'#dccba6', tileInk:'#16203a' } },
+  { id:'deepnavy',  name:'Deep Navy + Antique',       dot:'#d9b25a', t:{ bg:'#0d182e', bg2:'#172741', bg3:'#112036', glow:'#20355a', ink:'#f1ebd9', inkSoft:'#a9b4c9', line:'#2e405f', accent:'#d9b25a', accentDeep:'#9c7a1e', boss:'#e8795a', chain:'#4fb89c', tileA:'#f4eed8', tileB:'#dccba6', tileInk:'#16203a' } },
+  { id:'brass',     name:'Navy + Brass',              dot:'#cf9f3c', t:{ bg:'#13223c', bg2:'#1d3050', bg3:'#182843', glow:'#2a4068', ink:'#f1ebd9', inkSoft:'#a9b4c9', line:'#38496a', accent:'#cf9f3c', accentDeep:'#8f6c18', boss:'#e8795a', chain:'#4fb89c', tileA:'#f4eed8', tileB:'#dccba6', tileInk:'#16203a' } },
+  { id:'amber',     name:'Navy + Amber Gold',         dot:'#dba63a', t:{ bg:'#13223c', bg2:'#1d3050', bg3:'#182843', glow:'#2a4068', ink:'#f1ebd9', inkSoft:'#a9b4c9', line:'#38496a', accent:'#dba63a', accentDeep:'#97701a', boss:'#e8795a', chain:'#4fb89c', tileA:'#f4eed8', tileB:'#dccba6', tileInk:'#16203a' } },
+  { id:'brightnavy',name:'Brighter Navy + Old Gold',  dot:'#cda64e', t:{ bg:'#182f54', bg2:'#224069', bg3:'#1c3559', glow:'#2f4e82', ink:'#f1ebd9', inkSoft:'#b1bdd4', line:'#3f5a8a', accent:'#cda64e', accentDeep:'#927420', boss:'#e8795a', chain:'#4fb89c', tileA:'#f4eed8', tileB:'#dccba6', tileInk:'#16203a' } },
+  { id:'slatenavy', name:'Slate Navy + Champagne',    dot:'#e2c478', t:{ bg:'#16202f', bg2:'#202d3f', bg3:'#1a2636', glow:'#2a3a50', ink:'#f1ebd9', inkSoft:'#a6b0bf', line:'#374556', accent:'#e2c478', accentDeep:'#a8851f', boss:'#e8795a', chain:'#4fb89c', tileA:'#f4eed8', tileB:'#dccba6', tileInk:'#16203a' } },
+  { id:'inknavy',   name:'Ink Navy + Bright Antique', dot:'#e3b94e', t:{ bg:'#101a32', bg2:'#1a2a47', bg3:'#14223a', glow:'#243a62', ink:'#f1ebd9', inkSoft:'#a9b4c9', line:'#344b6e', accent:'#e3b94e', accentDeep:'#a07d1c', boss:'#e8795a', chain:'#4fb89c', tileA:'#f4eed8', tileB:'#dccba6', tileInk:'#16203a' } },
+  { id:'indigonavy',name:'Indigo Navy + Antique',     dot:'#d9b25a', t:{ bg:'#14193a', bg2:'#1f2752', bg3:'#181f45', glow:'#2a2f66', ink:'#f1ebd9', inkSoft:'#aaa6cf', line:'#3a4078', accent:'#d9b25a', accentDeep:'#9c7a1e', boss:'#e8795a', chain:'#4fb89c', tileA:'#f4eed8', tileB:'#dccba6', tileInk:'#16203a' } },
+];
+
+const root = document.documentElement;
+const bar = document.getElementById('bar');
+const curname = document.getElementById('curname');
+
+function applyPalette(p) {
+  for (const [k, v] of Object.entries(p.t)) root.style.setProperty('--' + k, v);
+  curname.textContent = p.name;
+  document.querySelectorAll('.sw').forEach(b => b.classList.toggle('active', b.dataset.id === p.id));
+}
+
+// Build switcher buttons
+PALETTES.forEach(p => {
+  const b = document.createElement('button');
+  b.className = 'sw'; b.dataset.id = p.id;
+  b.innerHTML = `<span class="dot" style="background:${p.dot}"></span>${p.name}`;
+  b.onclick = () => applyPalette(p);
+  bar.insertBefore(b, document.getElementById('fontsel'));
+});
+
+document.getElementById('fontsel').onchange = (e) => {
+  const f = e.target.value === 'system-ui' ? 'system-ui, sans-serif' : `'${e.target.value}'`;
+  root.style.setProperty('--fontDisplay', f);
+  root.style.setProperty('--fontBody', f);
+};
+
+applyPalette(PALETTES[0]);
+</script>
+</body>
+</html>

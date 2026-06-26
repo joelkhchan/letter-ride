@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letter Ride — Relics (proposed icons)</title>
+<style>
+  @font-face{ font-family:'Zilla Slab'; font-weight:400; font-display:swap;
+    src:url('assets/fonts/zilla-slab-latin-400.woff2') format('woff2'); }
+  @font-face{ font-family:'Zilla Slab'; font-weight:700; font-display:swap;
+    src:url('assets/fonts/zilla-slab-latin-700.woff2') format('woff2'); }
+  :root{
+    --night:#0d182e; --night-2:#172741; --night-sunk:#112036; --glow:#20355a;
+    --ink:#f1ebd9; --ink-soft:#a9b4c9; --line:#2e405f;
+    --gold:#d9b25a; --gold-deep:#9c7a1e;
+    --glyph: linear-gradient(155deg,#c9a55e,#8a6a18);  /* aged gold (decided) */
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--night); color:var(--ink);
+    font-family:'Zilla Slab',Georgia,serif; line-height:1.4; -webkit-font-smoothing:antialiased; }
+  header{ padding:24px 26px 12px; border-bottom:1px solid var(--line); }
+  h1{ margin:0; font-size:27px; color:var(--gold); font-weight:700; }
+  .sub{ margin:6px 0 0; color:var(--ink-soft); font-size:14px; max-width:820px; }
+  main{ padding:6px 26px 80px; }
+  .fam{ margin:30px 0 0; }
+  .fam h2{ font-size:12px; text-transform:uppercase; letter-spacing:2px; color:var(--gold);
+    border-bottom:1px solid var(--line); padding-bottom:6px; margin:0 0 3px; }
+  .fam .motif{ color:var(--ink-soft); font-size:12.5px; margin:0 0 14px; }
+  .grid{ display:flex; flex-wrap:wrap; gap:13px; }
+  .relic{ width:212px; background:var(--night-2); border:1px solid var(--line);
+    border-radius:11px; padding:13px; display:flex; gap:12px; align-items:flex-start; }
+
+  /* the struck-gold wax seal */
+  .seal{ flex:0 0 auto; width:60px; height:60px; border-radius:50%; position:relative;
+    display:grid; place-items:center;
+    background:radial-gradient(circle at 38% 30%, var(--glow), var(--night-sunk) 72%);
+    border:2px solid var(--gold-deep);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07), inset 0 0 0 3px var(--night), 0 2px 7px rgba(0,0,0,.5); }
+  .seal::after{ content:""; position:absolute; inset:5px; border-radius:50%;
+    border:1px solid rgba(217,178,90,.5); }
+  .g{ width:56%; height:56%; background:var(--glyph);
+      -webkit-mask:var(--src) center / contain no-repeat;
+              mask:var(--src) center / contain no-repeat;
+      filter:drop-shadow(0 1px 0 rgba(0,0,0,.55)); }
+  /* struck letterform (vowel-semantic relics) */
+  .letter{ font-family:'Zilla Slab'; font-weight:700; font-size:34px; line-height:1;
+    background:var(--glyph); -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 1px 0 rgba(0,0,0,.55)); }
+
+  .meta{ min-width:0; }
+  .meta b{ font-size:15px; color:var(--ink); display:block; }
+  .meta span{ font-size:12.5px; color:var(--ink-soft); display:block; margin-top:3px; }
+  .meta .gl{ font-size:10.5px; color:var(--gold-deep); margin-top:6px; letter-spacing:.4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Letter Ride — Relics, proposed icons</h1>
+  <p class="sub">All 26 relics in their final treatment: an aged-gold wax-seal (Tier&nbsp;A), grouped by archetype family so the shared motif is visible. Vowel-semantic relics use a struck Zilla&nbsp;Slab letterform instead of a pictogram. Sourced from game-icons.net (CC&nbsp;BY); the glyph name is noted under each. Tell me any to swap.</p>
+</header>
+<main id="app"></main>
+<script>
+const DIR = 'assets/icons/relics/';
+const FAMILIES = [
+  { name:'Rare-letter', motif:'Motif: gems / treasure / the press', relics:[
+    { id:'rareHoarder', name:'Rare Hoarder', desc:'+30 Points if the word uses J, Q, X, or Z', gl:'chest' },
+    { id:'rareSurge', name:'Rare Surge', desc:'×1.5 Mult if the word uses a rare letter (J/Q/X/Z)', gl:'cut-diamond' },
+    { id:'wildcardRares', name:'Wildcard Rares', desc:'Wilds count as rare letters (J/Q/X/Z)', gl:'card-joker' },
+    { id:'rareAvalanche', name:'Avalanche', desc:'Grows +0.2 Mult every time you play a rare letter (this run)', gl:'gold-nuggets' },
+    { id:'rareReprint', name:'Rare Reprint', desc:'Each J, Q, X, or Z prints one extra time', gl:'post-stamp' },
+  ]},
+  { name:'Long-word', motif:'Motif: length / reach / haul', relics:[
+    { id:'lengthy', name:'Lengthy', desc:'+1 Mult per letter beyond 4', gl:'measure-tape' },
+    { id:'longHaul', name:'Long Haul', desc:'×Mult grows with length: ×(1 + 0.25 per letter beyond 5)', gl:'caravan' },
+    { id:'longReach', name:'Long Reach', desc:'Long-word bonuses trigger one letter sooner', gl:'grab' },
+    { id:'juggernaut', name:'Juggernaut', desc:'Grows +0.15 Mult every time you play a word of 6+ letters (this run)', gl:'charging-bull' },
+  ]},
+  { name:'Doubled / pattern', motif:'Motif: twin / echo / resonance', relics:[
+    { id:'doubleTrouble', name:'Double Trouble', desc:'+40 Points if the word has a doubled letter', gl:'gemini (twins)' },
+    { id:'echoChamber', name:'Echo Chamber', desc:'×2 Mult if the word has a doubled letter', gl:'sound-waves' },
+    { id:'looseDoubles', name:'Loose Doubles', desc:'Any letter appearing 2+ times counts as doubled', gl:'linked-rings' },
+    { id:'resonanceEngine', name:'Resonance', desc:'Grows +0.2 Mult every time you play a word with a doubled letter (this run)', gl:'gong' },
+  ]},
+  { name:'Combo / escalation', motif:'Motif: ascending / time / engine', relics:[
+    { id:'comboCounter', name:'Combo Counter', desc:'+1 Mult per word already played this round', gl:'histogram' },
+    { id:'momentum', name:'Momentum', desc:'+10 Points per word already played this round', gl:'sprint' },
+    { id:'overtime', name:'Overtime', desc:'+1 play each round', gl:'hourglass' },
+    { id:'perpetualEngine', name:'Perpetual Engine', desc:'Grows +0.1 Mult every word you play (this run)', gl:'infinity' },
+  ]},
+  { name:'Vowel', motif:'Motif: struck letterform + flow (vowel-semantic = type, not pictogram)', relics:[
+    { id:'vowelBonus', name:'Vowel Bonus', desc:'+2 Points per vowel used', letter:'A' },
+    { id:'freshStart', name:'Fresh Start', desc:'+2 Mult if the word starts with a vowel', gl:'sunrise' },
+    { id:'risingTide', name:'Rising Tide', desc:'Grows +0.12 Mult every time you play a word with 3+ vowels (this run)', gl:'big-wave' },
+  ]},
+  { name:'Short-word', motif:'Motif: small + swift', relics:[
+    { id:'shortAndSweet', name:'Short & Sweet', desc:'Words of 3 letters or fewer: ×3 Mult', gl:'hummingbird' },
+    { id:'flywheel', name:'Flywheel', desc:'Grows +0.3 Mult every time you play a word of 3 letters or fewer (this run)', gl:'cog' },
+  ]},
+  { name:'Chaining', motif:'Motif: links / thread', relics:[
+    { id:'chainReaction', name:'Chain Reaction', desc:'Mult grows with your word-chain: ×(1 + 0.5 per chained word after the first)', gl:'chain-lightning' },
+    { id:'throughLine', name:'Through-Line', desc:'+8 Points per chained word after the first', gl:'knot' },
+  ]},
+  { name:'Economy + Retrigger', motif:'Motif: recycle / printing press', relics:[
+    { id:'recycler', name:'Recycler', desc:'+$2 per unused play at round end', gl:'recycle' },
+    { id:'pressLead', name:'Press Lead', desc:'The first letter of the word prints one extra time', gl:'stamper' },
+  ]},
+];
+
+const mark = r => r.letter
+  ? `<span class="letter">${r.letter}</span>`
+  : `<span class="g" style="--src:url('${DIR}relic-${r.id}.svg')"></span>`;
+
+document.getElementById('app').innerHTML = FAMILIES.map(f => `
+  <section class="fam">
+    <h2>${f.name} <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">· ${f.relics.length}</span></h2>
+    <p class="motif">${f.motif}</p>
+    <div class="grid">
+      ${f.relics.map(r => `
+        <div class="relic">
+          <div class="seal">${mark(r)}</div>
+          <div class="meta">
+            <b>${r.name}</b>
+            <span>${r.desc}</span>
+            <div class="gl">${r.letter ? 'struck “'+r.letter+'” (Zilla Slab)' : r.gl}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+  </section>
+`).join('');
+</script>
+</body>
+</html>
