@@ -47,3 +47,29 @@ export function bucketBadgeHtml(bucket, earned) {
   const cls = `relic-seal relic-seal--sm${earned ? '' : ' locked'}`;
   return `<span class="${cls}" aria-hidden="true">${glyphMark(`assets/icons/buckets/${bucket}.svg`)}</span>`;
 }
+
+// --- New Run bag images: a themed drawstring sack per deck (swap-bag silhouette, mask-tinted to
+// the deck's colour). Effects (sparkle / glow / echo ghost-trail) only on the "special" bags; the
+// basic bags (standard / vowelHeavy / lean) are plain coloured sacks. Masks are inline so the path
+// resolves at the document root (not relative to src/style.css).
+const BAG_MASK = "-webkit-mask:url('assets/icons/bags/swap-bag.svg') center/contain no-repeat;mask:url('assets/icons/bags/swap-bag.svg') center/contain no-repeat";
+const BAG_THEMES = {
+  standard:   { g: 'linear-gradient(155deg,#b89058,#6e5230)' },                                  // leather
+  vowelHeavy: { g: 'linear-gradient(155deg,#e2bd6a,#a87c2c)' },                                  // honey
+  wildcard:   { g: 'linear-gradient(155deg,#ecd180,#9c7a1e)', fx: 'spark', glow: '#ecd180' },    // gold + sparkle
+  rareRich:   { g: 'linear-gradient(155deg,#b3a0ee,#6a55c0)', fx: 'glow spark', glow: '#8a7fd6' }, // violet + glow/sparkle
+  doubled:    { g: 'linear-gradient(155deg,#79d8c0,#2c8a73)', fx: 'echo', glow: '#4fb89c' },      // teal + echo trail
+  lean:       { g: 'linear-gradient(155deg,#aeb8ca,#586a86)' },                                  // steel
+};
+const BAG_FALLBACK = { g: 'linear-gradient(155deg,#b89058,#6e5230)' };
+
+export function bagHtml(deckId) {
+  const t = BAG_THEMES[deckId] || BAG_FALLBACK;
+  const fx = t.fx || '';
+  const glow = t.glow ? `--glow:${t.glow};` : '';
+  const ghosts = /echo/.test(fx)
+    ? `<span class="bag bag-ghost g1" style="--g:${t.g};${BAG_MASK}"></span><span class="bag bag-ghost g2" style="--g:${t.g};${BAG_MASK}"></span>`
+    : '';
+  const spark = /spark/.test(fx) ? '<span class="bag-spark">&#10022;</span>' : '';
+  return `<span class="bag-wrap ${fx}" style="${glow}" aria-hidden="true">${ghosts}<span class="bag" style="--g:${t.g};${BAG_MASK}"></span>${spark}</span>`;
+}

@@ -12,7 +12,7 @@ import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 import { getPref, setPref, togglePref, applyDisplayPrefs } from './settings.js';
 import { levelFor } from './profile.js';
 import { pendingMeta } from './achievements.js';
-import { relicSealHtml, bossSealHtml, metaSealHtml, lineIconHtml, bucketBadgeHtml } from './icons.js';
+import { relicSealHtml, bossSealHtml, metaSealHtml, lineIconHtml, bucketBadgeHtml, bagHtml } from './icons.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -1250,7 +1250,7 @@ export function renderSetup(meta, config) {
     const active = id === selectedDeckId ? ' active' : '';
     const titleAttr = desc ? ` title="${desc}"` : '';
     const descHtml = desc ? `<div class="bag-desc">${desc}</div>` : '';
-    return `<button class="deck-pick${active}" data-deck="${id}"${titleAttr}>${name}${descHtml}</button>`;
+    return `<button class="deck-pick${active}" data-deck="${id}"${titleAttr}>${bagHtml(id)}<span class="deck-text"><b>${name}</b>${descHtml}</span></button>`;
   }).join(' ');
 
   const stakeButtonsHtml = meta.unlockedStakes.map(id => {

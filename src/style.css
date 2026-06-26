@@ -175,6 +175,18 @@ button { font-family: var(--font-body); color: var(--ink); }
 .deck-pick, .stake-pick { display: inline-block; padding: 10px 15px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--night-2); color: var(--ink); box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 2px 6px rgba(0,0,0,0.45); margin: 4px; cursor: pointer; font-size: 0.95rem; font-weight: 700; vertical-align: top; transition: border-color 0.1s; }
 .deck-pick:hover, .stake-pick:hover { border-color: var(--gold); }
 .deck-pick.active, .stake-pick.active { border-color: var(--gold); outline: 2px solid var(--gold); }
+/* New Run bag images (themed drawstring sacks; effects on special bags only) */
+#deck-buttons { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.deck-pick { display: flex; align-items: center; gap: 12px; text-align: left; max-width: 300px; }
+.deck-pick .deck-text b { display: block; }
+.bag-wrap { position: relative; width: 60px; height: 60px; display: grid; place-items: center; flex: 0 0 auto; }
+.bag { grid-area: 1 / 1; width: 92%; height: 92%; background: var(--g); filter: drop-shadow(0 2px 3px rgba(0,0,0,0.55)); }
+.bag:not(.bag-ghost) { z-index: 1; }
+.bag-wrap.glow .bag:not(.bag-ghost) { filter: drop-shadow(0 0 8px var(--glow)) drop-shadow(0 2px 3px rgba(0,0,0,0.55)); }
+.bag-ghost { z-index: 0; }
+.bag-ghost.g1 { opacity: 0.30; transform: translate(5px,-4px); }
+.bag-ghost.g2 { opacity: 0.15; transform: translate(9px,-8px); }
+.bag-spark { position: absolute; top: 2px; right: 4px; font-size: 14px; color: #fff7d8; z-index: 2; text-shadow: 0 0 6px var(--glow, #fff); }
 .meta-section { margin: 4px 0; }
 .meta-section h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 14px 0 7px; }
 .meta-section .meta-offer { margin: 6px 0; }

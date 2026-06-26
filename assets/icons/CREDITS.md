@@ -53,6 +53,7 @@ All of the above are by their named authors, sourced from https://game-icons.net
 | `buckets/mastery.svg` | laurel-crown | Lorc |
 | `buckets/diversity.svg` | split-arrows | Delapouite |
 | `buckets/discovery.svg` | compass | Lorc |
+| `bags/swap-bag.svg` | swap-bag (New Run deck bags) | Lorc |
 
 ## General UI glyphs — Tabler Icons (MIT, https://github.com/tabler/tabler-icons/blob/main/LICENSE)
 
