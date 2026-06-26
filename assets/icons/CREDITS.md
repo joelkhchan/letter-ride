@@ -66,6 +66,7 @@ MIT does not require visible attribution; listed for provenance. Recolored via C
 | `ui/arrows-shuffle.svg` | arrows-shuffle | Shuffle |
 | `ui/refresh.svg` | refresh | Reroll |
 | `ui/player-track-next.svg` | player-track-next | Continue |
+| `ui/arrow-left.svg` | arrow-left | Back (pushed screens) |
 
 `ui/wild-star.svg` is original to Letter Ride (the same hand-drawn star as Wildcard Rares), used for wild tiles. No third-party attribution needed.
 

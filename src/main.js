@@ -14,6 +14,7 @@ import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './ev
 import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx, resumeAudio } from './audio.js';
 import { logEvent } from './playlog.js';
+import { applyDisplayPrefs } from './settings.js';
 
 try {
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
@@ -220,6 +221,7 @@ try {
   window.addEventListener('keydown', (e) => { if (view === 'run') handleRunKey(e); });
   // First user gesture unlocks the audio context for SFX (browser autoplay policy).
   window.addEventListener('pointerdown', () => { resumeAudio(); }, { once: true });
+  applyDisplayPrefs();
   render();
 } catch (err) {
   document.getElementById('app').textContent = 'Failed to start Letter Ride: ' + err.message + ' — check that assets/enable1.txt is present and served.';

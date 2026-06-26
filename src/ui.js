@@ -9,7 +9,7 @@ import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 import { EVENTS } from './events.js';
 import { play as sfx, isMuted, toggleMuted } from './audio.js';
 import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
-import { getPref, togglePref } from './settings.js';
+import { getPref, setPref, togglePref, applyDisplayPrefs } from './settings.js';
 import { levelFor } from './profile.js';
 import { pendingMeta } from './achievements.js';
 import { relicSealHtml, bossSealHtml, metaSealHtml, lineIconHtml } from './icons.js';
@@ -1074,6 +1074,10 @@ function showStatsOverlay(summary) {
 }
 
 // ---- Front-of-game shell: main menu / settings / achievements ---------------
+// Consistent top-left back arrow for pushed screens (Setup / Meta Shop / Settings / Achievements).
+const backArrowHtml = () => `<button class="back-arrow" id="back-arrow" aria-label="Back" title="Back">${lineIconHtml('arrow-left')}</button>`;
+function wireBack() { const b = document.getElementById('back-arrow'); if (b) b.onclick = () => handlers.onBackToMenu?.(); }
+
 export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
   const badge = pending > 0 ? ` <span class="menu-badge">+${pending}</span>` : '';
   app().innerHTML = `
@@ -1099,23 +1103,33 @@ export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
 }
 
 export function renderSettings(hasRun) {
+  const ts = getPref('textSize') === 'large' ? 'Large' : 'Normal';
   app().innerHTML = `
+    ${backArrowHtml()}
     <div id="menu-screen">
       <div class="menu-title small">Settings</div>
+      <h3 class="settings-h">Audio</h3>
       <div class="menu-buttons">
         <button id="set-sound" class="menu-btn">Sound effects: ${isMuted() ? 'Off' : 'On'}</button>
+      </div>
+      <h3 class="settings-h">Motion</h3>
+      <div class="menu-buttons">
         <button id="set-motion" class="menu-btn">Reduced motion: ${getPref('reducedMotion') ? 'On' : 'Off'}</button>
         <button id="set-fast" class="menu-btn">Fast scoring: ${getPref('fastScoring') ? 'On' : 'Off'}</button>
-        ${hasRun ? `<button id="set-abandon" class="menu-btn danger">Abandon current run</button>` : ''}
-        <button id="set-back" class="menu-btn">Back</button>
       </div>
+      <h3 class="settings-h">Display</h3>
+      <div class="menu-buttons">
+        <button id="set-textsize" class="menu-btn">Text size: ${ts}</button>
+      </div>
+      ${hasRun ? `<h3 class="settings-h">Run</h3><div class="menu-buttons"><button id="set-abandon" class="menu-btn danger">Abandon current run</button></div>` : ''}
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('set-sound', () => { toggleMuted(); renderSettings(hasRun); });
   on('set-motion', () => { togglePref('reducedMotion'); renderSettings(hasRun); });
   on('set-fast', () => { togglePref('fastScoring'); renderSettings(hasRun); });
+  on('set-textsize', () => { setPref('textSize', getPref('textSize') === 'large' ? 'normal' : 'large'); applyDisplayPrefs(); renderSettings(hasRun); });
   on('set-abandon', () => handlers.onAbandonRun?.());
-  on('set-back', () => handlers.onBackToMenu?.());
+  wireBack();
 }
 
 export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = [], allModIds = []) {
@@ -1176,15 +1190,15 @@ export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = 
   const pendingHtml = pending > 0 ? `<div class="ach-pending">${pending} Meta to collect</div>` : '';
 
   app().innerHTML = `
+    ${backArrowHtml()}
     <div id="menu-screen" class="achievements">
       <div class="menu-title small">Achievements</div>
       ${statsPanel}
       ${pendingHtml}
       ${sections}
       <div class="ach-section"><h3>Bounties</h3><table class="bounty-grid">${gridHead}${gridRows}</table></div>
-      <div class="menu-buttons"><button id="ach-back" class="menu-btn">Back</button></div>
     </div>`;
-  const back = document.getElementById('ach-back'); if (back) back.onclick = () => handlers.onBackToMenu?.();
+  wireBack();
   app().querySelectorAll('[data-collect-ach]').forEach(b => { b.onclick = () => handlers.onCollectAchievement?.(b.dataset.collectAch); });
   app().querySelectorAll('[data-collect-bounty]').forEach(b => { b.onclick = () => handlers.onCollectBounty?.(b.dataset.collectBounty); });
 }
@@ -1239,6 +1253,7 @@ export function renderSetup(meta, config) {
   }).join(' ');
 
   app().innerHTML = `
+    ${backArrowHtml()}
     <div id="meta-screen">
       <div class="menu-title small">New Run <button id="setup-help-btn" title="How it works" style="font-size:0.6em;padding:2px 8px;border-radius:50%;cursor:pointer;vertical-align:middle;">?</button></div>
       <div id="deck-picker">
@@ -1250,7 +1265,6 @@ export function renderSetup(meta, config) {
         <div id="stake-buttons">${stakeButtonsHtml}</div>
       </div>
       <button id="start-run">Start Run</button>
-      <button id="setup-back">Back</button>
     </div>`;
 
   app().querySelectorAll('.deck-pick').forEach(btn => {
@@ -1268,8 +1282,7 @@ export function renderSetup(meta, config) {
   };
   const help = document.getElementById('setup-help-btn');
   if (help) help.onclick = () => showHelpOverlay();
-  const back = document.getElementById('setup-back');
-  if (back) back.onclick = () => handlers.onBackToMenu?.();
+  wireBack();
 }
 
 // Meta Shop: persistent unlocks, grouped into sections by offer type. No run setup here.
@@ -1315,11 +1328,11 @@ export function renderMetaShop(meta, config, allRelicIds, allModIds) {
   if (!offers.length) sectionsHtml = '<div class="none-label">All unlocked. Nothing left to buy.</div>';
 
   app().innerHTML = `
+    ${backArrowHtml()}
     <div id="meta-screen">
       <div class="menu-title small">Meta Shop</div>
       <div id="meta-balance">${metaSealHtml({ size: 'sm' })}<span>Meta: ${meta.meta}</span></div>
       <div id="meta-shop">${sectionsHtml}</div>
-      <button id="metashop-back">Back</button>
     </div>`;
 
   offers.forEach((offer, i) => {
@@ -1327,6 +1340,5 @@ export function renderMetaShop(meta, config, allRelicIds, allModIds) {
     if (!btn || btn.disabled) return;
     btn.onclick = () => handlers.onMetaBuy?.(offer);
   });
-  const back = document.getElementById('metashop-back');
-  if (back) back.onclick = () => handlers.onBackToMenu?.();
+  wireBack();
 }

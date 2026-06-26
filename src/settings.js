@@ -7,6 +7,7 @@ const KEY = 'letterRide.prefs';
 const DEFAULTS = {
   reducedMotion: false,   // skip animations (accessibility)
   fastScoring: false,     // skip the pull reveal, show the score instantly
+  textSize: 'normal',     // 'normal' | 'large'
 };
 
 let prefs = (() => {
@@ -20,3 +21,8 @@ export function setPref(k, v) {
   try { window.localStorage.setItem(KEY, JSON.stringify(prefs)); } catch {}
 }
 export function togglePref(k) { setPref(k, !prefs[k]); return prefs[k]; }
+
+// Apply display-affecting prefs to the document root (text size). Call on boot and on change.
+export function applyDisplayPrefs() {
+  try { document.documentElement.classList.toggle('text-large', prefs.textSize === 'large'); } catch {}
+}
