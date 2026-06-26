@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { scoreWord } from '../src/scoring.js';
 import { makeTile, getMod, WILD, resetTileIds } from '../src/tiles.js';
+import { RELICS } from '../src/relics.js';
 
 const tv = { C:3, A:1, T:1, E:1, R:1, S:1, O:1 };
 // build a selection where one specific tile carries a mod
@@ -34,6 +35,25 @@ test('anchor: +8 Points only if this tile is the first letter of the word', () =
   const notFirst = selWithMod('CAT', 2, 'anchor');  // anchor on T (last)
   assert.equal(scoreWord(first, { tileValues: tv, lengthBonusPerLetter: 0 }).points, 5 + 8);
   assert.equal(scoreWord(notFirst, { tileValues: tv, lengthBonusPerLetter: 0 }).points, 5);
+});
+test('twin: a pure enabler mod (no standalone Points/Mult of its own)', () => {
+  resetTileIds();
+  const s = selWithMod('CAT', 0, 'twin');
+  const bare = [...'CAT'].map(ch => ({ tile: makeTile(ch), letter: ch }));
+  const r = scoreWord(s, { tileValues: tv, lengthBonusPerLetter: 0 });
+  assert.equal(r.points, scoreWord(bare, { tileValues: tv, lengthBonusPerLetter: 0 }).points);
+  assert.equal(r.mult, 1);
+  assert.ok(getMod('twin') && getMod('twin').desc.length > 0);
+});
+test('twin enables doubled-letter relics without an adjacent double (echoChamber x2, doubleTrouble +40)', () => {
+  resetTileIds();
+  const twinSel = selWithMod('CAT', 0, 'twin');                          // C-A-T: no adjacent double
+  const bareSel = [...'CAT'].map(ch => ({ tile: makeTile(ch), letter: ch }));
+  const opts = { tileValues: tv, lengthBonusPerLetter: 0, relics: [RELICS.echoChamber, RELICS.doubleTrouble] };
+  const twin = scoreWord(twinSel, opts), bare = scoreWord(bareSel, opts);
+  assert.equal(bare.mult, 1);                                            // no double -> relics inert
+  assert.equal(twin.mult, 2);                                            // echoChamber via isDoubled
+  assert.equal(twin.points - bare.points, 40);                          // doubleTrouble via isDoubled
 });
 test('WILD contributes 0 base Points but its mod still applies', () => {
   resetTileIds();

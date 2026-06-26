@@ -1,5 +1,4 @@
 // src/relics.js — relic content. Magnitudes are tunable here (relic = its effect).
-import { hasDoubledLetter } from './patterns.js';
 import { hasRare as hasRareCtx, isDoubled as isDoubledCtx } from './archetypes.js';
 
 const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
@@ -39,7 +38,7 @@ export const RELICS = {
   },
   doubleTrouble: {
     id: 'doubleTrouble', name: 'Double Trouble', desc: '+40 Points if the word has a doubled letter',
-    evaluate: (ctx) => ({ addPoints: hasDoubledLetter(ctx.word) ? 40 : 0 }),
+    evaluate: (ctx) => ({ addPoints: isDoubledCtx(ctx) ? 40 : 0 }),
   },
   freshStart: {
     id: 'freshStart', name: 'Fresh Start', desc: '+2 Mult if the word starts with a vowel',

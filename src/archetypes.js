@@ -17,6 +17,7 @@ export function hasRare(ctx) {
 export function isDoubled(ctx) {
   if (hasAdjacentDouble(ctx.word.toUpperCase())) return true;
   if ((ctx.enablers || []).includes('looseDoubled') && hasRepeat(ctx.letters)) return true;
+  if ((ctx.selection || []).some(s => (s.tile?.mods || []).some(m => m.id === 'twin'))) return true;  // engineered double (Twin mod)
   return false;
 }
 // long threshold drops by 1 with the longReach enabler.

@@ -53,3 +53,13 @@ test('Hone ×Mult only applies when the archetype condition matches', () => {
   const ctx = { letters: ['C', 'A', 'T', 'S'], word: 'CATS' };  // does NOT match shortWord (>3)
   assert.deepEqual(ARCHETYPES.shortWord.honeBonus(ctx, 4), {});
 });
+
+test('a twin-modded tile makes the word count as doubled (engineered double, skill lever)', () => {
+  assert.equal(ARCHETYPES.doubled.matches(ctx('CAT')), false);                 // no adjacent double, no repeat
+  const withTwin = { ...ctx('CAT'), selection: [
+    { tile: { letter: 'C', mods: [{ id: 'twin' }] }, letter: 'C' },
+    { tile: { letter: 'A' }, letter: 'A' },
+    { tile: { letter: 'T' }, letter: 'T' },
+  ] };
+  assert.equal(ARCHETYPES.doubled.matches(withTwin), true);
+});

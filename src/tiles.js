@@ -23,6 +23,12 @@ const MOD_REGISTRY = {
     id: 'reprint', name: 'Reprint', desc: 'The sort it sits on prints one extra time',
     evaluate: () => ({ retrigger: 1 }),
   },
+  // Doubled-archetype enabler: lets the player ENGINEER the doubled condition (a skill lever) rather
+  // than wait for the rack to hand it over. Detected in archetypes.isDoubled; no standalone score.
+  twin: {
+    id: 'twin', name: 'Twin', desc: 'This tile counts as a doubled letter',
+    evaluate: () => ({}),
+  },
 };
 
 export const WILD = '*';
