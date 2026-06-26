@@ -337,6 +337,49 @@ you pick a direction.
 
 ---
 
+## 9. CURRENCY economy — $ and Meta (`analyze-currency.js`, 2026-06-26)
+
+New harness `scripts/analyze-currency.js` instruments coin/Meta *flow* (the earlier passes only counted
+purchases). Section A: per-run `$` by source / spend / rerolls / leftover, split won vs lost (150
+seeds/persona, greedy + target-buy). Section B: Meta by source + full-collection timeline (3 careers ×
+30 runs). **Author decision: document only — no currency numbers changed this session.**
+
+### In-run `$`
+| Signal | Measured | Read |
+|---|---|---|
+| Earn rate | **~7.4 $/round**, constant across all archetypes AND won/lost | uniform faucet |
+| $/run won vs lost | 88–94 vs 45–65 | **pure survival** (winners play more rounds); per-round earn identical |
+| Leftover at end | **~0–1** | faucet fully consumed, no hoarding |
+| Interest | **0 for everyone** | bot never holds $5+, so the interest mechanic **never fires** — dead for spend-it-all play; only a hoarding *human* uses it |
+| Reroll spend | **$12–24/run (~25–30% of income)** | a big sink — coins burned hunting target offers |
+| Relics owned at end | winners **~1.5**, losers ~0.3 | engine built mostly from cheaper tile-mods; relics are offer-RNG + reroll gated |
+
+**Key conclusion: coin scarcity does NOT drive the engine-vs-flat bimodality.** Per-round earn is flat
+won-vs-lost, leftover ~0 — losers don't lose for lack of coins. *Retires the "loosen $ to fix
+bimodality" hypothesis.* What gates the engine is **relic acquisition** (offer RNG + ~⅓ of coins lost
+to rerolls), so the targeted economy lever *would be* relic availability (reroll cost / relic cost /
+offer rate) — **but the author chose to fix the bimodality via the snowball/curve dial instead and
+leave `$` untouched.**
+
+### Meta
+| Signal | Measured | Read |
+|---|---|---|
+| Meta/run | 17–27, **drip-dominated** (14–22) | achievements add only 3–5, **front-loaded** (early 20–49 → late 15–24, one-time) |
+| Bounties | **~0** at Stake 0 | reward stake/deck variety the floor never exercises (by design) |
+| Full collection | 640 Meta (relics 500 dominate) → **~24–30 runs** for a competent line | healthy long-tail collection arc |
+
+**Conclusion: Meta pacing is healthy** (leash-not-crutch confirmed in §5). Two caveats: interest is a
+dead knob for non-hoarders (documented, not changed — author may revisit), and the **Stake-0 floor
+does not exercise bounties / higher stakes / locked decks** — so **Meta tuning is deferred until
+stake-climb data exists** (author decision). The drip+ach faucet is well-matched to unlock costs.
+
+### Currency decisions (author, 2026-06-26)
+- **Interest:** leave as-is, documented (don't change yet).
+- **`$` / relic access:** leave the coin economy alone; address the bimodality via snowball/curve.
+- **Meta pacing:** revisit after stake-climb data (bounties/stakes/decks unmeasured at Stake 0).
+
+---
+
 ## Appendix: methodology & repro
 
 - New harness: `node scripts/playtest-detail.js --agent=<greedy|lookahead> --k --branch --n --detail
