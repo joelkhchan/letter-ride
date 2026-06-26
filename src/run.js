@@ -22,7 +22,7 @@ function applyEncounterBoss(run) {
   const passageIdx = passageOf(run.roundIndex) - 1;                     // 0-based passage
   run.boss = (run.bossOrder && run.bossOrder[passageIdx % run.bossOrder.length]) || null;
   const boss = run.boss ? BOSSES[run.boss] : null;
-  if (boss && boss.warp.verb === 'lock' && boss.warp.lock === 'discard') run.discardsLeft = 0;
+  if (boss && boss.warp.verb === 'lock' && boss.warp.lock === 'discard') run.discardsLeft = Math.min(run.discardsLeft, boss.warp.keep ?? 0);
 }
 
 const sumExtraPlays = (relics = []) => relics.reduce((n, r) => n + (r.extraPlays || 0), 0);

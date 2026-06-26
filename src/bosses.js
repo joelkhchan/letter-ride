@@ -5,9 +5,9 @@ const VOWELS = ['A', 'E', 'I', 'O', 'U'];
 
 export const BOSSES = {
   mute:    { id: 'mute',    name: 'The Mute',    desc: 'Vowels score 0',                   warp: { verb: 'disable', letters: 'vowels' } },
-  ceiling: { id: 'ceiling', name: 'The Ceiling', desc: 'Mult is capped at x4',             warp: { verb: 'cap',     maxMult: 4 } },
-  toll:    { id: 'toll',    name: 'The Toll',    desc: 'Each word scores 15 fewer Points', warp: { verb: 'tax',     points: 15 } },
-  vise:    { id: 'vise',    name: 'The Vise',    desc: 'No discards this round',           warp: { verb: 'lock',    lock: 'discard' } },
+  ceiling: { id: 'ceiling', name: 'The Ceiling', desc: 'Mult is capped at x3',             warp: { verb: 'cap',     maxMult: 3 } },
+  toll:    { id: 'toll',    name: 'The Toll',    desc: 'Each word scores 10 fewer Points', warp: { verb: 'tax',     points: 10 } },
+  vise:    { id: 'vise',    name: 'The Vise',    desc: 'Only 1 discard this round',        warp: { verb: 'lock',    lock: 'discard', keep: 1 } },
 };
 
 export const ALL_BOSS_IDS = Object.keys(BOSSES);

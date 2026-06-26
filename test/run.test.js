@@ -344,13 +344,13 @@ test('bossOrder is seeded + deterministic + one of each boss', () => {
   assert.equal(a.boss, null);                 // encounter 0 is a Word, no boss
 });
 
-test('The Vise zeroes discards on its boss encounter', () => {
+test('The Vise limits discards to 1 on its boss encounter', () => {
   // Force a run whose first Sentence boss is vise: spin nextRound to a Sentence and set bossOrder.
   const run = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
   run.bossOrder = ['vise','mute','toll','ceiling'];        // passage 1's boss = vise
   nextRoundB(run); nextRoundB(run);                        // advance to roundIndex 2 (Passage 1 Sentence)
   assert.equal(run.boss, 'vise');
-  assert.equal(run.discardsLeft, 0);                       // lock applied at encounter setup
+  assert.equal(run.discardsLeft, 1);                       // keep:1 applied at encounter setup (not a dead-hand instakill)
 });
 
 test('The Toll taxes the played word on its boss encounter', () => {
@@ -360,7 +360,7 @@ test('The Toll taxes the played word on its boss encounter', () => {
   assert.equal(run.boss, 'toll');
   run.rack = ['R','A','T'].map((l,i) => ({ id:'z'+i, letter:l, mods:[] }));
   const sel = run.rack.map(t => ({ tile:t, letter:t.letter }));
-  const r = playWordB(run, sel);                           // RAT = 3 points, mult 1 => 3, minus 15 tax => 0
+  const r = playWordB(run, sel);                           // RAT = 3 points, mult 1 => 3, minus 10 tax => 0 (floored)
   assert.equal(r.scored.score, 0);
 });
 
