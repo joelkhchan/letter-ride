@@ -555,10 +555,21 @@ export function renderRun(run, profile) {
 
   const pct = run.target > 0 ? Math.min(100, Math.round((run.roundTotal / run.target) * 100)) : 0;
   const toGo = Math.max(0, run.target - run.roundTotal);
+  // Run-progress track: one node per encounter, grouped 3 per passage; every 3rd (the Sentence) is a boss.
+  const totalRounds = run.targets.length;
+  const trackNodes = run.targets.map((_, i) => {
+    const boss = (i % 3) === 2;
+    const state = i < run.roundIndex ? 'done' : (i === run.roundIndex ? 'current' : 'upcoming');
+    const grp = (i > 0 && i % 3 === 0) ? ' group-start' : '';
+    return `<span class="rt-node ${state}${boss ? ' boss' : ''}${grp}" title="${tierOf(i)}${boss ? ' — Boss' : ''}"></span>`;
+  }).join('');
   app().innerHTML = `
     <div class="run-view">
+    <div id="run-track">
+      <div class="rt-nodes">${trackNodes}</div>
+      <div class="rt-label"><b>Round ${run.roundIndex + 1}/${totalRounds}</b> &middot; ${tierOf(run.roundIndex)}${isBossRound(run.roundIndex) ? ' &middot; Boss' : ''}</div>
+    </div>
     <div id="hud">
-      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; encounter ${(run.roundIndex % 3) + 1}/3 &middot; ${tierOf(run.roundIndex)}${isBossRound(run.roundIndex) ? ' (boss)' : ''}</div>
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
       <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
