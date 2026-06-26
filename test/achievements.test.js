@@ -32,13 +32,16 @@ test('"win leaning vowels" reads the dominant non-trivial archetype', () => {
   assert.ok(checkAchievements(p, ctx, CONFIG).map(a => a.id).includes('winVowels'));
 });
 
-test('completeness predicate compares against the live roster and never re-pays', () => {
+test('curator rewards breadth of exploration (N different relics across runs) and never re-pays', () => {
   const p = makeProfile();
-  p.stats.relicsEverUsed = ['a','b'];
-  const base = { phase:'end', won:true, roundIndex:8, boughtAnythingThisRun:true, discardedThisRun:true, totalWordsThisRun:30, flawlessSoFar:false, archetypeTally:{}, relicsCount:1, modsCount:0, stakeId:0, allModIds:[] };
-  assert.ok(checkAchievements(p, { ...base, allRelicIds: ['a','b'] }, CONFIG).map(a=>a.id).includes('curator'));
+  const base = { phase:'end', won:true, roundIndex:8, boughtAnythingThisRun:true, discardedThisRun:true, totalWordsThisRun:30, flawlessSoFar:false, archetypeTally:{}, relicsCount:1, modsCount:0, stakeId:0, allRelicIds:[], allModIds:[] };
+  const n = CONFIG.META.achievement.discoverRelics;
+  p.stats.relicsEverUsed = Array.from({ length: n - 1 }, (_, i) => 'r' + i);
+  assert.ok(!checkAchievements(p, base, CONFIG).map(a=>a.id).includes('curator'), 'below threshold -> no fire');
+  p.stats.relicsEverUsed = Array.from({ length: n }, (_, i) => 'r' + i);
+  assert.ok(checkAchievements(p, base, CONFIG).map(a=>a.id).includes('curator'), 'at threshold -> fires');
   p.completed.push('curator');
-  assert.ok(!checkAchievements(p, { ...base, allRelicIds: ['a','b','c'] }, CONFIG).map(a=>a.id).includes('curator'));
+  assert.ok(!checkAchievements(p, base, CONFIG).map(a=>a.id).includes('curator'), 'already completed -> never re-pays');
 });
 
 test('grantBounties marks earned cells (lower stakes auto), no Meta paid yet', () => {

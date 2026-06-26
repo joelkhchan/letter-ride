@@ -72,10 +72,13 @@ export const ACHIEVEMENTS = [
     predicate: (p, c, cfg) => isEnd(c) && c.won && (c.relicsCount || 0) >= cfg.META.achievement.manyRelics },
 
   // --- Discovery / long-tail prestige (low) ---
-  { id: 'curator',        bucket: 'discovery', name: 'Curator',  desc: 'Use every relic at least once.',
-    predicate: (p, c) => isEnd(c) && (c.allRelicIds || []).length > 0 && (c.allRelicIds || []).every(id => p.stats.relicsEverUsed.includes(id)) },
-  { id: 'enchanter',      bucket: 'discovery', name: 'Enchanter', desc: 'Apply every tile-mod at least once.',
-    predicate: (p, c) => isEnd(c) && (c.allModIds || []).length > 0 && (c.allModIds || []).every(id => p.stats.modsEverApplied.includes(id)) },
+  // Earnable through exploration (was "use EVERY relic/mod" - which never fired; with the larger
+  // roster it was an unreachable grind, so the discovery bucket's Meta went unpaid). Now a breadth
+  // count across runs; thresholds are tunable in config.
+  { id: 'curator',        bucket: 'discovery', name: 'Curator',  desc: 'Use 12 different relics across your runs.',
+    predicate: (p, c, cfg) => isEnd(c) && p.stats.relicsEverUsed.length >= cfg.META.achievement.discoverRelics },
+  { id: 'enchanter',      bucket: 'discovery', name: 'Enchanter', desc: 'Apply 6 different tile-mods across your runs.',
+    predicate: (p, c, cfg) => isEnd(c) && p.stats.modsEverApplied.length >= cfg.META.achievement.discoverMods },
   { id: 'qNoU',           bucket: 'discovery', name: 'Q Without U', desc: 'Play a word with Q and no U.',
     predicate: (p, c) => isPlay(c) && has(c.letters, 'Q') && !has(c.letters, 'U') },
   { id: 'fullHouse',      bucket: 'discovery', name: 'Full House', desc: 'Play a word using all five vowels.',

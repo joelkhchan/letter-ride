@@ -50,6 +50,8 @@ export const CONFIG = {
       efficientWords: 20,   // TUNE: win in <= N total words (12 rounds, so <=20 ≈ 1.6 words/round)
       manyMods: 4,          // TUNE
       manyRelics: 4,        // TUNE
+      discoverRelics: 12,   // TUNE: Curator - use N different relics across runs (keep the desc in sync)
+      discoverMods: 6,      // TUNE: Enchanter - apply N different tile-mods across runs (keep the desc in sync)
     },
     bounty: { 0: 5, 1: 10, 2: 20 },   // TUNE: one-time per (stake,deck) cell, by stake tier
   },
