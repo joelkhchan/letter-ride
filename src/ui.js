@@ -1143,10 +1143,10 @@ export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = 
     return '';
   };
   const buckets = [
-    ['onboarding', 'Getting Started'],
+    ['onboarding', 'First Proofs'],
     ['progression', 'Ranks'],
-    ['mastery', 'Mastery'],
-    ['diversity', 'Build Diversity'],
+    ['mastery', 'Pressmanship'],
+    ['diversity', 'The Repertoire'],
     ['discovery', 'Discovery'],
   ];
   // Feat-first rows. Completed-unclaimed rows get a Collect button (the only path that pays Meta).
