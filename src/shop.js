@@ -4,6 +4,9 @@ import { makeTile, getMod, ALL_MOD_IDS } from './tiles.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { ALL_ARCHETYPE_IDS } from './archetypes.js';
 
+const RARE_LETTERS = new Set(['J', 'Q', 'X', 'Z']);
+const COUNT_MODS = new Set(['resonator']);  // value needs 2+ of the tile's OWN letter
+
 // Build the candidate offer list, then sample offersPerShop of them deterministically.
 export function generateShop(run, rng, pool = {}) {
   const cfg = run.config.SHOP;
@@ -12,8 +15,12 @@ export function generateShop(run, rng, pool = {}) {
   const owned = new Set(run.relics.map(r => r.id));
   const candidates = [];
   for (const letter of cfg.buyableLetters) candidates.push({ type: 'buyLetter', letter, cost: cfg.cost.buyLetter });
-  for (const letter of cfg.buyableLetters) for (const modId of modIds)
+  for (const letter of cfg.buyableLetters) for (const modId of modIds) {
+    // Count-based mods (e.g. Resonator: +Points for 2+ of this letter) are a dead enchant on a rare
+    // letter - you almost never draw two J/Q/X/Z - so skip those pairings.
+    if (RARE_LETTERS.has(letter) && COUNT_MODS.has(modId)) continue;
     candidates.push({ type: 'buyEnchantedTile', letter, modId, cost: cfg.cost.buyEnchantedTile });
+  }
   for (const modId of modIds) candidates.push({ type: 'enchantTile', modId, cost: cfg.cost.enchantTile });
   for (const letter of cfg.buyableLetters) candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: cfg.cost.upgradeLetter });
   candidates.push({ type: 'thinLetter', cost: cfg.cost.thinLetter });

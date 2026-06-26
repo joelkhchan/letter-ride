@@ -1358,8 +1358,14 @@ export function renderMetaShop(meta, config, allRelicIds, allModIds) {
     switch (offer.type) {
       case 'unlockRelic': { const r = RELICS[offer.relicId]; return { name: r?.name || offer.relicId, desc: r?.desc || '' }; }
       case 'unlockMod':   { const m = getMod(offer.modId); return { name: m?.name || offer.modId, desc: m?.desc || '' }; }
-      case 'unlockDeck':  return { name: config.DECKS[offer.deckId]?.name || offer.deckId, desc: '' };
-      case 'unlockStake': return { name: config.STAKES.find(s => s.id === offer.stakeId)?.name || `Stake ${offer.stakeId}`, desc: '' };
+      case 'unlockDeck':  return { name: config.DECKS[offer.deckId]?.name || offer.deckId, desc: config.DECKS[offer.deckId]?.desc || '' };
+      case 'unlockStake': {
+        const st = config.STAKES.find(s => s.id === offer.stakeId);
+        const parts = [st && st.targetMult !== 1 ? `Targets +${Math.round((st.targetMult - 1) * 100)}%` : 'Standard targets'];
+        if (st?.playsDelta) parts.push(`${st.playsDelta > 0 ? '+' : ''}${st.playsDelta} play/round`);
+        if (st?.discardsDelta) parts.push(`${st.discardsDelta > 0 ? '+' : ''}${st.discardsDelta} discard/round`);
+        return { name: st?.name || `Stake ${offer.stakeId}`, desc: parts.join(' · ') };
+      }
       case 'loadout':     return { name: config.LOADOUT[offer.key]?.name || offer.key, desc: '' };
       default:            return { name: offer.type, desc: '' };
     }
@@ -1405,6 +1411,7 @@ export function renderMetaShop(meta, config, allRelicIds, allModIds) {
     ${backArrowHtml()}
     <div id="meta-screen" class="shop-screen">
       <div class="menu-title small">Meta Shop</div>
+      <p class="setup-sub">Spend Meta to permanently unlock content. Relics, tile-mods, and bags you unlock join the pool you can find during a run; stakes and loadout apply at run start.</p>
       <div id="meta-balance">${metaSealHtml({ size: 'sm' })}<span>Meta: ${meta.meta}</span></div>
       <div id="meta-shop">${sectionsHtml}</div>
     </div>`;

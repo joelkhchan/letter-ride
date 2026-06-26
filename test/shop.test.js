@@ -23,6 +23,14 @@ test('Phase 3 SP1: retrigger content is offerable (in the shop candidate pools)'
   assert.ok(ALL_MOD_IDS.includes('reprint'), 'reprint mod offerable');
 });
 
+test('rare letters are not offered count-based mods (no Resonator on Z)', () => {
+  const cfg2 = { ...config, SHOP: { ...config.SHOP, offersPerShop: 999 } };  // take all candidates, no sampling drop
+  const r = newRun({ config: cfg2, dictionary: dict, seed: 1 }); r.coins = 100;
+  const ench = generateShop(r, r.rng, { modIds: ['resonator'] }).offers.filter(o => o.type === 'buyEnchantedTile' && o.modId === 'resonator');
+  assert.ok(ench.some(o => o.letter === 'A'), 'Resonator IS offered on a common letter (A)');
+  assert.ok(!ench.some(o => o.letter === 'Z'), 'Resonator is NOT offered on the rare letter Z');
+});
+
 test('generateShop is deterministic per seed and returns offers + rerollCost', () => {
   const r1 = mkRun(); const r2 = mkRun();
   const s1 = generateShop(r1, r1.rng);
