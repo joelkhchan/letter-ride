@@ -101,7 +101,11 @@ try {
 
   bindControls({
     onSubmit(sel) { if (isPulling()) return;
-      const r = playWord(run, sel); if (!r.ok) return flashInvalid(r.reason);
+      const r = playWord(run, sel);
+      if (!r.ok) {
+        logEvent('invalid', { word: sel.map(s => s.letter).join('').toUpperCase(), letters: sel.map(s => s.letter.toUpperCase()), reason: r.reason, ...snap() });
+        return flashInvalid(r.reason);
+      }
       recordPlay(telemetry, { letters: sel.map(s => s.letter.toUpperCase()), word: sel.map(s => s.letter).join('').toUpperCase(), selection: sel, wordsPlayedThisRound: run.wordsPlayedThisRound, enablers: run.relics.filter(rv => rv.enabler).map(rv => rv.enabler) }, r.scored?.score ?? 0);
       const playedWord = sel.map(s => s.letter).join('');
       run.lastPlay = { word: playedWord, score: r.scored.score };

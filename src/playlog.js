@@ -21,3 +21,20 @@ export function logEvent(type, data = {}) {
     fetch('/log', { method: 'POST', headers: { 'content-type': 'application/json' }, body, keepalive: true }).catch(() => {});
   } catch {}
 }
+
+// Auto-capture uncaught client-side errors + unhandled promise rejections so a crash or back-end
+// exception during a playtest lands in the same log (not only the browser console).
+if (DEV) {
+  try {
+    window.addEventListener('error', (e) => logEvent('error', {
+      message: String((e && (e.message || (e.error && e.error.message))) || 'error'),
+      source: e && e.filename, line: e && e.lineno, col: e && e.colno,
+      stack: e && e.error && e.error.stack ? String(e.error.stack).slice(0, 600) : undefined,
+    }));
+    window.addEventListener('unhandledrejection', (e) => logEvent('error', {
+      kind: 'unhandledrejection',
+      message: String((e && e.reason && (e.reason.message || e.reason)) || 'rejection'),
+      stack: e && e.reason && e.reason.stack ? String(e.reason.stack).slice(0, 600) : undefined,
+    }));
+  } catch {}
+}
