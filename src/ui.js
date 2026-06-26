@@ -744,6 +744,14 @@ function renderEventOneShot(run) {
   const optionsHtml = (ev.options || []).map((opt, i) =>
     `<button class="event-option-btn" data-opt="${i}">${opt.label}</button>`
   ).join('');
+  // Wordsmith picks an archetype to Hone: show the choices INLINE (themed), each with the actual
+  // effect of the next level, instead of a separate pop-up overlay.
+  const optionsBody = ev.id === 'wordsmith'
+    ? Object.values(ARCHETYPES).map(a => {
+        const lvl = run.honeLevels?.[a.id] || 0;
+        return `<button class="event-option-btn arch-choice" data-arch="${a.id}"><b>${a.name}</b> <span class="arch-lvl">Lv ${lvl} &rarr; ${lvl + 1}</span><span class="arch-desc">${honeDescription(a.id, lvl + 1)}</span></button>`;
+      }).join('')
+    : optionsHtml;
 
   app().innerHTML = `
     <div id="hud">
@@ -755,7 +763,7 @@ function renderEventOneShot(run) {
     <div id="event-ui">
       <h3>${ev.name}</h3>
       <div class="event-desc">${ev.desc}</div>
-      <div id="event-options">${optionsHtml}</div>
+      <div id="event-options">${optionsBody}</div>
       <div id="msg" style="color:#c0392b;min-height:1.2rem;margin-top:8px;"></div>
     </div>`;
 
@@ -775,17 +783,6 @@ function renderEventOneShot(run) {
           renderEventDone(run, ev);
         }
       });
-    } else if (ev.id === 'wordsmith') {
-      // Wordsmith: show archetype picker
-      btn.onclick = () => showArchetypePicker(run, (archetypeId) => {
-        const r = handlers.onEventOption?.(i, { archetypeId });
-        if (r && !r.ok) {
-          const msg = document.getElementById('msg');
-          if (msg) msg.textContent = 'Could not apply hone.';
-        } else {
-          renderEventDone(run, ev);
-        }
-      });
     } else {
       // Simple confirm (theBlank, inkMerchant)
       btn.onclick = () => {
@@ -799,6 +796,16 @@ function renderEventOneShot(run) {
       };
     }
   });
+  // Wordsmith: each inline archetype button Hones that archetype (no overlay).
+  if (ev.id === 'wordsmith') {
+    app().querySelectorAll('.arch-choice[data-arch]').forEach(btn => {
+      btn.onclick = () => {
+        const r = handlers.onEventOption?.(0, { archetypeId: btn.dataset.arch });
+        if (r && !r.ok) { const msg = document.getElementById('msg'); if (msg) msg.textContent = 'Could not apply hone.'; }
+        else renderEventDone(run, ev);
+      };
+    });
+  }
   wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
@@ -873,45 +880,6 @@ function showEventTilePicker(run, count, onConfirm) {
     onConfirm([...selected]);
   };
   overlay.appendChild(confirmBtn);
-
-  const cancel = document.createElement('button');
-  cancel.textContent = 'Cancel';
-  cancel.style.cssText = 'padding:8px 20px;font-size:0.95em;border-radius:6px;cursor:pointer;';
-  cancel.onclick = () => overlay.remove();
-  overlay.appendChild(cancel);
-
-  document.body.appendChild(overlay);
-}
-
-// Show an overlay for picking an archetype (used by Wordsmith event).
-function showArchetypePicker(run, onConfirm) {
-  const old = document.getElementById('archetype-picker-overlay');
-  if (old) old.remove();
-
-  const overlay = document.createElement('div');
-  overlay.id = 'archetype-picker-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:100;padding:16px;box-sizing:border-box;';
-
-  const title = document.createElement('div');
-  title.textContent = 'Choose an archetype to hone:';
-  title.style.cssText = 'color:#fff;font-weight:bold;font-size:1.1em;';
-  overlay.appendChild(title);
-
-  const grid = document.createElement('div');
-  grid.style.cssText = 'display:flex;flex-direction:column;gap:8px;max-width:320px;width:100%;';
-
-  Object.values(ARCHETYPES).forEach(arch => {
-    const currentLevel = (run.honeLevels?.[arch.id] || 0);
-    const btn = document.createElement('button');
-    btn.style.cssText = 'padding:10px 14px;font-size:1em;border-radius:6px;cursor:pointer;text-align:left;';
-    btn.innerHTML = `<b>${arch.name}</b> (Lv ${currentLevel} &rarr; ${currentLevel + 1})<br><span style="font-size:0.85em;color:#666;">${arch.desc}</span>`;
-    btn.onclick = () => {
-      overlay.remove();
-      onConfirm(arch.id);
-    };
-    grid.appendChild(btn);
-  });
-  overlay.appendChild(grid);
 
   const cancel = document.createElement('button');
   cancel.textContent = 'Cancel';
