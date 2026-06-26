@@ -107,6 +107,7 @@ h1 { color: var(--gold); }
 
 /* ================================================================ Staging + scorebug */
 #staging { min-height: 2.4rem; font-family: var(--font-display); font-weight: 700; font-size: 2.1rem; letter-spacing: 4px; text-align: center; color: var(--ink); }
+.staging-hint { font-size: 0.95rem; letter-spacing: 0; font-weight: 400; color: var(--ink-soft); opacity: 0.5; }
 #scorebug { display: flex; flex-direction: column; align-items: center; gap: 3px; margin: 8px auto; padding: 11px 18px; background: linear-gradient(var(--night-2), var(--night-sunk)); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: var(--radius-sm); max-width: 380px; box-shadow: 0 2px 7px rgba(0,0,0,0.5); }
 .sb-word    { font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; letter-spacing: 2px; }
 .sb-formula { font-size: 1.05rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
@@ -150,7 +151,7 @@ h1 { color: var(--gold); }
 
 /* ================================================================ Buttons */
 button { font-family: var(--font-body); color: var(--ink); }
-#controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 16px; }
+#controls { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 16px; }
 #controls button, #shop-actions button, #press-controls button {
   font-size: 1.05rem; font-weight: 700; padding: 11px 19px; border-radius: var(--radius-sm);
   border: 1px solid var(--line); background: linear-gradient(var(--night-2), var(--night));
@@ -160,6 +161,11 @@ button { font-family: var(--font-body); color: var(--ink); }
 #controls button:hover:not([disabled]), #shop-actions button:hover:not([disabled]), #press-controls button:hover:not([disabled]) { border-color: var(--gold); background: linear-gradient(#22304e, var(--night-sunk)); }
 #controls button:active, #shop-actions button:active, #press-controls button:active { transform: translateY(1px); }
 #controls button[disabled], #shop-actions button[disabled], #press-controls button[disabled] { opacity: 0.4; cursor: default; }
+/* Submit is the primary action: its own centred row, gold-filled; the rest sit in a secondary row */
+#controls #submit { background: linear-gradient(180deg, #d8b25e, var(--gold-deep)); color: #241a05; border: none; padding: 12px 48px; font-size: 1.12rem; box-shadow: 0 3px 0 #6f560f, 0 5px 12px rgba(0,0,0,0.45); }
+#controls #submit:hover:not([disabled]) { background: linear-gradient(180deg, #e3bd66, #a8841f); border: none; transform: translateY(-1px); }
+#controls #submit:active:not([disabled]) { transform: translateY(2px); box-shadow: 0 1px 0 #6f560f, 0 3px 8px rgba(0,0,0,0.45); }
+#controls-secondary { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 #continue, #continue-btn { border-color: var(--gold) !important; background: linear-gradient(#26365a, var(--night-sunk)) !important; color: var(--gold) !important; }
 #shop-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; }
 #msg { text-align: center; color: var(--coral); font-weight: 700; min-height: 1.2rem; }

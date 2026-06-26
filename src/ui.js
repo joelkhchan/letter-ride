@@ -29,8 +29,11 @@ let _pullRaf = null;         // active pull tween rAF (cancel on skip)
 export function bindControls(h) { handlers = h; }
 
 export function flashInvalid(reason) {
+  // The selection was already cleared on submit; re-render so the rack + staging reset (auto-clear,
+  // letting the player immediately try another word), then surface why it didn't take.
+  renderRun(lastRun);
   const el = document.getElementById('msg');
-  if (el) el.textContent = reason === 'short' ? 'Too short (min 3).' : 'Not a word.';
+  if (el) el.textContent = reason === 'short' ? 'Too short (min 3).' : 'Not a word, try another.';
 }
 
 function tapTile(tile) {
@@ -558,7 +561,7 @@ export function renderRun(run, profile) {
     </div>
     ${relicsModsPanelHtml(run, stagedBreakdown)}
     ${lastPlayHtml}
-    <div id="staging">${staged || '&nbsp;'}</div>
+    <div id="staging">${staged || '<span class="staging-hint">Tap tiles to spell a word</span>'}</div>
     ${preview}
     ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner">${bossSealHtml(run.boss, { size: 'md' })}<span><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</span></div>` : ''}
     ${run.chainLength > 1 ? `<div id="chain-banner">Chain &times;${run.chainLength}${run.lastWord ? ` &middot; continue with ${run.lastWord.lastLetter}` : ''}</div>` : ''}
@@ -577,10 +580,12 @@ export function renderRun(run, profile) {
     <div id="msg"></div>
     <div id="controls">
       <button id="submit" ${done ? 'disabled' : ''}>Submit</button>
-      <button id="back" ${done ? 'disabled' : ''}>⌫</button>
-      <button id="clear" ${done ? 'disabled' : ''}>Clear</button>
-      <button id="discard" ${done || run.discardsLeft <= 0 || selection.length === 0 ? 'disabled' : ''}>${lineIconHtml('trash')}${`Discard${selection.length ? ' (' + selection.length + ')' : ''}`}</button>
-      <button id="shuffle" ${done || run.rack.length === 0 ? 'disabled' : ''}>${lineIconHtml('arrows-shuffle')}Shuffle</button>
+      <div id="controls-secondary">
+        <button id="back" ${done ? 'disabled' : ''}>⌫</button>
+        <button id="clear" ${done ? 'disabled' : ''}>Clear</button>
+        <button id="discard" ${done || run.discardsLeft <= 0 || selection.length === 0 ? 'disabled' : ''}>${lineIconHtml('trash')}${`Discard${selection.length ? ' (' + selection.length + ')' : ''}`}</button>
+        <button id="shuffle" ${done || run.rack.length === 0 ? 'disabled' : ''}>${lineIconHtml('arrows-shuffle')}Shuffle</button>
+      </div>
       ${run.status === 'won' ? `<div class="end">🎉 Run cleared!${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
       ${run.status === 'lost' ? `<div class="end">💀 Out of plays.${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
     </div>`;
