@@ -14,9 +14,9 @@ test('vowelBonus: +2 Points per vowel', () => {
   const r = base('CAT', { relics: [RELICS.vowelBonus] });
   assert.equal(r.points - b.points, 2);
 });
-test('rareHoarder: +30 Points if word uses J/Q/X/Z', () => {
+test('rareHoarder: +40 Points if word uses J/Q/X/Z', () => {
   resetTileIds();
-  assert.equal(base('QI', { relics: [RELICS.rareHoarder] }).points - base('QI').points, 30);
+  assert.equal(base('QI', { relics: [RELICS.rareHoarder] }).points - base('QI').points, 40);
   assert.equal(base('CAT', { relics: [RELICS.rareHoarder] }).points - base('CAT').points, 0);
 });
 test('shortAndSweet: ×3 Mult for words <= 3 letters only', () => {
@@ -55,11 +55,11 @@ test('recycler is an economy relic: no evaluate, has coinsOnRoundClear', () => {
 const tv2 = { ...tv, X: 8, Z: 10, J: 8 };
 const base2 = (word, opts = {}) => scoreWord(sel(word), { tileValues: tv2, lengthBonusPerLetter: 0, ...opts });
 
-test('rareSurge: ×1.5 Mult when word uses a rare letter (Q)', () => {
+test('rareSurge: ×1.8 Mult when word uses a rare letter (Q)', () => {
   resetTileIds();
   const withRelic = base2('QI', { relics: [RELICS.rareSurge] });
   const without   = base2('QI');
-  assert.equal(withRelic.mult / without.mult, 1.5);
+  assert.equal(withRelic.mult / without.mult, 1.8);
 });
 
 test('echoChamber: ×2 Mult when word has a doubled letter (BALL)', () => {
@@ -133,7 +133,7 @@ test('wildcardRares: enabler flag fires rareSurge on a wild tile', () => {
     tileValues: tv2, lengthBonusPerLetter: 0,
   });
   // rareSurge should fire because enablers includes 'wildsAreRare' and selection has a wild
-  assert.equal(withBoth.mult / without.mult, 1.5);
+  assert.equal(withBoth.mult / without.mult, 1.8);
 });
 
 test('wildcardRares: enabler field is set correctly', () => {
@@ -154,8 +154,8 @@ test('rareAvalanche: ×Mult grows with its stacks, applies to every word', () =>
   const av = RELICS.rareAvalanche;
   // 0 stacks → timesMult 1 (no-op)
   assert.deepEqual(av.evaluate({ relicState: {} }), { timesMult: 1 });
-  // 3 stacks → timesMult 1 + 0.2*3 = 1.6, regardless of the current word
-  assert.deepEqual(av.evaluate({ relicState: { rareAvalanche: { stacks: 3 } } }), { timesMult: 1 + 0.2 * 3 });
+  // 3 stacks → timesMult 1 + 0.14*3, regardless of the current word
+  assert.deepEqual(av.evaluate({ relicState: { rareAvalanche: { stacks: 3 } } }), { timesMult: 1 + 0.14 * 3 });
 });
 
 test('rareAvalanche: condition is "word uses a rare letter"', () => {
@@ -177,8 +177,8 @@ test('all six snowball relics: condition + ×Mult-from-stacks', () => {
   }
   // perpetualEngine fires on every word
   assert.equal(RELICS.perpetualEngine.snowball.condition({ letters: ['C','A','T'] }), true);
-  // stacks read (flywheel perStack 0.3)
-  assert.deepEqual(RELICS.flywheel.evaluate({ relicState: { flywheel: { stacks: 2 } } }), { timesMult: 1 + 0.3 * 2 });
+  // stacks read (flywheel perStack 0.2)
+  assert.deepEqual(RELICS.flywheel.evaluate({ relicState: { flywheel: { stacks: 2 } } }), { timesMult: 1 + 0.2 * 2 });
 });
 
 test('pressLead retriggers only the first tile', () => {

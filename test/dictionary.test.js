@@ -1,6 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { makeDictionary } from '../src/dictionary.js';
+import { CONFIG } from '../src/config.js';
+
+test('CONFIG.PROFANITY_BLOCKLIST is populated, all-lowercase, and actually blocks plays', () => {
+  const list = CONFIG.PROFANITY_BLOCKLIST;
+  assert.ok(Array.isArray(list) && list.length > 0, 'blocklist should be non-empty');
+  for (const w of list) assert.equal(w, w.toLowerCase(), `blocklist entry "${w}" must be lowercase (exact-match contract)`);
+  // A blocked word present in the word list must be rejected; a clean word must pass.
+  const sample = list[0];
+  const dict = makeDictionary([sample, 'cat'], list);
+  assert.equal(dict.isValid(sample), false, 'a blocklisted word must be invalid even if in the list');
+  assert.equal(dict.isValid('cat'), true);
+});
 
 test('isValid is case-insensitive and membership-based', () => {
   const dict = makeDictionary(['cat', 'dog', 'house']);

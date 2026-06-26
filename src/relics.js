@@ -26,8 +26,8 @@ export const RELICS = {
     evaluate: (ctx) => ({ addPoints: 2 * ctx.letters.filter(isVowel).length }),
   },
   rareHoarder: {
-    id: 'rareHoarder', name: 'Rare Hoarder', desc: '+30 Points if the word uses J, Q, X, or Z',
-    evaluate: (ctx) => ({ addPoints: ctx.letters.some(l => RARE.has(l.toUpperCase())) ? 30 : 0 }),
+    id: 'rareHoarder', name: 'Rare Hoarder', desc: '+40 Points if the word uses J, Q, X, or Z',
+    evaluate: (ctx) => ({ addPoints: ctx.letters.some(l => RARE.has(l.toUpperCase())) ? 40 : 0 }),
   },
   shortAndSweet: {
     id: 'shortAndSweet', name: 'Short & Sweet', desc: 'Words of 3 letters or fewer: ×3 Mult',
@@ -58,8 +58,8 @@ export const RELICS = {
 
   // Rare-letter
   rareSurge: {
-    id: 'rareSurge', name: 'Rare Surge', desc: '×1.5 Mult if the word uses a rare letter (J/Q/X/Z)',
-    evaluate: (ctx) => hasRareCtx(ctx) ? { timesMult: 1.5 } : {},
+    id: 'rareSurge', name: 'Rare Surge', desc: '×1.8 Mult if the word uses a rare letter (J/Q/X/Z)',
+    evaluate: (ctx) => hasRareCtx(ctx) ? { timesMult: 1.8 } : {},
   },
   wildcardRares: {
     id: 'wildcardRares', name: 'Wildcard Rares', desc: 'Wilds count as rare letters (J/Q/X/Z)',
@@ -99,35 +99,35 @@ export const RELICS = {
   // ── Task 1: Snowball relics ───────────────────────────────────────────────
   rareAvalanche: snowball({
     id: 'rareAvalanche', name: 'Avalanche',
-    desc: 'Grows +0.2 Mult every time you play a rare letter (this run)',
-    perStack: 0.2, condition: (ctx) => hasRareCtx(ctx),
+    desc: 'Grows +0.14 Mult every time you play a rare letter (this run)',
+    perStack: 0.14, condition: (ctx) => hasRareCtx(ctx),
   }),
 
   // ── Task 2: Five more snowball relics ──────────────────────────────────────
   flywheel: snowball({
     id: 'flywheel', name: 'Flywheel',
-    desc: 'Grows +0.3 Mult every time you play a word of 3 letters or fewer (this run)',
-    perStack: 0.3, condition: (ctx) => ctx.letters.length <= 3,
+    desc: 'Grows +0.2 Mult every time you play a word of 3 letters or fewer (this run)',
+    perStack: 0.2, condition: (ctx) => ctx.letters.length <= 3,
   }),
   juggernaut: snowball({
     id: 'juggernaut', name: 'Juggernaut',
-    desc: 'Grows +0.15 Mult every time you play a word of 6+ letters (this run)',
-    perStack: 0.15, condition: (ctx) => ctx.letters.length >= 6,
+    desc: 'Grows +0.1 Mult every time you play a word of 6+ letters (this run)',
+    perStack: 0.10, condition: (ctx) => ctx.letters.length >= 6,
   }),
   resonanceEngine: snowball({
     id: 'resonanceEngine', name: 'Resonance',
-    desc: 'Grows +0.2 Mult every time you play a word with a doubled letter (this run)',
-    perStack: 0.2, condition: (ctx) => isDoubledCtx(ctx),
+    desc: 'Grows +0.14 Mult every time you play a word with a doubled letter (this run)',
+    perStack: 0.14, condition: (ctx) => isDoubledCtx(ctx),
   }),
   risingTide: snowball({
     id: 'risingTide', name: 'Rising Tide',
-    desc: 'Grows +0.12 Mult every time you play a word with 3+ vowels (this run)',
-    perStack: 0.12, condition: (ctx) => ctx.letters.filter(isVowel).length >= 3,
+    desc: 'Grows +0.08 Mult every time you play a word with 3+ vowels (this run)',
+    perStack: 0.08, condition: (ctx) => ctx.letters.filter(isVowel).length >= 3,
   }),
   perpetualEngine: snowball({
     id: 'perpetualEngine', name: 'Perpetual Engine',
-    desc: 'Grows +0.1 Mult every word you play (this run)',
-    perStack: 0.1, condition: () => true,
+    desc: 'Grows +0.07 Mult every word you play (this run)',
+    perStack: 0.07, condition: () => true,
   }),
 
   // ── Phase 3 SP1: Retrigger relics ──────────────────────────────────────────

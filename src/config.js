@@ -21,8 +21,8 @@ export const CONFIG = {
   ROUND_TARGETS: [
     40,  50,  60,      // Passage 1: Word, Phrase, Sentence(boss)
     75,  90,  110,     // Passage 2
-    130, 160, 195,     // Passage 3
-    240, 290, 355,     // Passage 4 (final boss)
+    125, 150, 180,     // Passage 3  (softened 2026-06-26: flat skilled lines died ~15-45 short here)
+    220, 260, 315,     // Passage 4 (final boss; softened with snowball compression so engines don't trivialize it)
   ],
   COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 }, // Tier 1
   INTEREST: { enabled: true, per: 5, rate: 1, cap: 5 },             // $1 per $5 held, max $5
@@ -75,5 +75,17 @@ export const CONFIG = {
   },
   HONE: { cost: 6 },
   PROFANITY_FILTER: true,
-  PROFANITY_BLOCKLIST: [ /* add slurs to reject; author may empty this */ ],
+  // Words rejected as plays even though ENABLE contains them. Lowercase, exact-match (see
+  // dictionary.makeDictionary). Curated set of strong profanity + slurs; the author may extend or
+  // empty this. Kept focused, not exhaustive.
+  PROFANITY_BLOCKLIST: [
+    // strong profanity
+    'fuck', 'fucks', 'fucked', 'fucker', 'fuckers', 'shit', 'shits', 'shat', 'shitted',
+    'cunt', 'cunts', 'twat', 'twats',
+    // slurs (racial / ethnic / sexual-orientation / ableist)
+    'nigger', 'niggers', 'nigga', 'niggas', 'kike', 'kikes', 'spic', 'spics', 'chink', 'chinks',
+    'wop', 'wops', 'dago', 'dagos', 'gook', 'gooks', 'coon', 'coons', 'wetback', 'wetbacks',
+    'faggot', 'faggots', 'fag', 'fags', 'dyke', 'dykes', 'tranny', 'trannies',
+    'retard', 'retards', 'retarded', 'spaz', 'spazzes',
+  ],
 };
