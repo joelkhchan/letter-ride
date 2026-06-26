@@ -549,15 +549,22 @@ export function renderRun(run, profile) {
     preview = scorePreviewHtml(selection, scored, bossNote);
   }
 
+  const pct = run.target > 0 ? Math.min(100, Math.round((run.roundTotal / run.target) * 100)) : 0;
+  const toGo = Math.max(0, run.target - run.roundTotal);
   app().innerHTML = `
+    <div class="run-view">
     <div id="hud">
       <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; encounter ${(run.roundIndex % 3) + 1}/3 &middot; ${tierOf(run.roundIndex)}${isBossRound(run.roundIndex) ? ' (boss)' : ''}</div>
-      <div><span id="score-total">${run.roundTotal}</span> / ${run.target} Score</div>
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
       ${coinsHtml}
       <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
       <button id="mute-btn" class="${isMuted() ? 'muted' : ''}" title="${isMuted() ? 'Sound off (tap for on)' : 'Sound on (tap for off)'}" style="font-size:0.95em;padding:2px 8px;border-radius:50%;cursor:pointer;">&#9834;</button>
       <button id="exit-btn" title="Main menu (your run is saved)" style="font-size:0.72em;padding:3px 10px;border-radius:10px;cursor:pointer;">Menu</button>
+    </div>
+    <div id="score-bar">
+      <div class="score-nums"><span id="score-total">${run.roundTotal}</span><span class="score-slash">/</span>${run.target}</div>
+      <div class="score-track"><div class="score-fill${pct >= 100 ? ' full' : ''}" style="width:${pct}%"></div></div>
+      <div class="score-togo">${toGo > 0 ? `${toGo} to clear` : 'Target met'}</div>
     </div>
     ${relicsModsPanelHtml(run, stagedBreakdown)}
     ${lastPlayHtml}
@@ -588,6 +595,7 @@ export function renderRun(run, profile) {
       </div>
       ${run.status === 'won' ? `<div class="end">🎉 Run cleared!${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
       ${run.status === 'lost' ? `<div class="end">💀 Out of plays.${run.lastMetaEarned ? ` +${run.lastMetaEarned} Meta earned` : ''}</div><button id="new">Back to menu</button>` : ''}
+    </div>
     </div>`;
 
   // Score count-up: animate from lastShownScore to run.roundTotal after each render.

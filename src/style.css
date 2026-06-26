@@ -72,6 +72,17 @@ h1 { color: var(--gold); }
 #mute-btn.muted { text-decoration: line-through; opacity: 0.5; color: var(--ink-soft); }
 
 /* ================================================================ Tiles (sorts) */
+/* Play screen: centred, max-width column so it isn't top-heavy + edge-to-edge */
+.run-view { max-width: 760px; margin: 0 auto; min-height: calc(100vh - 44px); display: flex; flex-direction: column; justify-content: center; }
+/* Score -> target focal block: big numbers + a progress bar + points-to-clear */
+#score-bar { text-align: center; margin: 8px 0 12px; }
+.score-nums { font-family: var(--font-display); font-weight: 700; font-size: 2rem; color: var(--ink); display: flex; gap: 8px; justify-content: center; align-items: baseline; }
+.score-nums #score-total { color: var(--gold); }
+.score-slash { color: var(--ink-soft); }
+.score-track { height: 12px; max-width: 480px; margin: 7px auto 5px; background: var(--night-sunk); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.score-fill { height: 100%; background: linear-gradient(90deg, var(--gold-deep), var(--gold)); border-radius: 7px; }
+.score-fill.full { background: linear-gradient(90deg, #2c8a73, var(--teal)); }
+.score-togo { font-size: 0.85rem; color: var(--ink-soft); letter-spacing: 0.3px; }
 #rack { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0; }
 .tile {
   position: relative; width: 58px; height: 64px;
