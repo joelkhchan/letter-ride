@@ -481,11 +481,11 @@ export function animatePull(sel, scored, onDone) {
   _pullAfter(t + PULL.hold, settle);
 }
 
-export function renderRun(run) {
+export function renderRun(run, profile) {
   lastRun = run;
 
   // Run end: show the broadside (trophy card) instead of the playing layout.
-  if (run.status === 'won' || run.status === 'lost') { renderBroadside(run); return; }
+  if (run.status === 'won' || run.status === 'lost') { renderBroadside(run, profile); return; }
 
   // Node routing: after a round clear, show node choice, event UI, or shop.
   if (run.status === 'roundCleared') {
@@ -646,8 +646,10 @@ export function handleRunKey(e) {
 
 // The end-of-run trophy card (SP4). Drawn to a canvas (see broadside.js) so it can be
 // saved/shared as an image; matches the live theme. Shown for status won | lost.
-function renderBroadside(run) {
-  const s = buildSummary(run);
+function renderBroadside(run, profile) {
+  // Unified rank: show the player's lifetime rank including this run's score (endRun adds it after).
+  const lifetimeRank = levelFor((profile?.stats?.lifetimeScore || 0) + (run.roundTotal || 0), run.config).name;
+  const s = buildSummary(run, lifetimeRank);
   app().innerHTML = `
     <div id="broadside-screen">
       <canvas id="broadside-canvas" width="680" height="800" role="img" aria-label="${s.header}. ${s.rank}. ${s.resultLine}. Best line ${s.bestWord || 'none'}, ${s.bestScore} Score."></canvas>

@@ -10,19 +10,19 @@
 
 import { passageOf, tierOf } from './run.js';
 
-const RANKS = { won: 'Master Printer', far: 'Journeyman', near: 'Apprentice' };
-
-export function buildSummary(run) {
+// `rank` is the player's LIFETIME rank (Novice..Artisan), passed in by the caller. Unified ladder
+// (2026-06-26): the trophy shows your standing, not a separate per-run tier, so there is one rank
+// vocabulary across the menu, achievements, and this card.
+export function buildSummary(run, rank = '') {
   const won = run.status === 'won';
   const best = run.bestPlay || run.lastPlay || null;
   const N = run.config?.PASSAGES ?? 4;
-  const common = { won, bestWord: best?.word || '', bestScore: best?.score || 0 };
+  const common = { won, rank, bestWord: best?.word || '', bestScore: best?.score || 0 };
   if (won) {
-    return { ...common, header: 'Cleared the Press', rank: RANKS.won, resultLine: `All ${N} Passages set` };
+    return { ...common, header: 'Cleared the Press', resultLine: `All ${N} Passages set` };
   }
   const p = passageOf(run.roundIndex), t = tierOf(run.roundIndex);
-  return { ...common, header: 'Press Stopped', rank: p >= 3 ? RANKS.far : RANKS.near,
-           resultLine: `Fell at Passage ${p}, the ${t}` };
+  return { ...common, header: 'Press Stopped', resultLine: `Fell at Passage ${p}, the ${t}` };
 }
 
 const tok = (cs, name, fb) => (cs.getPropertyValue(name).trim() || fb);

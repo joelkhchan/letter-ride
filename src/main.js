@@ -44,7 +44,7 @@ try {
     for (const a of list) if (!profile.completed.includes(a.id)) { profile.completed.push(a.id); achievementToast(a); }
   }
   const render = () => {
-    if (view === 'run') return renderRun(run);
+    if (view === 'run') return renderRun(run, profile);
     if (view === 'setup') return renderSetup(meta, CONFIG);
     if (view === 'meta') return renderMetaShop(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS);
     if (view === 'settings') return renderSettings(!!run);
