@@ -9,7 +9,7 @@ import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd } from './telemetry.js';
 import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
-import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingMeta } from './achievements.js';
+import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingCount } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
 import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx, resumeAudio } from './audio.js';
@@ -49,7 +49,7 @@ try {
     if (view === 'meta') return renderMetaShop(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS);
     if (view === 'settings') return renderSettings(!!run);
     if (view === 'achievements') return renderAchievements(profile, CONFIG, ACHIEVEMENTS, ALL_RELIC_IDS, ALL_MOD_IDS);
-    return renderMenu(!!run, meta.meta, pendingMeta(profile, CONFIG));   // 'menu'
+    return renderMenu(!!run, meta.meta, pendingCount(profile, CONFIG));   // 'menu' (badge = items ready to collect)
   };
   const pool = () => poolFromMeta(meta);
 

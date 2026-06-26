@@ -1109,7 +1109,7 @@ const backArrowHtml = () => `<button class="back-arrow" id="back-arrow" aria-lab
 function wireBack() { const b = document.getElementById('back-arrow'); if (b) b.onclick = () => handlers.onBackToMenu?.(); }
 
 export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
-  const badge = pending > 0 ? ` <span class="menu-badge">+${pending}</span>` : '';
+  const badge = pending > 0 ? ` <span class="menu-badge" title="ready to collect">${pending}</span>` : '';
   app().innerHTML = `
     <div id="main-menu">
       <div class="menu-title">Letter Ride</div>
@@ -1220,6 +1220,7 @@ export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = 
   const pending = pendingMeta(profile, config);
   const statsPanel = `<div class="ach-stats">
     <p>Rank <b>${lvl.name}</b>${lvl.nextAt ? ` &middot; next at ${lvl.nextAt} lifetime Score (now ${s.lifetimeScore || 0})` : ' &middot; max'}</p>
+    <p>Achievements <b>${done.size} / ${ACHIEVEMENTS.length}</b> unlocked &middot; ${claimed.size} collected</p>
     <p>Runs <b>${s.runs || 0}</b> &middot; Wins <b>${s.wins || 0}</b> &middot; Rounds cleared <b>${s.roundsCleared || 0}</b></p>
     <p>Best word <b>${s.bestWord || '&mdash;'}</b> (${s.bestWordScore || 0}) &middot; Best run <b>${s.bestRunScore || 0}</b></p>
   </div>`;

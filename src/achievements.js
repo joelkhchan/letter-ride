@@ -40,35 +40,35 @@ export const ACHIEVEMENTS = [
     predicate: (p, c) => isEnd(c) && c.won && !c.boughtAnythingThisRun },
   { id: 'oneWordClear',   bucket: 'mastery', name: 'One and Done', desc: 'Clear a round in a single word.',
     predicate: (p, c) => isPlay(c) && c.status === 'roundCleared' && c.wordsPlayedThisRound === 1 },
-  { id: 'bigWord',        bucket: 'mastery', name: 'Heavy Impression', desc: 'Play a single word worth a lot.',
+  { id: 'bigWord',        bucket: 'mastery', name: 'Heavy Impression', desc: 'Play a single word worth 150+ Score.',
     predicate: (p, c, cfg) => isPlay(c) && (c.score || 0) >= cfg.META.achievement.bigWordScore },
   { id: 'winStake1',      bucket: 'mastery', name: 'Pressrun',     desc: 'Win on Stake 1.',
     predicate: (p, c) => isEnd(c) && c.won && (c.stakeId || 0) >= 1 },
   { id: 'winStake2',      bucket: 'mastery', name: 'Master Printer', desc: 'Win on Stake 2.',  // reward via rewardOverride.winStake2
     predicate: (p, c) => isEnd(c) && c.won && (c.stakeId || 0) >= 2 },
-  { id: 'bigRound',       bucket: 'mastery', name: 'Engine Room',  desc: 'Score big in a single round.',
+  { id: 'bigRound',       bucket: 'mastery', name: 'Engine Room',  desc: 'Score 400+ in a single round.',
     predicate: (p, c, cfg) => isPlay(c) && c.status === 'roundCleared' && (c.roundTotal || 0) >= cfg.META.achievement.bigRoundScore },
-  { id: 'speedWin',       bucket: 'mastery', name: 'Speed Set',    desc: 'Win in few total words.',
+  { id: 'speedWin',       bucket: 'mastery', name: 'Speed Set',    desc: 'Win a run in 20 words or fewer.',
     predicate: (p, c, cfg) => isEnd(c) && c.won && (c.totalWordsThisRun || 0) <= cfg.META.achievement.efficientWords },
   { id: 'winNoDiscard',   bucket: 'mastery', name: 'No Waste',     desc: 'Win without discarding.',
     predicate: (p, c) => isEnd(c) && c.won && !c.discardedThisRun },
-  { id: 'clutch',         bucket: 'mastery', name: 'Comeback',     desc: 'Clear a round on your final play from behind.',
+  { id: 'clutch',         bucket: 'mastery', name: 'Comeback',     desc: 'Clear a round with your last play, from below the target.',
     predicate: (p, c) => isPlay(c) && c.status === 'roundCleared' && c.playsLeft <= 0 && (c.prevRoundTotal || 0) < c.target },
-  { id: 'flawless',       bucket: 'mastery', name: 'Full Press',   desc: 'Win without ever clearing on your last play.',
+  { id: 'flawless',       bucket: 'mastery', name: 'Full Press',   desc: 'Win a run, clearing every round with a play to spare.',
     predicate: (p, c) => isEnd(c) && c.won && c.flawlessSoFar },
 
   // --- Build diversity (moderate) ---
-  { id: 'winVowels',      bucket: 'diversity', name: 'Vowel Movement', desc: 'Win leaning vowels.',
+  { id: 'winVowels',      bucket: 'diversity', name: 'Vowel Movement', desc: 'Win a run built mostly on vowel-heavy words.',
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'vowelHeavy' },
-  { id: 'winRare',        bucket: 'diversity', name: 'Rare Earth',     desc: 'Win leaning rare letters.',
+  { id: 'winRare',        bucket: 'diversity', name: 'Rare Earth',     desc: 'Win a run built mostly on rare letters (J/Q/X/Z).',
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'rareLetter' },
-  { id: 'winShort',       bucket: 'diversity', name: 'Short Stack',    desc: 'Win with a short-word build.',
+  { id: 'winShort',       bucket: 'diversity', name: 'Short Stack',    desc: 'Win a run built mostly on short words (3 letters or fewer).',
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'shortWord' },
-  { id: 'winLong',        bucket: 'diversity', name: 'Long Hauler',    desc: 'Win with a long-word build.',
+  { id: 'winLong',        bucket: 'diversity', name: 'Long Hauler',    desc: 'Win a run built mostly on long words (6+ letters).',
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'longWord' },
-  { id: 'winManyMods',    bucket: 'diversity', name: "Enchanter's Run", desc: 'Win using several tile-mods.',
+  { id: 'winManyMods',    bucket: 'diversity', name: "Enchanter's Run", desc: 'Win a run using 4+ tile-mods.',
     predicate: (p, c, cfg) => isEnd(c) && c.won && (c.modsCount || 0) >= cfg.META.achievement.manyMods },
-  { id: 'winManyRelics',  bucket: 'diversity', name: 'Relic Hound',    desc: 'Win with several relics.',
+  { id: 'winManyRelics',  bucket: 'diversity', name: 'Relic Hound',    desc: 'Win a run with 4+ relics.',
     predicate: (p, c, cfg) => isEnd(c) && c.won && (c.relicsCount || 0) >= cfg.META.achievement.manyRelics },
 
   // --- Discovery / long-tail prestige (low) ---
@@ -168,4 +168,9 @@ export function pendingMeta(profile, config) {
   const a = collectableAchievements(profile, config).reduce((s, x) => s + x.reward, 0);
   const b = collectableBounties(profile, config).reduce((s, x) => s + x.reward, 0);
   return a + b;
+}
+
+// Count of items ready to collect right now (achievements + bounty cells) - for the menu badge.
+export function pendingCount(profile, config) {
+  return collectableAchievements(profile, config).length + collectableBounties(profile, config).length;
 }
