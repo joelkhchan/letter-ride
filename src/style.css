@@ -187,6 +187,15 @@ button { font-family: var(--font-body); color: var(--ink); }
 .bag-ghost.g1 { opacity: 0.30; transform: translate(5px,-4px); }
 .bag-ghost.g2 { opacity: 0.15; transform: translate(9px,-8px); }
 .bag-spark { position: absolute; top: 2px; right: 4px; font-size: 14px; color: #fff7d8; z-index: 2; text-shadow: 0 0 6px var(--glow, #fff); }
+/* Stake picker cards: name + difficulty meter + derived effect description */
+#stake-buttons { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.stake-pick { text-align: left; min-width: 210px; max-width: 300px; }
+.stake-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stake-meter { display: inline-flex; gap: 4px; flex: 0 0 auto; }
+.stake-meter .pip { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.stake-meter .pip.on { background: var(--gold); }
+.stake-desc { font-size: 0.78rem; font-weight: 400; color: var(--ink-soft); margin-top: 5px; }
+.setup-sub { color: var(--ink-soft); font-size: 0.9rem; margin: -2px 0 2px; }
 .meta-section { margin: 4px 0; }
 .meta-section h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 14px 0 7px; }
 .meta-section .meta-offer { margin: 6px 0; }
@@ -302,6 +311,8 @@ html.text-large { font-size: 112.5%; }
 .ach-toast .t-tag { color: var(--gold); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .ach-toast .t-name { color: var(--ink); font-weight: 700; }
 
+/* Pushed screens (Run Setup, Meta Shop): clear the fixed back-arrow + read as a centred column */
+#meta-screen { max-width: 680px; margin: 0 auto; padding: 52px 16px 26px; }
 #meta-screen > button { font-size: 1rem; font-weight: 700; padding: 11px 18px; margin: 3px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: linear-gradient(var(--night-2), var(--night)); color: var(--ink); cursor: pointer; transition: border-color 0.1s; }
 #meta-screen > button:hover { border-color: var(--gold); }
 #start-run { border-color: var(--gold) !important; color: var(--gold) !important; }

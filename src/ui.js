@@ -1253,25 +1253,34 @@ export function renderSetup(meta, config) {
     return `<button class="deck-pick${active}" data-deck="${id}"${titleAttr}>${bagHtml(id)}<span class="deck-text"><b>${name}</b>${descHtml}</span></button>`;
   }).join(' ');
 
+  // Stake description derived from its effects (no separate copy to maintain).
+  const stakeDesc = (s) => {
+    const parts = [s.targetMult && s.targetMult !== 1 ? `Targets +${Math.round((s.targetMult - 1) * 100)}%` : 'Standard targets'];
+    if (s.playsDelta) parts.push(`${s.playsDelta > 0 ? '+' : ''}${s.playsDelta} play/round`);
+    if (s.discardsDelta) parts.push(`${s.discardsDelta > 0 ? '+' : ''}${s.discardsDelta} discard/round`);
+    return parts.join(' · ');
+  };
+  const totalStakes = config.STAKES.length;
   const stakeButtonsHtml = meta.unlockedStakes.map(id => {
-    const stakeObj = config.STAKES.find(s => s.id === id);
-    const name = stakeObj?.name || id;
+    const s = config.STAKES.find(x => x.id === id) || { id, name: `Stake ${id}` };
     const active = id === selectedStakeId ? ' active' : '';
-    return `<button class="stake-pick${active}" data-stake="${id}">${name}</button>`;
-  }).join(' ');
+    const filled = (Number(id) || 0) + 1;
+    const meter = Array.from({ length: totalStakes }, (_, i) => `<span class="pip${i < filled ? ' on' : ''}"></span>`).join('');
+    return `<button class="stake-pick${active}" data-stake="${id}">
+      <span class="stake-head"><b>${s.name || `Stake ${id}`}</b><span class="stake-meter" title="Difficulty">${meter}</span></span>
+      <div class="stake-desc">${stakeDesc(s)}</div>
+    </button>`;
+  }).join('');
 
   app().innerHTML = `
     ${backArrowHtml()}
     <div id="meta-screen">
       <div class="menu-title small">New Run <button id="setup-help-btn" title="How it works" style="font-size:0.6em;padding:2px 8px;border-radius:50%;cursor:pointer;vertical-align:middle;">?</button></div>
-      <div id="deck-picker">
-        <div><b>Bag:</b></div>
-        <div id="deck-buttons">${deckButtonsHtml}</div>
-      </div>
-      <div id="stake-picker">
-        <div><b>Stake:</b></div>
-        <div id="stake-buttons">${stakeButtonsHtml}</div>
-      </div>
+      <p class="setup-sub">Pick a bag and a stake, then start your run.</p>
+      <h3 class="settings-h">Bag</h3>
+      <div id="deck-buttons">${deckButtonsHtml}</div>
+      <h3 class="settings-h">Stake</h3>
+      <div id="stake-buttons">${stakeButtonsHtml}</div>
       <button id="start-run">Start Run</button>
     </div>`;
 
@@ -1279,7 +1288,7 @@ export function renderSetup(meta, config) {
     btn.onclick = () => { selectedDeckId = btn.dataset.deck; renderSetup(meta, config); };
   });
   app().querySelectorAll('.stake-pick').forEach(btn => {
-    btn.onclick = () => { selectedStakeId = btn.dataset.stake; renderSetup(meta, config); };
+    btn.onclick = () => { selectedStakeId = Number(btn.dataset.stake); renderSetup(meta, config); };
   });
   const startBtn = document.getElementById('start-run');
   if (startBtn) startBtn.onclick = () => {
