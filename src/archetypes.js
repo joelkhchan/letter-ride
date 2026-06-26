@@ -82,3 +82,18 @@ export function honeModifiers(honeLevels = {}) {
   }
   return mods;
 }
+
+// Human description of the ACTUAL hone effect at a given level (real numbers, not the generic
+// archetype flavour) — so the in-run hone popover shows what the level does.
+export function honeDescription(id, lvl) {
+  const kicker = lvl >= 3 ? ` and ×${honeXMult(lvl)} Mult to the word` : '';
+  switch (id) {
+    case 'shortWord':  return `+${lvl} Mult on words of 3 letters or fewer${kicker}`;
+    case 'longWord':   return `+${5 * lvl} Points on words of 6+ letters${kicker}`;
+    case 'rareLetter': return `+${15 * lvl} Points on words using J, Q, X, or Z${kicker}`;
+    case 'doubled':    return `+${12 * lvl} Points on words with a doubled letter${kicker}`;
+    case 'vowelHeavy': return `+${2 * lvl} Points per vowel on words with 3+ vowels${kicker}`;
+    case 'escalation': return `+${0.5 * lvl} Mult for each word already played this round${kicker}`;
+    default:           return ARCHETYPES[id]?.desc || '';
+  }
+}

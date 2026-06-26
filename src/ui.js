@@ -3,7 +3,7 @@ import { metaShopOffers } from './meta.js';
 import { RELICS } from './relics.js';
 import { getMod } from './tiles.js';
 import { scoreWord } from './scoring.js';
-import { ARCHETYPES, honeModifiers } from './archetypes.js';
+import { ARCHETYPES, honeModifiers, honeDescription } from './archetypes.js';
 import { passageOf, tierOf, isBossRound } from './run.js';
 import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
 import { EVENTS } from './events.js';
@@ -173,8 +173,12 @@ function showDescPopover(anchorEl, name, desc) {
   popover.dataset.anchor = anchorEl.dataset.popoverKey;
   popover.innerHTML = `<span class="desc-pop-name">${name}</span><span class="desc-pop-text">${desc}</span><button class="desc-pop-close" aria-label="Close">x</button>`;
 
-  // Insert popover right after the anchor in the DOM.
-  anchorEl.insertAdjacentElement('afterend', popover);
+  // Float the popover over the layout (anchored below the chip) so it never reflows the panel.
+  document.body.appendChild(popover);
+  const r = anchorEl.getBoundingClientRect();
+  popover.style.top = `${r.bottom + window.scrollY + 5}px`;
+  const maxLeft = window.scrollX + document.documentElement.clientWidth - popover.offsetWidth - 8;
+  popover.style.left = `${Math.max(window.scrollX + 8, Math.min(r.left + window.scrollX, maxLeft))}px`;
 
   const closeBtn = popover.querySelector('.desc-pop-close');
   if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); popover.remove(); };
@@ -255,7 +259,7 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
   const honeText = activeHones.length
     ? activeHones.map(([id, lvl]) => {
         const a = ARCHETYPES[id];
-        const safeDesc = (a?.desc || '').replace(/"/g, '&quot;');
+        const safeDesc = honeDescription(id, lvl).replace(/"/g, '&quot;');
         const safeName = (a?.name || id).replace(/"/g, '&quot;');
         return `<span class="hone-entry tappable-chip" data-pop-name="${safeName} Lv${lvl}" data-pop-desc="${safeDesc}">${lineIconHtml('tools')}${a?.name || id} Lv${lvl}</span>`;
       }).join(', ')

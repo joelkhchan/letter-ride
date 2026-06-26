@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { ARCHETYPES, honeModifiers, ALL_ARCHETYPE_IDS } from '../src/archetypes.js';
+import { ARCHETYPES, honeModifiers, ALL_ARCHETYPE_IDS, honeDescription } from '../src/archetypes.js';
 
 const ctx = (word, extra = {}) => ({
   word, letters: [...word.toUpperCase()],
@@ -57,6 +57,14 @@ test('Hone emits ×Mult at level 3+ (shortWord example)', () => {
 test('Hone ×Mult only applies when the archetype condition matches', () => {
   const ctx = { letters: ['C', 'A', 'T', 'S'], word: 'CATS' };  // does NOT match shortWord (>3)
   assert.deepEqual(ARCHETYPES.shortWord.honeBonus(ctx, 4), {});
+});
+
+test('honeDescription states the actual per-level effect, with the ×Mult kicker only at L3+', () => {
+  assert.equal(honeDescription('longWord', 2), '+10 Points on words of 6+ letters');           // 5*2, no kicker
+  assert.equal(honeDescription('rareLetter', 1), '+15 Points on words using J, Q, X, or Z');   // 15*1
+  assert.equal(honeDescription('vowelHeavy', 2), '+4 Points per vowel on words with 3+ vowels'); // 2*2
+  assert.match(honeDescription('shortWord', 3), /×1\.25 Mult/);                                  // L3 kicker present
+  assert.doesNotMatch(honeDescription('shortWord', 2), /Mult to the word/);                      // no kicker below L3
 });
 
 test('a twin-modded tile makes the word count as doubled (engineered double, skill lever)', () => {
