@@ -1235,9 +1235,45 @@ function _drainToasts() {
 // Run Setup: pick the bag + stake for THIS run, then Start Run. No meta-shop here.
 // Note: selectedDeckId/selectedStakeId are module-level (top of file); this screen owns them now,
 // re-renders itself on a pick, and resets them on Start Run.
-export function renderSetup(meta, config) {
-  if (!selectedStakeId || !meta.unlockedStakes.includes(selectedStakeId)) {
-    selectedStakeId = meta.unlockedStakes[0] ?? (config.STAKES[0]?.id || null);
+// The "Your run" panel: a peek at the chosen bag's tiles laid out, the run's starting numbers, and
+// the first-round target at the chosen stake. UI-only (reads config/meta; no rules); recomputed on
+// every bag/stake pick. The first target mirrors meta.applyStakeTargets (Math.ceil(base * mult)).
+function runPreviewHtml(meta, config, deckId, stakeId) {
+  const deck = config.DECKS[deckId];
+  const bag = (deck && deck.startingBag) || config.STARTING_BAG || [];
+  const stake = config.STAKES.find(s => s.id === stakeId) || { targetMult: 1, playsDelta: 0, discardsDelta: 0 };
+  const TV = config.TILE_VALUES || {};
+  const isV = (l) => 'AEIOU'.includes(l), isW = (l) => l === '*', isR = (l) => 'JQXZ'.includes(l);
+  const cat = (l) => isW(l) ? 4 : isV(l) ? 0 : isR(l) ? 3 : 1;     // group vowels, consonants, rares, wilds
+  const sorted = bag.slice().sort((a, b) => cat(a) - cat(b) || ((TV[a] || 0) - (TV[b] || 0)) || a.localeCompare(b));
+  const tray = sorted.map((l) => l === '*'
+    ? `<span class="run-tile wild">&#9733;</span>`
+    : `<span class="run-tile">${l}<i>${TV[l] ?? 0}</i></span>`).join('');
+  const v = bag.filter(isV).length, w = bag.filter(isW).length, r = bag.filter(isR).length, c = bag.length - v - w - r;
+  const pct = (n) => (bag.length ? (n / bag.length * 100).toFixed(1) : 0) + '%';
+  const plays = config.PLAYS_PER_ROUND + (stake.playsDelta || 0);
+  const discards = config.DISCARDS_PER_ROUND + (stake.discardsDelta || 0) + (meta.loadout?.extraDiscards || 0);
+  const startCoins = meta.loadout?.startCoins || 0;
+  const base = config.ROUND_TARGETS[0];
+  const target = Math.ceil(base * (stake.targetMult ?? 1));
+  return `
+    <div class="run-tray">${tray}</div>
+    <div class="run-mixbar"><i class="mix-v" style="width:${pct(v)}"></i><i class="mix-c" style="width:${pct(c)}"></i><i class="mix-r" style="width:${pct(r)}"></i><i class="mix-w" style="width:${pct(w)}"></i></div>
+    <div class="run-legend">${v} vowels &middot; ${c} consonants${r ? ` &middot; ${r} rare` : ''}${w ? ` &middot; ${w} wild` : ''}</div>
+    <div class="run-stats">
+      <div class="run-stat"><span>Bag size</span><b>${bag.length} tiles</b></div>
+      <div class="run-stat"><span>Rack</span><b>${config.RACK_SIZE}</b></div>
+      <div class="run-stat"><span>Plays / round</span><b>${plays}</b></div>
+      <div class="run-stat"><span>Discards / round</span><b>${discards}</b></div>
+      <div class="run-stat"><span>Starting $</span><b>${startCoins}</b></div>
+      <div class="run-stat"><span>Difficulty</span><b>${stake.name || `Stake ${stakeId}`}</b></div>
+    </div>
+    <div class="run-target">First target: ${target !== base ? `<span class="base">${base}</span>` : ''}<b>${target}</b></div>`;
+}
+
+export function renderSetup(meta, config, profile) {
+  if (selectedStakeId == null || !meta.unlockedStakes.includes(selectedStakeId)) {
+    selectedStakeId = meta.unlockedStakes[0] ?? (config.STAKES[0]?.id ?? 0);
   }
   if (!selectedDeckId || !meta.unlockedDecks.includes(selectedDeckId)) {
     selectedDeckId = meta.unlockedDecks[0] ?? 'standard';
@@ -1248,10 +1284,8 @@ export function renderSetup(meta, config) {
     const name = deck?.name || id;
     const desc = deck?.desc || '';
     const active = id === selectedDeckId ? ' active' : '';
-    const titleAttr = desc ? ` title="${desc}"` : '';
-    const descHtml = desc ? `<div class="bag-desc">${desc}</div>` : '';
-    return `<button class="deck-pick${active}" data-deck="${id}"${titleAttr}>${bagHtml(id)}<span class="deck-text"><b>${name}</b>${descHtml}</span></button>`;
-  }).join(' ');
+    return `<button class="pick-card deck-pick${active}" data-deck="${id}">${bagHtml(id)}<span class="deck-text"><b class="pick-name">${name}</b><div class="bag-desc">${desc}</div></span></button>`;
+  }).join('');
 
   // Stake description derived from its effects (no separate copy to maintain).
   const stakeDesc = (s) => {
@@ -1264,31 +1298,47 @@ export function renderSetup(meta, config) {
   const stakeButtonsHtml = meta.unlockedStakes.map(id => {
     const s = config.STAKES.find(x => x.id === id) || { id, name: `Stake ${id}` };
     const active = id === selectedStakeId ? ' active' : '';
+    const danger = id >= 2 ? ' danger' : '';
     const filled = (Number(id) || 0) + 1;
-    const meter = Array.from({ length: totalStakes }, (_, i) => `<span class="pip${i < filled ? ' on' : ''}"></span>`).join('');
-    return `<button class="stake-pick${active}" data-stake="${id}">
-      <span class="stake-head"><b>${s.name || `Stake ${id}`}</b><span class="stake-meter" title="Difficulty">${meter}</span></span>
+    const meter = Array.from({ length: totalStakes }, (_, i) => `<span class="pip${i < filled ? ' on' : ''}${id >= 2 ? ' hot' : ''}"></span>`).join('');
+    // Win bounty for (this stake, currently-selected bag): the one-time Meta the grid pays on first clear.
+    const bountyAmt = config.META?.bounty?.[id] ?? 0;
+    const claimed = profile?.bountyClaimed?.[`${id}:${selectedDeckId}`];
+    const bountyHtml = bountyAmt
+      ? `<div class="stake-bounty${claimed ? ' done' : ''}">${claimed ? '✓ Bounty claimed' : `Win bounty: +${bountyAmt} Meta`}</div>`
+      : '';
+    return `<button class="pick-card stake-pick${active}${danger}" data-stake="${id}">
+      <span class="stake-head"><b class="pick-name">${s.name || `Stake ${id}`}</b><span class="stake-meter" title="Difficulty">${meter}</span></span>
       <div class="stake-desc">${stakeDesc(s)}</div>
+      ${bountyHtml}
     </button>`;
   }).join('');
 
   app().innerHTML = `
     ${backArrowHtml()}
-    <div id="meta-screen">
+    <div id="meta-screen" class="setup-screen">
       <div class="menu-title small">New Run <button id="setup-help-btn" title="How it works" style="font-size:0.6em;padding:2px 8px;border-radius:50%;cursor:pointer;vertical-align:middle;">?</button></div>
       <p class="setup-sub">Pick a bag and a stake, then start your run.</p>
-      <h3 class="settings-h">Bag</h3>
-      <div id="deck-buttons">${deckButtonsHtml}</div>
-      <h3 class="settings-h">Stake</h3>
-      <div id="stake-buttons">${stakeButtonsHtml}</div>
-      <button id="start-run">Start Run</button>
+      <div class="setup-layout">
+        <div class="setup-picks">
+          <h3 class="settings-h">Bag</h3>
+          <div id="deck-buttons">${deckButtonsHtml}</div>
+          <h3 class="settings-h">Stake</h3>
+          <div id="stake-buttons">${stakeButtonsHtml}</div>
+        </div>
+        <aside class="setup-aside">
+          <h3 class="settings-h">Your run</h3>
+          <div class="run-panel" id="run-preview">${runPreviewHtml(meta, config, selectedDeckId, selectedStakeId)}</div>
+          <button id="start-run" class="cta-btn">Start Run &#9656;</button>
+        </aside>
+      </div>
     </div>`;
 
   app().querySelectorAll('.deck-pick').forEach(btn => {
-    btn.onclick = () => { selectedDeckId = btn.dataset.deck; renderSetup(meta, config); };
+    btn.onclick = () => { selectedDeckId = btn.dataset.deck; renderSetup(meta, config, profile); };
   });
   app().querySelectorAll('.stake-pick').forEach(btn => {
-    btn.onclick = () => { selectedStakeId = Number(btn.dataset.stake); renderSetup(meta, config); };
+    btn.onclick = () => { selectedStakeId = Number(btn.dataset.stake); renderSetup(meta, config, profile); };
   });
   const startBtn = document.getElementById('start-run');
   if (startBtn) startBtn.onclick = () => {

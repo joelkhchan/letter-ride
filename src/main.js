@@ -45,7 +45,7 @@ try {
   }
   const render = () => {
     if (view === 'run') return renderRun(run, profile);
-    if (view === 'setup') return renderSetup(meta, CONFIG);
+    if (view === 'setup') return renderSetup(meta, CONFIG, profile);
     if (view === 'meta') return renderMetaShop(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS);
     if (view === 'settings') return renderSettings(!!run);
     if (view === 'achievements') return renderAchievements(profile, CONFIG, ACHIEVEMENTS, ALL_RELIC_IDS, ALL_MOD_IDS);
