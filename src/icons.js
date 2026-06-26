@@ -6,7 +6,10 @@
 // Glyphs are recolored via CSS mask. The mask url is set INLINE (resolves against the document at
 // the web root); a url() in a custom property would resolve relative to src/style.css and 404.
 
-const LETTER_RELICS = { vowelBonus: 'A' };  // vowel-semantic relic: struck Zilla letter, not a pictogram
+// Relics rendered as a struck Zilla letterform instead of an engraved glyph. vowelBonus is
+// letter-semantic ("A"); new relics added during the systems pass use their initial as a stopgap
+// until engraved icons are sourced (a visual follow-up). Avoids an empty seal in the shop/tray.
+const LETTER_RELICS = { vowelBonus: 'A', pithy: 'P' };
 
 // a mask-tinted glyph from an svg path
 function glyphMark(src) {

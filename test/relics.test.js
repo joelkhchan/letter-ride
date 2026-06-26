@@ -24,6 +24,11 @@ test('shortAndSweet: ×3 Mult for words <= 3 letters only', () => {
   assert.equal(base('CAT', { relics: [RELICS.shortAndSweet] }).mult, 3);
   assert.equal(base('CATS', { relics: [RELICS.shortAndSweet] }).mult, 1);
 });
+test('pithy: +15 Points if the word is 3 letters or fewer (gives short words base to multiply)', () => {
+  resetTileIds();
+  assert.equal(base('CAT', { relics: [RELICS.pithy] }).points - base('CAT').points, 15);    // 3 letters
+  assert.equal(base('CATS', { relics: [RELICS.pithy] }).points - base('CATS').points, 0);    // 4 letters
+});
 test('lengthy: +1 Mult per letter beyond 4', () => {
   resetTileIds();
   assert.equal(base('CASTLE', { relics: [RELICS.lengthy] }).mult, 1 + 2);  // 6 letters -> +2

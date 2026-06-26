@@ -32,6 +32,10 @@ export const RELICS = {
     id: 'shortAndSweet', name: 'Short & Sweet', desc: 'Words of 3 letters or fewer: ×3 Mult',
     evaluate: (ctx) => (ctx.letters.length <= 3 ? { timesMult: 3 } : {}),
   },
+  pithy: {
+    id: 'pithy', name: 'Pithy', desc: '+15 Points if the word is 3 letters or fewer',
+    evaluate: (ctx) => (ctx.letters.length <= 3 ? { addPoints: 15 } : {}),
+  },
   lengthy: {
     id: 'lengthy', name: 'Lengthy', desc: '+1 Mult per letter beyond 4',
     evaluate: (ctx) => ({ addMult: Math.max(0, ctx.letters.length - 4) }),
