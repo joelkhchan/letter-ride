@@ -1356,22 +1356,36 @@ export function renderSetup(meta, config, profile) {
 export function renderMetaShop(meta, config, allRelicIds, allModIds) {
   const offers = metaShopOffers(meta, config, allRelicIds, allModIds);
 
-  function metaOfferLabel(offer) {
+  // Name + description per offer (bags/stakes/loadout carry no description in config today).
+  const offerInfo = (offer) => {
     switch (offer.type) {
-      case 'unlockRelic': {
-        const relic = RELICS[offer.relicId];
-        return `${relic?.name || offer.relicId} · ${relic?.desc || ''} · ${offer.cost}`;
-      }
-      case 'unlockMod': {
-        const mod = getMod(offer.modId);
-        return `${mod?.name || offer.modId} · ${mod?.desc || ''} · ${offer.cost}`;
-      }
-      case 'unlockDeck':   return `${config.DECKS[offer.deckId]?.name || offer.deckId} · ${offer.cost}`;
-      case 'unlockStake':  return `${config.STAKES.find(s => s.id === offer.stakeId)?.name || offer.stakeId} · ${offer.cost}`;
-      case 'loadout':      return `${config.LOADOUT[offer.key]?.name || offer.key} · ${offer.cost}`;
-      default:             return `${offer.type} · ${offer.cost}`;
+      case 'unlockRelic': { const r = RELICS[offer.relicId]; return { name: r?.name || offer.relicId, desc: r?.desc || '' }; }
+      case 'unlockMod':   { const m = getMod(offer.modId); return { name: m?.name || offer.modId, desc: m?.desc || '' }; }
+      case 'unlockDeck':  return { name: config.DECKS[offer.deckId]?.name || offer.deckId, desc: '' };
+      case 'unlockStake': return { name: config.STAKES.find(s => s.id === offer.stakeId)?.name || `Stake ${offer.stakeId}`, desc: '' };
+      case 'loadout':     return { name: config.LOADOUT[offer.key]?.name || offer.key, desc: '' };
+      default:            return { name: offer.type, desc: '' };
     }
-  }
+  };
+  // Each offer's icon: the engraved relic seal / themed bag image, else a consistent letterpress badge.
+  const offerIcon = (offer) => {
+    switch (offer.type) {
+      case 'unlockRelic': return relicSealHtml(offer.relicId, { size: 'md' });
+      case 'unlockDeck':  return bagHtml(offer.deckId);
+      case 'unlockMod':   return `<span class="meta-badge mod">${(getMod(offer.modId)?.name || '?').slice(0, 1)}</span>`;
+      case 'unlockStake': return `<span class="meta-badge stake${offer.stakeId >= 2 ? ' hot' : ''}">${offer.stakeId}</span>`;
+      case 'loadout':     return `<span class="meta-badge load">+</span>`;
+      default:            return '';
+    }
+  };
+  const card = (offer, i) => {
+    const cant = meta.meta < offer.cost;
+    const { name, desc } = offerInfo(offer);
+    return `<button class="meta-card${cant ? ' cant' : ''}" data-idx="${i}"${cant ? ' disabled' : ''}>
+      <span class="meta-card-icon">${offerIcon(offer)}</span>
+      <span class="meta-card-body"><b class="meta-card-name">${name}</b>${desc ? `<span class="meta-card-desc">${desc}</span>` : ''}<span class="meta-card-cost">${offer.cost} Meta</span></span>
+    </button>`;
+  };
 
   const SECTIONS = [
     ['unlockRelic', 'Relics'],
@@ -1380,30 +1394,26 @@ export function renderMetaShop(meta, config, allRelicIds, allModIds) {
     ['unlockStake', 'Stakes'],
     ['loadout', 'Loadout'],
   ];
-  const card = (offer, i) => {
-    const disabled = meta.meta < offer.cost ? 'disabled' : '';
-    return `<button class="meta-offer" data-idx="${i}" ${disabled}>${metaOfferLabel(offer)}</button>`;
-  };
   const known = new Set(SECTIONS.map(s => s[0]));
   let sectionsHtml = SECTIONS.map(([type, label]) => {
     const items = offers.map((o, i) => [o, i]).filter(([o]) => o.type === type);
     if (!items.length) return '';
-    return `<div class="meta-section"><h3>${label}</h3>${items.map(([o, i]) => card(o, i)).join('')}</div>`;
+    return `<div class="meta-section"><h3>${label}</h3><div class="meta-grid">${items.map(([o, i]) => card(o, i)).join('')}</div></div>`;
   }).join('');
   const extras = offers.map((o, i) => [o, i]).filter(([o]) => !known.has(o.type));
-  if (extras.length) sectionsHtml += `<div class="meta-section"><h3>Other</h3>${extras.map(([o, i]) => card(o, i)).join('')}</div>`;
+  if (extras.length) sectionsHtml += `<div class="meta-section"><h3>Other</h3><div class="meta-grid">${extras.map(([o, i]) => card(o, i)).join('')}</div></div>`;
   if (!offers.length) sectionsHtml = '<div class="none-label">All unlocked. Nothing left to buy.</div>';
 
   app().innerHTML = `
     ${backArrowHtml()}
-    <div id="meta-screen">
+    <div id="meta-screen" class="shop-screen">
       <div class="menu-title small">Meta Shop</div>
       <div id="meta-balance">${metaSealHtml({ size: 'sm' })}<span>Meta: ${meta.meta}</span></div>
       <div id="meta-shop">${sectionsHtml}</div>
     </div>`;
 
   offers.forEach((offer, i) => {
-    const btn = app().querySelector(`.meta-offer[data-idx="${i}"]`);
+    const btn = app().querySelector(`.meta-card[data-idx="${i}"]`);
     if (!btn || btn.disabled) return;
     btn.onclick = () => handlers.onMetaBuy?.(offer);
   });

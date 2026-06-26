@@ -241,6 +241,22 @@ button { font-family: var(--font-body); color: var(--ink); }
 .setup-screen::after { bottom: 11px; left: 11px; border-right: 0; border-top: 0; border-radius: 0 0 0 6px; }
 .meta-section { margin: 4px 0; }
 .meta-section h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 14px 0 7px; }
+/* ---- Meta Shop offer cards (icon + name + desc + cost, in a responsive grid) ---- */
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.meta-card { position: relative; display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; padding: 11px 13px; border-radius: var(--radius-md); border: 1px solid var(--line); border-top: 3px solid var(--gold-deep); background: linear-gradient(180deg, var(--night-2), var(--night-sunk)); color: var(--ink); cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 3px 9px rgba(0,0,0,0.45); transition: transform 0.11s, border-color 0.11s, box-shadow 0.11s; }
+.meta-card:hover:not([disabled]) { transform: translateY(-2px); border-top-color: var(--gold); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 7px 16px rgba(0,0,0,0.5); }
+.meta-card[disabled], .meta-card.cant { opacity: 0.5; cursor: default; }
+.meta-card-icon { flex: 0 0 54px; height: 54px; display: grid; place-items: center; }
+.meta-card-icon .bag-wrap { width: 52px; height: 52px; }
+.meta-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.meta-card-name { font-family: var(--font-display); font-weight: 700; font-size: 1.02rem; color: var(--ink); }
+.meta-card-desc { font-size: 0.76rem; color: var(--ink-soft); }
+.meta-card-cost { font-size: 0.82rem; font-weight: 700; color: var(--gold); margin-top: 3px; }
+.meta-badge { width: 44px; height: 44px; border-radius: 9px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; }
+.meta-badge.mod { background: linear-gradient(180deg, var(--tile-a), var(--tile-b)); color: var(--tile-ink); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.meta-badge.stake { border-radius: 50%; background: var(--night); border: 1.5px solid var(--gold); color: var(--gold); }
+.meta-badge.stake.hot { border-color: var(--coral); color: var(--coral); }
+.meta-badge.load { background: var(--gold-wash); border: 1px solid var(--line); color: var(--gold); }
 .meta-section .meta-offer { margin: 6px 0; }
 .bag-desc { font-size: 0.74rem; font-weight: 400; color: var(--ink-soft); white-space: normal; margin-top: 2px; line-height: 1.35; }
 
@@ -356,6 +372,7 @@ html.text-large { font-size: 112.5%; }
 
 /* Pushed screens (Run Setup, Meta Shop): clear the fixed back-arrow + read as a centred column */
 #meta-screen { max-width: 680px; margin: 0 auto; padding: 52px 16px 26px; }
+#meta-screen.shop-screen { max-width: 960px; }   /* wider so the offer grid fits three cards across */
 #meta-screen > button { font-size: 1rem; font-weight: 700; padding: 11px 18px; margin: 3px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: linear-gradient(var(--night-2), var(--night)); color: var(--ink); cursor: pointer; transition: border-color 0.1s; }
 #meta-screen > button:hover { border-color: var(--gold); }
 #start-run { border-color: var(--gold) !important; color: var(--gold) !important; }
