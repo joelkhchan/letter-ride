@@ -414,6 +414,32 @@ html.text-large { font-size: 112.5%; }
 .stat-of { font-size: 0.95rem; color: var(--ink-soft); font-weight: 700; }
 .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--ink-soft); margin-top: 1px; }
 .stat-sub { font-size: 0.72rem; color: var(--gold); }
+/* Signature build banner */
+.stat-sig { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 12px; margin: 2px 0 4px; padding: 10px 15px; border-radius: var(--radius-md); border: 1px solid var(--line); border-left: 3px solid var(--gold); background: var(--gold-wash); }
+.stat-sig-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--ink-soft); }
+.stat-sig-name { font-family: var(--font-display); font-weight: 700; font-size: 1.22rem; color: var(--gold); }
+.stat-sig-share { font-size: 0.76rem; color: var(--ink-soft); margin-left: auto; }
+/* "The wall" loss-by-round chart */
+.wall-headline { font-size: 0.82rem; color: var(--ink-soft); margin: 0 0 9px; }
+.wall-headline b { color: var(--ink); }
+.wall-chart { display: flex; align-items: flex-end; gap: 3px; height: 92px; }
+.wall-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; min-width: 0; }
+.wall-bar { width: 100%; min-height: 2px; border-radius: 2px 2px 0 0; background: var(--ink-soft); display: block; }
+.wall-col.boss .wall-bar { background: var(--coral); }
+.wall-col.won .wall-bar { background: var(--gold); }
+.wall-num { font-size: 0.58rem; color: var(--ink-soft); font-family: var(--font-ui); }
+.wall-col.boss .wall-num { color: var(--coral); }
+.wall-col.won .wall-num { color: var(--gold); }
+/* Dev balance-telemetry screen */
+#menu-screen.telemetry { align-items: stretch; max-width: 600px; margin: 0 auto; text-align: left; }
+.telemetry .menu-title { text-align: center; }
+.telem-overall { font-size: 0.9rem; color: var(--ink-soft); }
+.telem-overall b { color: var(--ink); }
+.telem-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 0.82rem; margin: 2px 0 8px; }
+.telem-table th:first-child, .telem-table td:first-child { width: 42%; word-break: break-word; }
+.telem-table th { text-align: right; color: var(--ink-soft); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.telem-table th:first-child, .telem-table td:first-child { text-align: left; }
+.telem-table td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--line-dim); color: var(--ink); }
 .ach-pending { color: var(--gold); font-weight: 700; text-align: center; margin: 4px 0; }
 .ach-section { margin: 10px 0; }
 .ach-section h3 { color: var(--gold); font-family: var(--font-display); margin: 0 0 6px; font-size: 1rem; }

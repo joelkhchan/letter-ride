@@ -11,6 +11,8 @@ export function makeProfile() {
       lifetimeScore: 0,
       bestWordScore: 0, bestWord: '', bestRunScore: 0, bestRoundScore: 0,
       longestWord: '', longestWordLen: 0,
+      lossByRound: {},          // {roundIndex: count} of runs that DIED at each round - the "wall"
+      archetypePlays: {},       // {archetypeId: lifetime match count} - drives the signature build
       relicsEverUsed: [], modsEverApplied: [],
     },
     completed: [],            // achievement ids whose predicate fired (Meta uncollected by default)
@@ -61,10 +63,20 @@ export function recordRunEnd(profile, summary) {
   const s = profile.stats;
   s.runs += 1;
   if (summary.won) s.wins += 1;
+  else {
+    // On a loss, roundsCleared is the round the run died on (run.roundIndex). Tally the wall.
+    const r = summary.roundsCleared || 0;
+    s.lossByRound = s.lossByRound || {};
+    s.lossByRound[r] = (s.lossByRound[r] || 0) + 1;
+  }
   s.roundsCleared += summary.roundsCleared || 0;
   if ((summary.runScore || 0) > s.bestRunScore) s.bestRunScore = summary.runScore || 0;
   for (const id of summary.relicIds || []) addUnique(s.relicsEverUsed, id);
   for (const id of summary.modIds || []) addUnique(s.modsEverApplied, id);
+  // Lifetime archetype lean (from this run's per-archetype match tally) -> signature build.
+  s.archetypePlays = s.archetypePlays || {};
+  const tally = summary.archetypeTally || {};
+  for (const id of Object.keys(tally)) s.archetypePlays[id] = (s.archetypePlays[id] || 0) + (tally[id] || 0);
 }
 
 // Lifetime rank derived from cumulative Score. Pure; tier names + thresholds come from config.LEVELS.
@@ -77,6 +89,23 @@ export function levelFor(lifetimeScore, config) {
 }
 
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
+
+// The archetype the player leans on most (by lifetime match count). null if no data yet.
+function topArchetype(plays) {
+  const entries = Object.entries(plays || {});
+  if (!entries.length) return null;
+  const total = entries.reduce((a, [, n]) => a + n, 0);
+  const [id, n] = entries.reduce((best, e) => (e[1] > best[1] ? e : best));
+  return { id, plays: n, share: total ? n / total : 0 };
+}
+
+// The round most runs die on (the "wall"). null if no losses recorded.
+function topLossRound(lossByRound) {
+  const entries = Object.entries(lossByRound || {});
+  if (!entries.length) return null;
+  const [idx, count] = entries.reduce((best, e) => (Number(e[1]) > Number(best[1]) ? e : best));
+  return { roundIndex: Number(idx), count: Number(count) };
+}
 
 // Pure, player-facing analytics derived from the profile. The Stats screen formats this; the
 // derivation (averages, rates, rank progress) lives here so it stays testable and DOM-free.
@@ -106,5 +135,8 @@ export function statsSummary(profile, config, totals = {}) {
     achievementsDone: (profile?.completed || []).length,
     achievementsClaimed: (profile?.claimedAchievements || []).length,
     achievementsTotal: totals.achievementsTotal || 0,
+    signatureArchetype: topArchetype(s.archetypePlays),   // { id, plays, share } or null
+    lossByRound: s.lossByRound || {},                      // { roundIndex: count }
+    wall: topLossRound(s.lossByRound),                     // { roundIndex, count } or null
   };
 }

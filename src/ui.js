@@ -1181,6 +1181,24 @@ export function renderStats(profile, config, allRelicIds = [], allModIds = [], A
     tile(`${sum.achievementsDone}<span class="stat-of">/${sum.achievementsTotal}</span>`, 'Achievements', `${sum.achievementsClaimed} collected`),
   ].join('');
 
+  const sig = sum.signatureArchetype;
+  const sigBanner = sig
+    ? `<div class="stat-sig"><span class="stat-sig-label">Signature build</span><span class="stat-sig-name">${ARCHETYPES[sig.id]?.name || sig.id}</span><span class="stat-sig-share">${pct(sig.share)} of your plays</span></div>`
+    : '';
+
+  // "The wall": where runs end. A bar per round (runs that died there) + a final Won bar; bosses tinted.
+  const totalRounds = config.ROUND_TARGETS.length;
+  const counts = Array.from({ length: totalRounds }, (_, i) => sum.lossByRound[i] || 0);
+  const maxBar = Math.max(1, sum.wins, ...counts);
+  const cols = counts.map((c, i) => {
+    const boss = i % 3 === 2;
+    return `<div class="wall-col${boss ? ' boss' : ''}"><span class="wall-bar" style="height:${Math.round((c / maxBar) * 100)}%"${c ? ` title="${c} ended at round ${i + 1}"` : ''}></span><span class="wall-num">${i + 1}</span></div>`;
+  }).join('');
+  const wonCol = `<div class="wall-col won"><span class="wall-bar" style="height:${Math.round((sum.wins / maxBar) * 100)}%" title="${sum.wins} won"></span><span class="wall-num">&#10003;</span></div>`;
+  const wallSection = sum.runs > 0
+    ? `<div class="stat-section"><h3>Where runs end</h3>${sum.wall ? `<p class="wall-headline">Your wall: <b>Round ${sum.wall.roundIndex + 1}</b> &middot; Passage ${passageOf(sum.wall.roundIndex)} &middot; ${sum.wall.count} run${sum.wall.count === 1 ? '' : 's'} ended here</p>` : `<p class="wall-headline">No losses yet. ${sum.wins} win${sum.wins === 1 ? '' : 's'} so far.</p>`}<div class="wall-chart">${cols}${wonCol}</div></div>`
+    : '';
+
   const section = (label, body) => `<div class="stat-section"><h3>${label}</h3><div class="stat-grid">${body}</div></div>`;
   const emptyNote = sum.runs === 0 ? `<p class="setup-sub">Play a run to start building your stats.</p>` : '';
 
@@ -1190,7 +1208,9 @@ export function renderStats(profile, config, allRelicIds = [], allModIds = [], A
       <div class="menu-title small">Stats</div>
       ${emptyNote}
       ${rankBanner}
+      ${sigBanner}
       ${section('Runs', runsSection)}
+      ${wallSection}
       ${section('Words', wordsSection)}
       ${section('Collection', collectionSection)}
     </div>`;
@@ -1217,6 +1237,10 @@ export function renderSettings(hasRun) {
         <button id="set-textsize" class="menu-btn">Text size: ${ts}</button>
       </div>
       ${hasRun ? `<h3 class="settings-h">Run</h3><div class="menu-buttons"><button id="set-abandon" class="menu-btn danger">Abandon current run</button></div>` : ''}
+      <h3 class="settings-h">Developer</h3>
+      <div class="menu-buttons">
+        <button id="set-telemetry" class="menu-btn">${lineIconHtml('chart-bar')}Balance telemetry</button>
+      </div>
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('set-sound', () => { toggleMuted(); renderSettings(hasRun); });
@@ -1224,6 +1248,36 @@ export function renderSettings(hasRun) {
   on('set-fast', () => { togglePref('fastScoring'); renderSettings(hasRun); });
   on('set-textsize', () => { setPref('textSize', getPref('textSize') === 'large' ? 'normal' : 'large'); applyDisplayPrefs(); renderSettings(hasRun); });
   on('set-abandon', () => handlers.onAbandonRun?.());
+  on('set-telemetry', () => handlers.onOpenTelemetry?.());
+  wireBack();
+}
+
+// Dev/author balance view: surfaces telemetry.summarize() - per-archetype play share + avg Score
+// (the build-diversity meter) and per-item pick rate + win rate (the "joker win rate"). Local signal.
+export function renderTelemetry(summary) {
+  const pct = (x) => `${Math.round((x || 0) * 100)}%`;
+  const nm = (id) => RELICS[id]?.name || getMod(id)?.name || id;
+
+  const archRows = (summary.archetypes || [])
+    .slice().sort((a, b) => b.plays - a.plays)
+    .map(a => `<tr><td>${ARCHETYPES[a.id]?.name || a.id}</td><td>${a.plays}</td><td>${pct(a.playShare)}</td><td>${Math.round(a.avgScore)}</td></tr>`).join('');
+
+  const itemRows = (summary.items || [])
+    .filter(it => it.offered > 0 || it.runsWith > 0)
+    .slice().sort((a, b) => (b.runsWith - a.runsWith) || (b.offered - a.offered))
+    .map(it => `<tr><td>${nm(it.id)}</td><td>${pct(it.pickRate)}</td><td>${it.runsWith}</td><td>${it.runsWith ? pct(it.winRate) : '&mdash;'}</td></tr>`).join('');
+
+  app().innerHTML = `
+    ${backArrowHtml()}
+    <div id="menu-screen" class="telemetry">
+      <div class="menu-title small">Balance telemetry</div>
+      <p class="setup-sub">Local-only tuning signal (dev). How do real runs compare to the eval harness? Resettable.</p>
+      <p class="telem-overall">Runs <b>${summary.runs}</b> &middot; Win rate <b>${pct(summary.winRate)}</b> &middot; Avg word length <b>${(summary.avgWordLen || 0).toFixed(1)}</b></p>
+      <h3 class="settings-h">Archetypes &middot; build diversity</h3>
+      ${archRows ? `<table class="telem-table"><tr><th>Archetype</th><th>Plays</th><th>Share</th><th>Avg</th></tr>${archRows}</table>` : '<p class="none-label">No plays recorded yet.</p>'}
+      <h3 class="settings-h">Relics &amp; mods &middot; pick + win rate</h3>
+      ${itemRows ? `<table class="telem-table"><tr><th>Item</th><th>Pick</th><th>Runs</th><th>Win</th></tr>${itemRows}</table>` : '<p class="none-label">No offers recorded yet.</p>'}
+    </div>`;
   wireBack();
 }
 

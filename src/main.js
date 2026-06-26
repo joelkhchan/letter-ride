@@ -7,11 +7,11 @@ import { generateShop, purchase } from './shop.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
-import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd } from './telemetry.js';
+import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
 import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
 import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingCount } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
-import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, renderStats, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
+import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, renderStats, renderTelemetry, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx, resumeAudio } from './audio.js';
 import { logEvent } from './playlog.js';
 import { applyDisplayPrefs } from './settings.js';
@@ -50,6 +50,7 @@ try {
     if (view === 'settings') return renderSettings(!!run);
     if (view === 'achievements') return renderAchievements(profile, CONFIG, ACHIEVEMENTS, ALL_RELIC_IDS, ALL_MOD_IDS);
     if (view === 'stats') return renderStats(profile, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS, ACHIEVEMENTS);
+    if (view === 'telemetry') return renderTelemetry(summarize(telemetry));
     return renderMenu(!!run, meta.meta, pendingCount(profile, CONFIG));   // 'menu' (badge = items ready to collect)
   };
   const pool = () => poolFromMeta(meta);
@@ -71,7 +72,7 @@ try {
     const won = run.status === 'won';
     const roundsCleared = won ? run.targets.length : run.roundIndex;
     // Update lifetime sets FIRST so completeness predicates (curator/enchanter) see this run's ids.
-    profileRecordRunEnd(profile, { won, roundsCleared, runScore: run.roundTotal, relicIds, modIds });
+    profileRecordRunEnd(profile, { won, roundsCleared, runScore: run.roundTotal, relicIds, modIds, archetypeTally: run.archetypeTally });
     if (won) grantBounties(profile, run.stake?.id ?? 0, run.deck?.id ?? null);   // mark earned; collected later
     markCompletions(checkAchievements(profile, {
       phase: 'end', won, roundIndex: run.roundIndex,
@@ -221,6 +222,7 @@ try {
     onOpenMetaShop() { view = 'meta'; render(); },
     onOpenAchievements() { view = 'achievements'; render(); },
     onOpenStats() { view = 'stats'; render(); },
+    onOpenTelemetry() { view = 'telemetry'; render(); },
     // Collect an earned-but-unclaimed reward on the Achievements screen (the only path that pays Meta).
     onCollectAchievement(id) { const r = collectAchievement(profile, id, CONFIG); if (r > 0) meta.meta += r; saveAll(); render(); return r; },
     onCollectBounty(key) { const r = collectBounty(profile, key, CONFIG); if (r > 0) meta.meta += r; saveAll(); render(); return r; },

@@ -108,4 +108,30 @@ test('statsSummary is safe on an empty profile (no divide-by-zero)', () => {
   assert.equal(sum.avgRoundsPerRun, 0);
   assert.equal(sum.rank.name, 'Novice');
   assert.equal(sum.rank.progress, 1);   // no next tier -> full bar
+  assert.equal(sum.signatureArchetype, null);
+  assert.equal(sum.wall, null);
+});
+
+test('recordRunEnd tallies the wall (loss round) and lifetime archetype plays', () => {
+  const p = makeProfile();
+  recordRunEnd(p, { won: false, roundsCleared: 5,  runScore: 100, archetypeTally: { longWord: 3, vowelHeavy: 1 } });
+  recordRunEnd(p, { won: false, roundsCleared: 5,  runScore: 120, archetypeTally: { longWord: 2 } });
+  recordRunEnd(p, { won: true,  roundsCleared: 12, runScore: 400, archetypeTally: { longWord: 4, shortWord: 1 } });
+  assert.deepEqual(p.stats.lossByRound, { 5: 2 });   // two losses at round index 5; the win is not tallied
+  assert.equal(p.stats.archetypePlays.longWord, 9);  // 3 + 2 + 4
+  assert.equal(p.stats.archetypePlays.vowelHeavy, 1);
+  assert.equal(p.stats.archetypePlays.shortWord, 1);
+});
+
+test('statsSummary surfaces the signature build and the wall', () => {
+  const cfg = { LEVELS: { names: ['Novice'], thresholds: [0] } };
+  const p = makeProfile();
+  recordRunEnd(p, { won: false, roundsCleared: 4, runScore: 50, archetypeTally: { longWord: 5, rareLetter: 2 } });
+  recordRunEnd(p, { won: false, roundsCleared: 7, runScore: 80, archetypeTally: { longWord: 1 } });
+  recordRunEnd(p, { won: false, roundsCleared: 7, runScore: 90, archetypeTally: {} });
+  const sum = statsSummary(p, cfg, {});
+  assert.equal(sum.signatureArchetype.id, 'longWord');   // 6 total, the most
+  assert.equal(sum.signatureArchetype.plays, 6);
+  assert.equal(sum.signatureArchetype.share, 6 / 8);     // of 6 longWord + 2 rareLetter
+  assert.deepEqual(sum.wall, { roundIndex: 7, count: 2 });
 });
