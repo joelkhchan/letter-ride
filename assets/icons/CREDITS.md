@@ -36,6 +36,7 @@ a struck Zilla Slab letter "A", and Wildcard Rares (`relic-wildcardRares.svg`) i
 | `relic-throughLine.svg` | knot | Delapouite |
 | `relic-recycler.svg` | recycle | Lorc |
 | `relic-pressLead.svg` | stamper | Delapouite |
+| `relic-pithy.svg` | anvil | Delapouite |
 
 All of the above are by their named authors, sourced from https://game-icons.net, licensed CC BY 3.0.
 
