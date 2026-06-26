@@ -963,25 +963,63 @@ function offerInfoData(offer) {
   }
 }
 
+// Full card data for an in-run shop offer: category caption, name, description, icon HTML.
+// Mirrors the Meta Shop's card vocabulary so both shops read as one family.
+function shopOfferCard(offer) {
+  const badge = (cls, inner) => `<span class="meta-badge ${cls}">${inner}</span>`;
+  const tile = (l) => badge('letter', l);
+  const util = (icon) => badge('util', lineIconHtml(icon));
+  switch (offer.type) {
+    case 'buyRelic': {
+      const r = RELICS[offer.relicId];
+      return { cat: 'Relic', name: r?.name || offer.relicId, desc: r?.desc || '', icon: relicSealHtml(offer.relicId, { size: 'md' }) };
+    }
+    case 'buyEnchantedTile': {
+      const m = getMod(offer.modId);
+      return { cat: 'Enchant', name: `${offer.letter} + ${m?.name || offer.modId}`, desc: m?.desc || '', icon: tile(offer.letter) };
+    }
+    case 'enchantTile': {
+      const m = getMod(offer.modId);
+      return { cat: 'Enchant', name: m?.name || offer.modId, desc: `Enchant a tile: ${m?.desc || ''}`, icon: badge('mod', (m?.name || '?').slice(0, 1)) };
+    }
+    case 'buyLetter':
+      return { cat: 'Letter', name: `Buy ${offer.letter}`, desc: `Add ${/^[AEIOU]/.test(offer.letter) ? 'an' : 'a'} ${offer.letter} tile to your bag`, icon: tile(offer.letter) };
+    case 'upgradeLetter':
+      return { cat: 'Upgrade', name: `Upgrade ${offer.letter} +${offer.plus}`, desc: `Every ${offer.letter} tile is worth +${offer.plus} Point${offer.plus === 1 ? '' : 's'}`, icon: tile(offer.letter) };
+    case 'thinLetter':
+      return { cat: 'Bag', name: 'Thin the bag', desc: 'Remove a tile of your choice from your bag', icon: util('trash') };
+    case 'recastTile':
+      return { cat: 'Recast', name: 'Recast a tile', desc: 'Change one tile to a letter you choose', icon: util('refresh') };
+    case 'transferMods':
+      return { cat: 'Transfer', name: 'Transfer mods', desc: "Move a tile's mods onto another (destroys the source)", icon: util('arrows-shuffle') };
+    case 'hone': {
+      const a = ARCHETYPES[offer.archetypeId];
+      const lvl = (lastRun?.honeLevels?.[offer.archetypeId] || 0);
+      return { cat: `Hone &middot; Lv ${lvl}&rarr;${lvl + 1}`, name: a?.name || offer.archetypeId, desc: a?.desc || '', icon: badge('hone', lineIconHtml('tools')) };
+    }
+    default:
+      return { cat: '', name: offerLabel(offer), desc: '', icon: '' };
+  }
+}
+
 function renderShop(run) {
   const shop = run.shop;
   const coins = run.coins || 0;
   const canAfford = (cost) => coins >= cost;
 
   const offersHtml = shop.offers.map((offer, i) => {
-    const label = offerLabel(offer);
-    const disabled = !canAfford(offer.cost) ? 'disabled' : '';
-    // Relic offers get their Tier-A seal; the label already states the effect + cost inline.
-    const seal = offer.type === 'buyRelic' ? relicSealHtml(offer.relicId, { size: 'md' }) : '';
-    const hone = offer.type === 'hone' ? lineIconHtml('tools') : '';
-    const text = offer.type === 'buyRelic' ? label.replace(/^Relic: /, '')
-      : offer.type === 'hone' ? label.replace(/^Hone: /, '') : label;
-    return `<div class="shop-offer-row"><button class="shop-offer${seal || hone ? ' has-seal' : ''}" data-idx="${i}" ${disabled}>${seal}${hone}${text}</button></div>`;
+    const { cat, name, desc, icon } = shopOfferCard(offer);
+    const cant = !canAfford(offer.cost);
+    const cls = `meta-card shop-card${offer.type === 'buyRelic' ? ' is-relic' : ''}${cant ? ' cant' : ''}`;
+    return `<button class="${cls}" data-idx="${i}"${cant ? ' disabled' : ''}>
+      <span class="meta-card-icon">${icon}</span>
+      <span class="meta-card-body">${cat ? `<span class="shop-cat">${cat}</span>` : ''}<b class="meta-card-name">${name}</b>${desc ? `<span class="meta-card-desc">${desc}</span>` : ''}<span class="meta-card-cost">${lineIconHtml('coins')}${offer.cost}</span></span>
+    </button>`;
   }).join('');
 
   const freeRerolls = run.freeRerollsLeft || 0;
   const rerollDisabled = (freeRerolls <= 0 && !canAfford(shop.rerollCost)) ? 'disabled' : '';
-  const rerollLabel = freeRerolls > 0 ? `Reroll &middot; free (${freeRerolls})` : `Reroll ($${shop.rerollCost})`;
+  const rerollLabel = freeRerolls > 0 ? `Reroll <span class="free-pill">free &times;${freeRerolls}</span>` : `Reroll ($${shop.rerollCost})`;
 
   let lastAwardHtml = '';
   if (run.lastAward && run.lastAward.length) {
@@ -991,15 +1029,14 @@ function renderShop(run) {
   }
 
   app().innerHTML = `
-    <div id="hud">
-      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} &middot; Shop</div>
-      <div><b>${run.roundTotal}</b> / ${run.target} Score ✓</div>
-      <div id="coins">$${coins}</div>
+    <div class="shop-counter">
+      <span class="sc-title">${lineIconHtml('building-store')}<span class="sc-main">The Press Shop</span><span class="sc-sub">Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} cleared</span></span>
+      <span class="shop-wallet">${lineIconHtml('coins')}${coins}</span>
     </div>
     ${relicsModsPanelHtml(run)}
     ${lastAwardHtml}
     <div id="shop">
-      <div id="shop-offers">${offersHtml}</div>
+      <div class="shop-grid">${offersHtml}</div>
       <div id="shop-actions">
         <button id="reroll" ${rerollDisabled}>${lineIconHtml('refresh')}${rerollLabel}</button>
         <button id="continue">${lineIconHtml('player-track-next')}Continue</button>
@@ -1009,7 +1046,7 @@ function renderShop(run) {
 
   // Wire offer buttons.
   shop.offers.forEach((offer, i) => {
-    const btn = app().querySelector(`.shop-offer[data-idx="${i}"]`);
+    const btn = app().querySelector(`.shop-card[data-idx="${i}"]`);
     if (!btn || btn.disabled) return;
     btn.onclick = () => {
       if (offer.type === 'recastTile') showRecastPicker(run, offer);
@@ -1368,7 +1405,7 @@ export function renderMetaShop(meta, config, allRelicIds, allModIds) {
         if (st?.discardsDelta) parts.push(`${st.discardsDelta > 0 ? '+' : ''}${st.discardsDelta} discard/round`);
         return { name: st?.name || `Stake ${offer.stakeId}`, desc: parts.join(' · ') };
       }
-      case 'loadout':     return { name: config.LOADOUT[offer.key]?.name || offer.key, desc: '' };
+      case 'loadout':     return { name: config.LOADOUT[offer.key]?.name || offer.key, desc: config.LOADOUT[offer.key]?.desc || '' };
       default:            return { name: offer.type, desc: '' };
     }
   };

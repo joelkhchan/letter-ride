@@ -73,9 +73,9 @@ export const CONFIG = {
     { id: 2, name: 'Stake 2', targetMult: 1.5,  playsDelta: -1, discardsDelta: 0 },
   ],
   LOADOUT: {
-    extraDiscards: { name: '+1 Discard / round', max: 2, cost: 10 },
-    freeReroll:    { name: '+1 free reroll per shop', max: 2, cost: 8 },
-    round1Play:    { name: '+1 Play on round 1', max: 1, cost: 8 },
+    extraDiscards: { name: '+1 Discard / round', max: 2, cost: 10, desc: 'More discards each round to dig for better letters' },
+    freeReroll:    { name: '+1 free reroll per shop', max: 2, cost: 8, desc: 'Reroll the shop once per visit at no cost' },
+    round1Play:    { name: '+1 Play on round 1', max: 1, cost: 8, desc: 'An extra play to open the run strong' },
   },
   HONE: { cost: 6 },
   PROFANITY_FILTER: true,

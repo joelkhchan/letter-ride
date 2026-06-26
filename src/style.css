@@ -194,11 +194,31 @@ button { font-family: var(--font-body); color: var(--ink); }
 #msg { text-align: center; color: var(--coral); font-weight: 700; min-height: 1.2rem; }
 .end { width: 100%; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; color: var(--gold); margin: 10px 0; }
 
-/* ================================================================ Shop offers */
-.shop-offer-row { display: flex; align-items: stretch; gap: 4px; margin: 6px 0; }
-.shop-offer, .meta-offer { display: block; flex: 1; width: 100%; text-align: left; padding: 11px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line); border-left: 3px solid var(--line); background: var(--night-2); color: var(--ink); font-size: 0.95rem; cursor: pointer; transition: border-color 0.1s, background 0.1s; }
-.shop-offer:hover:not([disabled]), .meta-offer:hover:not([disabled]) { border-color: var(--gold); border-left-color: var(--gold); background: var(--gold-wash); }
-.shop-offer[disabled], .meta-offer[disabled] { opacity: 0.42; cursor: default; }
+/* ================================================================ Shop offers (card parity with the Meta Shop) */
+/* In-run shop: a counter bar (context + wallet) above a responsive grid of offer cards that
+   reuse the Meta Shop's .meta-card vocabulary, so both shops read as one family. */
+.shop-counter { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 4px; column-gap: 12px; padding: 9px 15px; margin: 0 0 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); border-left: 3px solid var(--gold); background: linear-gradient(180deg, var(--night-2), var(--night-sunk)); }
+.shop-counter .sc-title { display: flex; align-items: baseline; gap: 9px; font-family: var(--font-display); font-weight: 700; color: var(--ink); min-width: 0; }
+.shop-counter .sc-main { white-space: nowrap; }
+.shop-counter .sc-title .lr-line { width: 1.1em; height: 1.1em; background: var(--gold); align-self: center; flex: 0 0 auto; }
+.shop-counter .sc-sub { font-size: 0.74rem; color: var(--ink-soft); font-family: var(--font-ui); font-weight: 400; letter-spacing: 0; }
+.shop-wallet { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 700; font-size: 1.18rem; color: var(--gold); white-space: nowrap; }
+.shop-wallet .lr-line { width: 0.95em; height: 0.95em; background: var(--gold); }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.shop-card .shop-cat { font-size: 0.6rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-soft); font-family: var(--font-ui); }
+.shop-card.is-relic .shop-cat { color: var(--gold); }
+.shop-card .meta-card-cost { display: inline-flex; align-items: center; gap: 4px; }
+.shop-card .meta-card-cost .lr-line { width: 0.82em; height: 0.82em; background: currentColor; vertical-align: -0.06em; }
+.meta-badge.letter { background: linear-gradient(180deg, var(--tile-a), var(--tile-b)); color: var(--tile-ink); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.meta-badge.util { background: var(--gold-wash); border: 1px solid var(--line); color: var(--gold); }
+.meta-badge.util .lr-line { width: 1.32em; height: 1.32em; background: currentColor; }
+.meta-badge.hone { background: var(--gold-wash); border: 1px solid var(--gold-deep); color: var(--gold); }
+.meta-badge.hone .lr-line { width: 1.32em; height: 1.32em; background: currentColor; }
+#shop-actions .free-pill { font-size: 0.68rem; color: #0c1626; background: var(--gold); border-radius: 999px; padding: 1px 7px; margin-left: 6px; font-family: var(--font-ui); font-weight: 700; }
+/* legacy .meta-offer (kept; harmless if unused) */
+.meta-offer { display: block; flex: 1; width: 100%; text-align: left; padding: 11px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line); border-left: 3px solid var(--line); background: var(--night-2); color: var(--ink); font-size: 0.95rem; cursor: pointer; transition: border-color 0.1s, background 0.1s; }
+.meta-offer:hover:not([disabled]) { border-color: var(--gold); border-left-color: var(--gold); background: var(--gold-wash); }
+.meta-offer[disabled] { opacity: 0.42; cursor: default; }
 
 /* ================================================================ Deck / bag picker */
 .deck-pick, .stake-pick { display: inline-block; padding: 10px 15px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--night-2); color: var(--ink); box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 2px 6px rgba(0,0,0,0.45); margin: 4px; cursor: pointer; font-size: 0.95rem; font-weight: 700; vertical-align: top; transition: border-color 0.1s; }
