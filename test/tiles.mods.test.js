@@ -61,3 +61,31 @@ test('WILD contributes 0 base Points but its mod still applies', () => {
   // wild=0 base, T=1, E=1, + polished +4 = 6
   assert.equal(scoreWord(s, { tileValues: tv, lengthBonusPerLetter: 0 }).points, 0 + 1 + 1 + 4);
 });
+
+// Archetype-flavored mods (design-review #4): each rewards its archetype's condition when its tile plays.
+test('bloom: +2 Points per vowel in the word (vowel archetype)', () => {
+  resetTileIds();
+  const s = selWithMod('OAT', 0, 'bloom');                                  // O,A vowels = 2 -> +4
+  const bare = [...'OAT'].map(ch => ({ tile: makeTile(ch), letter: ch }));
+  const o = { tileValues: tv, lengthBonusPerLetter: 0 };
+  assert.equal(scoreWord(s, o).points - scoreWord(bare, o).points, 4);
+});
+test('lode: +15 Points if the word uses a rare letter (rare archetype)', () => {
+  resetTileIds();
+  const tvZ = { Z: 10, A: 1, T: 1 };
+  assert.equal(scoreWord(selWithMod('ZA', 0, 'lode'), { tileValues: tvZ, lengthBonusPerLetter: 0 }).points, 10 + 1 + 15);
+  assert.equal(scoreWord(selWithMod('AT', 0, 'lode'), { tileValues: tvZ, lengthBonusPerLetter: 0 }).points, 1 + 1);
+});
+test('stretch: +3 Points per letter beyond 4 (long archetype)', () => {
+  resetTileIds();
+  const s = selWithMod('CATER', 0, 'stretch');                              // 5 letters -> +3
+  const bare = [...'CATER'].map(ch => ({ tile: makeTile(ch), letter: ch }));
+  const o = { tileValues: tv, lengthBonusPerLetter: 0 };
+  assert.equal(scoreWord(s, o).points - scoreWord(bare, o).points, 3);
+});
+test('compact: +2 Mult if the word is 3 letters or fewer (short archetype)', () => {
+  resetTileIds();
+  const o = { tileValues: tv, lengthBonusPerLetter: 0 };
+  assert.equal(scoreWord(selWithMod('CAT', 0, 'compact'), o).mult, 3);      // 1 + 2
+  assert.equal(scoreWord(selWithMod('CART', 0, 'compact'), o).mult, 1);     // 4 letters -> no bonus
+});
