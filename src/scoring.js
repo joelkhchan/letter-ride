@@ -37,5 +37,8 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
 
   const mult = (1 + addMult) * timesMult;                            // +Mult then ×Mult
   const breakdown = { base, lengthBonus, pointParts, addMultParts, timesMultParts };
-  return { points, mult, score: points * mult, breakdown };
+  // Score is rounded to an integer: fractional multipliers (×1.5, snowball per-stack, mods) otherwise
+  // leak IEEE float noise (e.g. 304.29999999999995) into roundTotal, the breakdown, and lifetimeScore.
+  // Points and mult stay exact; only the final Score is rounded.
+  return { points, mult, score: Math.round(points * mult), breakdown };
 }

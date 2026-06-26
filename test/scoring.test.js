@@ -124,3 +124,14 @@ test('no retrigger: behavior unchanged (relic +Points, mod +Mult, base, length)'
   assert.equal(r.mult, 2);
   assert.equal(r.score, 40);
 });
+
+test('score is rounded to an integer (no fractional/float-noise Score)', () => {
+  // CAT base = C3+A1+T1 = 5 points, no length bonus; a ×1.5 relic → 5 × 1.5 = 7.5 → rounds to 8.
+  const cat = sel([makeTile('C'), 'C'], [makeTile('A'), 'A'], [makeTile('T'), 'T']);
+  const timesMult = { id: 'half', name: 'Half', evaluate: () => ({ timesMult: 1.5 }) };
+  const r = scoreWord(cat, { tileValues, lengthBonusPerLetter: 0, relics: [timesMult] });
+  assert.equal(r.points, 5);
+  assert.equal(r.mult, 1.5);
+  assert.equal(r.score, 8, 'score 7.5 must round to 8');
+  assert.equal(Number.isInteger(r.score), true, 'score must always be an integer');
+});
