@@ -89,25 +89,27 @@ test('recordPlay accumulates plays and totalWordLen (ctx signature)', () => {
   assert.equal(t.totalWordLen, 10);
 });
 
-test('recordPlay classifies per-archetype: QI hits rareLetter+shortWord+escalation, CAT hits shortWord+escalation', () => {
+test('recordPlay classifies per-archetype: QI (round-opener) hits rareLetter+shortWord; CAT (2nd word) also hits escalation', () => {
   const t = makeTelemetry();
 
-  // QI: 2 letters, uses rare Q → matches shortWord, rareLetter, escalation (always true), NOT vowelHeavy/doubled/longWord
+  // QI: 2 letters, uses rare Q, played as the round's FIRST word (wordsPlayedThisRound 0) → matches
+  // shortWord + rareLetter, but NOT escalation (momentum hasn't started), NOT vowelHeavy/doubled/longWord.
   const qiCtx = ctx('QI', { wordsPlayedThisRound: 0 });
   recordPlay(t, qiCtx, 50);
 
-  // CAT: 3 letters, no rare → matches shortWord, escalation; NOT rareLetter/doubled/vowelHeavy/longWord
+  // CAT: 3 letters, no rare, played as the 2nd word (wordsPlayedThisRound 1) → matches shortWord + escalation.
   const catCtx = ctx('CAT', { wordsPlayedThisRound: 1 });
   recordPlay(t, catCtx, 20);
 
   assert.equal(t.archetypes['shortWord']?.plays, 2, 'shortWord should have 2 plays (QI + CAT)');
   assert.equal(t.archetypes['rareLetter']?.plays, 1, 'rareLetter should have 1 play (QI only)');
-  assert.equal(t.archetypes['escalation']?.plays, 2, 'escalation matches every play');
+  assert.equal(t.archetypes['escalation']?.plays, 1, 'escalation matches only the 2nd+ word (CAT, not the opening word QI)');
   assert.equal(t.archetypes['longWord']?.plays, undefined, 'longWord should have no plays');
 
-  // Scores: QI→50, CAT→20; shortWord total = 70
+  // Scores: QI→50, CAT→20; shortWord total = 70; escalation only the CAT play
   assert.equal(t.archetypes['shortWord'].totalScore, 70, 'shortWord totalScore = 50+20');
   assert.equal(t.archetypes['rareLetter'].totalScore, 50, 'rareLetter totalScore = 50');
+  assert.equal(t.archetypes['escalation'].totalScore, 20, 'escalation totalScore = CAT only');
 });
 
 test('recordRunEnd with won=true increments runs, wins, runsWith, winsWith', () => {

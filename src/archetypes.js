@@ -60,8 +60,12 @@ export const ARCHETYPES = {
   },
   escalation: {
     id: 'escalation', name: 'Escalation',
-    desc: 'Each word this round boosts the next.',
-    matches: () => true,
+    desc: 'Each word after the first this round boosts the next; chained words feed it too.',
+    // Real condition (was () => true, the universal fallback that diluted its identity): escalation
+    // applies once momentum has started — the 2nd+ word of a round, or a chained word. This also
+    // folds in the chain mechanic (chainReaction / throughLine): a chained word counts as escalation,
+    // so chain play benefits from the escalation Hone/identity instead of being an orphan mechanic.
+    matches: (ctx) => (ctx.wordsPlayedThisRound || 0) >= 1 || (ctx.chainLength || 0) >= 1,
     honeBonus: (ctx, lvl) => { const m = 0.5 * lvl * (ctx.wordsPlayedThisRound || 0); return (m || lvl >= 3) ? { addMult: m, timesMult: honeXMult(lvl) } : {}; },
   },
 };

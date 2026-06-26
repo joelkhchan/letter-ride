@@ -26,6 +26,11 @@ test('shortWord hone adds Mult per level on <=3 letters only', () => {
 test('escalation hone scales Mult with words played this round', () => {
   assert.deepEqual(ARCHETYPES.escalation.honeBonus(ctx('CAT', { wordsPlayedThisRound: 4 }), 1), { addMult: 2, timesMult: 1 }); // 0.5*1*4, no kicker below L3
 });
+test('escalation matches only once momentum has started (2nd+ word or a chained word), not the first', () => {
+  assert.equal(ARCHETYPES.escalation.matches(ctx('CAT', { wordsPlayedThisRound: 0 })), false);  // first word of the round
+  assert.equal(ARCHETYPES.escalation.matches(ctx('CAT', { wordsPlayedThisRound: 1 })), true);   // 2nd+ word
+  assert.equal(ARCHETYPES.escalation.matches(ctx('CAT', { chainLength: 1 })), true);            // chained word (folded chain)
+});
 test('looseDoubled enabler counts a non-adjacent repeat as doubled', () => {
   assert.equal(ARCHETYPES.doubled.matches(ctx('TOT')), false);                                  // T-O-T: repeat but no adjacent double
   assert.equal(ARCHETYPES.doubled.matches({ ...ctx('TOT'), enablers: ['looseDoubled'] }), true);
