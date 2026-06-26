@@ -219,8 +219,30 @@ Tagged **[design]** (this lane: structure/new mechanics), **[balance]** (numbers
 
 ## 8. What this is *not*
 
-This doc proposes **design structure**; it does not set magnitudes, and nothing here was implemented.
-Recommended next step if you want to act on any item: pick the ones you like, and each becomes either a
-focused brainstorm (e.g. the Doubled skill lever — a few concrete mechanic options to choose between) or
-an implementation plan, with the balance lane tuning magnitudes after the mechanic exists. The author
-judges fun; these are options, not decisions.
+This doc proposes **design structure**; it does not set magnitudes. (Recs #1–#5 were subsequently
+implemented — see §9.) The author judges fun; the numbers are options, not decisions.
+
+---
+
+## 9. Implementation status (2026-06-26)
+
+Recs #1–#5 implemented (logic-lane, TDD, 294 tests) and committed; the author **paused before #6**.
+Magnitudes and names throughout are placeholder starting points to tune/rebrand, and the five
+mechanics are **unplaytested** — a playtest is the next gate before more balance-sensitive work.
+
+- **#1 Doubled skill lever** — the `Twin` tile-mod makes a tile count as a doubled letter (engineer the
+  double); `doubleTrouble` routed through `isDoubled`. (`101905b`)
+- **#2 Archetype mods** — `Bloom` / `Lode` / `Stretch` / `Compact` (vowel / rare / long / short). (`da6b65d`)
+- **#3 Short-word base** — `Pithy` relic (+Points on ≤3 letters); renders as a struck "P" pending an
+  engraved icon. The "short bag" was folded into #6 (a short-lean bag-modifier). (`41fbd8d`)
+- **#4 Escalation + chain** — real condition (2nd+ word / chained word); chain folded into Escalation. (`e7aba64`)
+- **#5 Discovery achievements** — Curator/Enchanter reward breadth (tunable config thresholds). Artisan left 60k. (`8920990`)
+
+**Deferred to a dedicated session (#6):**
+- **Bag-modifiers** — a new meta-system (base bag × modifier twists). Needs its own brainstorm
+  (attachment model, New Run + Meta Shop UI, bounty-grid interaction). Subsumes the short-lean bag.
+- **Hone-vs-snowball scaling shift** — balance numbers; belongs to the balance harness + a playtest,
+  not a unilateral retune.
+
+**Visual follow-up:** engraved icons for new relics (Pithy, and any future ones) to replace the
+struck-letter stopgap.
