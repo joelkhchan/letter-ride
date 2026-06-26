@@ -48,6 +48,11 @@ All of the above are by their named authors, sourced from https://game-icons.net
 | `bosses/boss-toll.svg` | gate | Delapouite |
 | `bosses/boss-vise.svg` | clamp | Delapouite |
 | `ui/meta.svg` | medal | Lorc |
+| `buckets/onboarding.svg` | sprout | Lorc |
+| `buckets/progression.svg` | ladder | Delapouite |
+| `buckets/mastery.svg` | laurel-crown | Lorc |
+| `buckets/diversity.svg` | split-arrows | Delapouite |
+| `buckets/discovery.svg` | compass | Lorc |
 
 ## General UI glyphs — Tabler Icons (MIT, https://github.com/tabler/tabler-icons/blob/main/LICENSE)
 

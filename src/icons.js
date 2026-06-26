@@ -41,3 +41,9 @@ export function lineIconHtml(name) {
   const src = `assets/icons/ui/${name}.svg`;
   return `<span class="lr-line" style="-webkit-mask:url('${src}') center/contain no-repeat;mask:url('${src}') center/contain no-repeat" aria-hidden="true"></span>`;
 }
+
+// Achievement bucket badge: the bucket's emblem in a small seal; grey (locked) until earned.
+export function bucketBadgeHtml(bucket, earned) {
+  const cls = `relic-seal relic-seal--sm${earned ? '' : ' locked'}`;
+  return `<span class="${cls}" aria-hidden="true">${glyphMark(`assets/icons/buckets/${bucket}.svg`)}</span>`;
+}

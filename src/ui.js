@@ -12,7 +12,7 @@ import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 import { getPref, setPref, togglePref, applyDisplayPrefs } from './settings.js';
 import { levelFor } from './profile.js';
 import { pendingMeta } from './achievements.js';
-import { relicSealHtml, bossSealHtml, metaSealHtml, lineIconHtml } from './icons.js';
+import { relicSealHtml, bossSealHtml, metaSealHtml, lineIconHtml, bucketBadgeHtml } from './icons.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -1153,12 +1153,18 @@ export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = 
   ];
   // Feat-first rows. Completed-unclaimed rows get a Collect button (the only path that pays Meta).
   const rowsFor = (bucket) => (ACHIEVEMENTS || []).filter(a => a.bucket === bucket).map(a => {
-    const isClaimed = claimed.has(a.id), isDone = done.has(a.id);
+    const isClaimed = claimed.has(a.id), isDone = done.has(a.id), earned = isDone || isClaimed;
     let right;
     if (isClaimed) right = `<span class="ach-claimed">collected</span>`;
     else if (isDone) right = `<button class="ach-collect" data-collect-ach="${a.id}">Collect +${rewardFor(a)}</button>`;
-    else { const pr = progressFor(a); right = `<span class="ach-reward">${pr ? pr + ' · ' : ''}+${rewardFor(a)} Meta</span>`; }
+    else {
+      const pr = progressFor(a);
+      let bar = '';
+      if (pr) { const [n, d] = pr.split('/').map(Number); const pct = d ? Math.max(0, Math.min(100, Math.round(100 * n / d))) : 0; bar = `<span class="ach-bar" title="${pr}"><span class="ach-bar-fill" style="width:${pct}%"></span></span>`; }
+      right = `${bar}<span class="ach-reward">${pr ? pr + ' · ' : ''}+${rewardFor(a)} Meta</span>`;
+    }
     return `<div class="ach-row ${isClaimed ? 'claimed' : isDone ? 'ready' : 'locked'}">
+      ${bucketBadgeHtml(bucket, earned)}
       <span class="ach-name">${a.name}</span>
       <span class="ach-desc">${a.desc}</span>
       ${right}
