@@ -174,6 +174,10 @@ button { font-family: var(--font-body); color: var(--ink); }
 /* ================================================================ Deck / bag picker */
 .deck-pick, .stake-pick { display: inline-block; padding: 10px 15px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--night-2); color: var(--ink); box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 2px 6px rgba(0,0,0,0.45); margin: 4px; cursor: pointer; font-size: 0.95rem; font-weight: 700; vertical-align: top; transition: border-color 0.1s; }
 .deck-pick:hover, .stake-pick:hover { border-color: var(--gold); }
+.deck-pick.active, .stake-pick.active { border-color: var(--gold); outline: 2px solid var(--gold); }
+.meta-section { margin: 4px 0; }
+.meta-section h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 14px 0 7px; }
+.meta-section .meta-offer { margin: 6px 0; }
 .bag-desc { font-size: 0.74rem; font-weight: 400; color: var(--ink-soft); white-space: normal; margin-top: 2px; line-height: 1.35; }
 
 /* ================================================================ Node-choice */

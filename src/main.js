@@ -7,11 +7,11 @@ import { generateShop, purchase } from './shop.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
-import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
+import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd } from './telemetry.js';
 import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
 import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingMeta } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
-import { renderRun, renderMeta, renderMenu, renderSettings, renderAchievements, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
+import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx, resumeAudio } from './audio.js';
 import { logEvent } from './playlog.js';
 
@@ -44,7 +44,8 @@ try {
   }
   const render = () => {
     if (view === 'run') return renderRun(run);
-    if (view === 'meta') return renderMeta(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS, () => summarize(telemetry));
+    if (view === 'setup') return renderSetup(meta, CONFIG);
+    if (view === 'meta') return renderMetaShop(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS);
     if (view === 'settings') return renderSettings(!!run);
     if (view === 'achievements') return renderAchievements(profile, CONFIG, ACHIEVEMENTS, ALL_RELIC_IDS, ALL_MOD_IDS);
     return renderMenu(!!run, meta.meta, pendingMeta(profile, CONFIG));   // 'menu'
@@ -83,7 +84,7 @@ try {
     }, CONFIG));
     meta.meta += earned; run.lastMetaEarned = earned;   // base drip auto-pays; achievement/bounty Meta is collected on the Achievements screen
     logEvent('run_end', { won, roundsCleared, runScore: run.roundTotal, relics: relicIds, mods: modIds, metaEarned: earned });
-    window.localStorage.removeItem('letterRide.run'); run = null; view = 'meta'; saveAll(); render();
+    window.localStorage.removeItem('letterRide.run'); run = null; view = 'menu'; saveAll(); render();
   }
 
   // resume safety: a finished run sitting in storage shouldn't strand the player
@@ -200,7 +201,7 @@ try {
     onNewRun() {
       if (run && run.status !== 'won' && run.status !== 'lost'
           && !window.confirm('Start a new run? Your current run will be lost.')) return;
-      view = 'meta'; render();
+      view = 'setup'; render();
     },
     onOpenSettings() { view = 'settings'; render(); },
     onOpenMetaShop() { view = 'meta'; render(); },

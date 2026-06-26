@@ -1210,63 +1210,37 @@ function _drainToasts() {
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.remove(); _drainToasts(); }, 300); }, 2000);
 }
 
-export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
-  // Reset selectedStakeId if null or no longer valid.
+// Run Setup: pick the bag + stake for THIS run, then Start Run. No meta-shop here.
+// Note: selectedDeckId/selectedStakeId are module-level (top of file); this screen owns them now,
+// re-renders itself on a pick, and resets them on Start Run.
+export function renderSetup(meta, config) {
   if (!selectedStakeId || !meta.unlockedStakes.includes(selectedStakeId)) {
     selectedStakeId = meta.unlockedStakes[0] ?? (config.STAKES[0]?.id || null);
   }
+  if (!selectedDeckId || !meta.unlockedDecks.includes(selectedDeckId)) {
+    selectedDeckId = meta.unlockedDecks[0] ?? 'standard';
+  }
 
-  // Meta-shop offers.
-  const offers = metaShopOffers(meta, config, allRelicIds, allModIds);
-
-  // Build deck picker buttons HTML.
   const deckButtonsHtml = meta.unlockedDecks.map(id => {
     const deck = config.DECKS[id];
     const name = deck?.name || id;
     const desc = deck?.desc || '';
-    const active = id === selectedDeckId ? ' style="font-weight:bold;outline:2px solid #333;"' : '';
+    const active = id === selectedDeckId ? ' active' : '';
     const titleAttr = desc ? ` title="${desc}"` : '';
     const descHtml = desc ? `<div class="bag-desc">${desc}</div>` : '';
-    return `<button class="deck-pick" data-deck="${id}"${active}${titleAttr}>${name}${descHtml}</button>`;
+    return `<button class="deck-pick${active}" data-deck="${id}"${titleAttr}>${name}${descHtml}</button>`;
   }).join(' ');
 
-  // Build stake picker buttons HTML.
   const stakeButtonsHtml = meta.unlockedStakes.map(id => {
     const stakeObj = config.STAKES.find(s => s.id === id);
     const name = stakeObj?.name || id;
-    const active = id === selectedStakeId ? ' style="font-weight:bold;outline:2px solid #333;"' : '';
-    return `<button class="stake-pick" data-stake="${id}"${active}>${name}</button>`;
+    const active = id === selectedStakeId ? ' active' : '';
+    return `<button class="stake-pick${active}" data-stake="${id}">${name}</button>`;
   }).join(' ');
-
-  // Build meta-shop offers HTML.
-  function metaOfferLabel(offer) {
-    switch (offer.type) {
-      case 'unlockRelic': {
-        const relic = RELICS[offer.relicId];
-        return `Unlock relic: ${relic?.name || offer.relicId} · ${relic?.desc || ''} · ${offer.cost}`;
-      }
-      case 'unlockMod': {
-        const mod = getMod(offer.modId);
-        return `Unlock mod: ${mod?.name || offer.modId} · ${mod?.desc || ''} · ${offer.cost}`;
-      }
-      case 'unlockDeck':   return `Unlock bag: ${config.DECKS[offer.deckId]?.name || offer.deckId} · ${offer.cost}`;
-      case 'unlockStake':  return `Unlock stake: ${config.STAKES.find(s => s.id === offer.stakeId)?.name || offer.stakeId} · ${offer.cost}`;
-      case 'loadout':      return `${config.LOADOUT[offer.key]?.name || offer.key} · ${offer.cost}`;
-      default:             return `${offer.type} · ${offer.cost}`;
-    }
-  }
-
-  const shopHtml = offers.length
-    ? offers.map((offer, i) => {
-        const disabled = meta.meta < offer.cost ? 'disabled' : '';
-        return `<button class="meta-offer" data-idx="${i}" ${disabled}>${metaOfferLabel(offer)}</button>`;
-      }).join('')
-    : '<div>(No offers available)</div>';
 
   app().innerHTML = `
     <div id="meta-screen">
-      <h2>Letter Ride <button id="meta-help-btn" title="How it works" style="font-size:0.6em;padding:2px 8px;border-radius:50%;cursor:pointer;vertical-align:middle;">?</button></h2>
-      <div id="meta-balance">${metaSealHtml({ size: 'sm' })}<span>Meta: ${meta.meta}</span></div>
+      <div class="menu-title small">New Run <button id="setup-help-btn" title="How it works" style="font-size:0.6em;padding:2px 8px;border-radius:50%;cursor:pointer;vertical-align:middle;">?</button></div>
       <div id="deck-picker">
         <div><b>Bag:</b></div>
         <div id="deck-buttons">${deckButtonsHtml}</div>
@@ -1276,52 +1250,83 @@ export function renderMeta(meta, config, allRelicIds, allModIds, getStats) {
         <div id="stake-buttons">${stakeButtonsHtml}</div>
       </div>
       <button id="start-run">Start Run</button>
-      <button id="meta-menu-btn">Main Menu</button>
-      <button id="stats-btn">Stats</button>
-      <hr>
-      <div id="meta-shop">
-        <div><b>Meta Shop</b></div>
-        <div id="meta-offers">${shopHtml}</div>
-      </div>
+      <button id="setup-back">Back</button>
     </div>`;
 
-  // Wire deck picker.
   app().querySelectorAll('.deck-pick').forEach(btn => {
-    btn.onclick = () => { selectedDeckId = btn.dataset.deck; renderMeta(meta, config, allRelicIds, allModIds, getStats); };
+    btn.onclick = () => { selectedDeckId = btn.dataset.deck; renderSetup(meta, config); };
   });
-
-  // Wire stake picker.
   app().querySelectorAll('.stake-pick').forEach(btn => {
-    btn.onclick = () => { selectedStakeId = btn.dataset.stake; renderMeta(meta, config, allRelicIds, allModIds, getStats); };
+    btn.onclick = () => { selectedStakeId = btn.dataset.stake; renderSetup(meta, config); };
   });
-
-  // Wire Start Run.
   const startBtn = document.getElementById('start-run');
-  if (startBtn) {
-    startBtn.onclick = () => {
-      const deck = selectedDeckId;
-      const stake = selectedStakeId;
-      selectedDeckId = 'standard';
-      selectedStakeId = null;
-      handlers.onStartRun?.(deck, stake);
-    };
+  if (startBtn) startBtn.onclick = () => {
+    const deck = selectedDeckId, stake = selectedStakeId;
+    selectedDeckId = meta.unlockedDecks[0] ?? 'standard';
+    selectedStakeId = null;
+    handlers.onStartRun?.(deck, stake);
+  };
+  const help = document.getElementById('setup-help-btn');
+  if (help) help.onclick = () => showHelpOverlay();
+  const back = document.getElementById('setup-back');
+  if (back) back.onclick = () => handlers.onBackToMenu?.();
+}
+
+// Meta Shop: persistent unlocks, grouped into sections by offer type. No run setup here.
+export function renderMetaShop(meta, config, allRelicIds, allModIds) {
+  const offers = metaShopOffers(meta, config, allRelicIds, allModIds);
+
+  function metaOfferLabel(offer) {
+    switch (offer.type) {
+      case 'unlockRelic': {
+        const relic = RELICS[offer.relicId];
+        return `${relic?.name || offer.relicId} · ${relic?.desc || ''} · ${offer.cost}`;
+      }
+      case 'unlockMod': {
+        const mod = getMod(offer.modId);
+        return `${mod?.name || offer.modId} · ${mod?.desc || ''} · ${offer.cost}`;
+      }
+      case 'unlockDeck':   return `${config.DECKS[offer.deckId]?.name || offer.deckId} · ${offer.cost}`;
+      case 'unlockStake':  return `${config.STAKES.find(s => s.id === offer.stakeId)?.name || offer.stakeId} · ${offer.cost}`;
+      case 'loadout':      return `${config.LOADOUT[offer.key]?.name || offer.key} · ${offer.cost}`;
+      default:             return `${offer.type} · ${offer.cost}`;
+    }
   }
 
-  // Wire meta-shop offer buttons.
+  const SECTIONS = [
+    ['unlockRelic', 'Relics'],
+    ['unlockMod', 'Tile-mods'],
+    ['unlockDeck', 'Bags'],
+    ['unlockStake', 'Stakes'],
+    ['loadout', 'Loadout'],
+  ];
+  const card = (offer, i) => {
+    const disabled = meta.meta < offer.cost ? 'disabled' : '';
+    return `<button class="meta-offer" data-idx="${i}" ${disabled}>${metaOfferLabel(offer)}</button>`;
+  };
+  const known = new Set(SECTIONS.map(s => s[0]));
+  let sectionsHtml = SECTIONS.map(([type, label]) => {
+    const items = offers.map((o, i) => [o, i]).filter(([o]) => o.type === type);
+    if (!items.length) return '';
+    return `<div class="meta-section"><h3>${label}</h3>${items.map(([o, i]) => card(o, i)).join('')}</div>`;
+  }).join('');
+  const extras = offers.map((o, i) => [o, i]).filter(([o]) => !known.has(o.type));
+  if (extras.length) sectionsHtml += `<div class="meta-section"><h3>Other</h3>${extras.map(([o, i]) => card(o, i)).join('')}</div>`;
+  if (!offers.length) sectionsHtml = '<div class="none-label">All unlocked. Nothing left to buy.</div>';
+
+  app().innerHTML = `
+    <div id="meta-screen">
+      <div class="menu-title small">Meta Shop</div>
+      <div id="meta-balance">${metaSealHtml({ size: 'sm' })}<span>Meta: ${meta.meta}</span></div>
+      <div id="meta-shop">${sectionsHtml}</div>
+      <button id="metashop-back">Back</button>
+    </div>`;
+
   offers.forEach((offer, i) => {
     const btn = app().querySelector(`.meta-offer[data-idx="${i}"]`);
     if (!btn || btn.disabled) return;
-    btn.onclick = () => {
-      handlers.onMetaBuy?.(offer);
-    };
+    btn.onclick = () => handlers.onMetaBuy?.(offer);
   });
-
-  // Wire help button on meta screen.
-  const metaHelpBtn = document.getElementById('meta-help-btn');
-  if (metaHelpBtn) metaHelpBtn.onclick = () => showHelpOverlay();
-
-  // Wire stats button on meta screen.
-  const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
-  on('stats-btn', () => showStatsOverlay(getStats?.()));
-  on('meta-menu-btn', () => handlers.onBackToMenu?.());
+  const back = document.getElementById('metashop-back');
+  if (back) back.onclick = () => handlers.onBackToMenu?.();
 }
