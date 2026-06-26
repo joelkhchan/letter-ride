@@ -10,7 +10,7 @@ import { EVENTS } from './events.js';
 import { play as sfx, isMuted, toggleMuted } from './audio.js';
 import { buildSummary, drawBroadside, shareBroadside } from './broadside.js';
 import { getPref, setPref, togglePref, applyDisplayPrefs } from './settings.js';
-import { levelFor } from './profile.js';
+import { levelFor, statsSummary } from './profile.js';
 import { pendingMeta } from './achievements.js';
 import { relicSealHtml, bossSealHtml, metaSealHtml, lineIconHtml, bucketBadgeHtml, bagHtml } from './icons.js';
 
@@ -1128,6 +1128,7 @@ export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
         <button id="menu-metashop" class="menu-btn">${lineIconHtml('building-store')}Meta Shop</button>
         <button id="menu-settings" class="menu-btn">${lineIconHtml('settings')}Settings</button>
         <button id="menu-achievements" class="menu-btn">${lineIconHtml('trophy')}Achievements${badge}</button>
+        <button id="menu-stats" class="menu-btn">${lineIconHtml('chart-bar')}Stats</button>
       </div>
       <div class="menu-meta">${metaSealHtml({ size: 'sm' })}<span>Meta: ${metaTotal}</span></div>
     </div>`;
@@ -1137,6 +1138,63 @@ export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
   on('menu-metashop', () => handlers.onOpenMetaShop?.());
   on('menu-settings', () => handlers.onOpenSettings?.());
   on('menu-achievements', () => handlers.onOpenAchievements?.());
+  on('menu-stats', () => handlers.onOpenStats?.());
+}
+
+// The Stats screen: comprehensive player-facing analytics, derived by statsSummary (profile.js).
+// Lives below Achievements in the menu. Pure formatting here; no rules.
+export function renderStats(profile, config, allRelicIds = [], allModIds = [], ACHIEVEMENTS = []) {
+  const sum = statsSummary(profile, config, { relicsTotal: allRelicIds.length, modsTotal: allModIds.length, achievementsTotal: (ACHIEVEMENTS || []).length });
+  const pct = (x) => `${Math.round(x * 100)}%`;
+  const d1 = (x) => (Math.round(x * 10) / 10).toFixed(1);
+  const dash = '&mdash;';
+  const tile = (val, label, sub = '', cls = '') => `<div class="stat-tile${cls ? ' ' + cls : ''}"><span class="stat-val">${val}</span><span class="stat-label">${label}</span>${sub ? `<span class="stat-sub">${sub}</span>` : ''}</div>`;
+  const nextName = config.LEVELS.names[sum.rank.index + 1];
+
+  const rankBanner = `<div class="stat-rank">
+    <div class="stat-rank-top"><span class="stat-rank-name">${sum.rank.name}</span><span class="stat-rank-score">${sum.lifetimeScore} lifetime Score</span></div>
+    ${sum.rank.nextAt
+      ? `<div class="stat-rank-bar"><span class="stat-rank-fill" style="width:${Math.round(sum.rank.progress * 100)}%"></span></div><div class="stat-rank-next">${Math.max(0, sum.rank.nextAt - sum.lifetimeScore)} Score to ${nextName}</div>`
+      : `<div class="stat-rank-next">Top rank reached</div>`}
+  </div>`;
+
+  const runsSection = [
+    tile(sum.runs, 'Runs played'),
+    tile(pct(sum.winRate), 'Win rate', `${sum.wins} of ${sum.runs}`),
+    tile(sum.bestRunScore, 'Best run'),
+    tile(sum.roundsCleared, 'Rounds cleared'),
+    tile(sum.runs ? d1(sum.avgRoundsPerRun) : dash, 'Avg rounds / run'),
+  ].join('');
+
+  const wordsSection = [
+    tile(sum.wordsPlayed, 'Words played'),
+    tile(sum.wordsPlayed ? d1(sum.avgWordLength) : dash, 'Avg word length'),
+    tile(sum.longestWord ? sum.longestWord.toUpperCase() : dash, 'Longest word', sum.longestWordLen ? `${sum.longestWordLen} letters` : '', 'word'),
+    tile(sum.bestWord ? sum.bestWord.toUpperCase() : dash, 'Best word', sum.bestWordScore ? `${sum.bestWordScore} Score` : '', 'word'),
+    tile(sum.bestRoundScore, 'Best round'),
+    tile(sum.wordsPlayed ? d1(sum.avgScorePerWord) : dash, 'Avg Score / word'),
+  ].join('');
+
+  const collectionSection = [
+    tile(`${sum.relicsDiscovered}<span class="stat-of">/${sum.relicsTotal}</span>`, 'Relics found'),
+    tile(`${sum.modsDiscovered}<span class="stat-of">/${sum.modsTotal}</span>`, 'Tile-mods found'),
+    tile(`${sum.achievementsDone}<span class="stat-of">/${sum.achievementsTotal}</span>`, 'Achievements', `${sum.achievementsClaimed} collected`),
+  ].join('');
+
+  const section = (label, body) => `<div class="stat-section"><h3>${label}</h3><div class="stat-grid">${body}</div></div>`;
+  const emptyNote = sum.runs === 0 ? `<p class="setup-sub">Play a run to start building your stats.</p>` : '';
+
+  app().innerHTML = `
+    ${backArrowHtml()}
+    <div id="menu-screen" class="stats">
+      <div class="menu-title small">Stats</div>
+      ${emptyNote}
+      ${rankBanner}
+      ${section('Runs', runsSection)}
+      ${section('Words', wordsSection)}
+      ${section('Collection', collectionSection)}
+    </div>`;
+  wireBack();
 }
 
 export function renderSettings(hasRun) {

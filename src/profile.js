@@ -7,8 +7,10 @@ export function makeProfile() {
   return {
     stats: {
       runs: 0, wins: 0, roundsCleared: 0, wordsPlayed: 0,
+      lettersPlayed: 0,
       lifetimeScore: 0,
-      bestWordScore: 0, bestWord: '', bestRunScore: 0,
+      bestWordScore: 0, bestWord: '', bestRunScore: 0, bestRoundScore: 0,
+      longestWord: '', longestWordLen: 0,
       relicsEverUsed: [], modsEverApplied: [],
     },
     completed: [],            // achievement ids whose predicate fired (Meta uncollected by default)
@@ -46,9 +48,13 @@ const addUnique = (arr, id) => { if (!arr.includes(id)) arr.push(id); };
 
 export function recordPlay(profile, ctx) {
   const s = profile.stats;
+  const word = ctx.word || '';
   s.wordsPlayed += 1;
+  s.lettersPlayed = (s.lettersPlayed || 0) + word.length;
   s.lifetimeScore += ctx.score || 0;
-  if ((ctx.score || 0) > s.bestWordScore) { s.bestWordScore = ctx.score || 0; s.bestWord = ctx.word || ''; }
+  if ((ctx.score || 0) > s.bestWordScore) { s.bestWordScore = ctx.score || 0; s.bestWord = word; }
+  if (word.length > (s.longestWordLen || 0)) { s.longestWordLen = word.length; s.longestWord = word; }
+  if ((ctx.roundTotal || 0) > (s.bestRoundScore || 0)) s.bestRoundScore = ctx.roundTotal || 0;
 }
 
 export function recordRunEnd(profile, summary) {
@@ -68,4 +74,37 @@ export function levelFor(lifetimeScore, config) {
   let i = 0;
   for (let k = 0; k < t.length; k++) if (lifetimeScore >= t[k]) i = k;
   return { index: i, name: names[i], nextAt: t[i + 1] ?? null };
+}
+
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+
+// Pure, player-facing analytics derived from the profile. The Stats screen formats this; the
+// derivation (averages, rates, rank progress) lives here so it stays testable and DOM-free.
+// totals: { relicsTotal, modsTotal, achievementsTotal } supplied from the catalogs.
+export function statsSummary(profile, config, totals = {}) {
+  const s = profile?.stats || {};
+  const runs = s.runs || 0, wins = s.wins || 0, words = s.wordsPlayed || 0;
+  const lifetimeScore = s.lifetimeScore || 0;
+  const rank = levelFor(lifetimeScore, config);
+  const tierAt = config.LEVELS.thresholds[rank.index] || 0;
+  const per = (n, d) => (d > 0 ? n / d : 0);
+  return {
+    rank: {
+      name: rank.name, index: rank.index, lifetimeScore, nextAt: rank.nextAt,
+      progress: rank.nextAt ? clamp01((lifetimeScore - tierAt) / (rank.nextAt - tierAt)) : 1,
+    },
+    runs, wins, winRate: per(wins, runs),
+    roundsCleared: s.roundsCleared || 0, avgRoundsPerRun: per(s.roundsCleared || 0, runs),
+    bestRunScore: s.bestRunScore || 0,
+    wordsPlayed: words, avgWordLength: per(s.lettersPlayed || 0, words),
+    longestWord: s.longestWord || '', longestWordLen: s.longestWordLen || 0,
+    bestWord: s.bestWord || '', bestWordScore: s.bestWordScore || 0,
+    bestRoundScore: s.bestRoundScore || 0, avgScorePerWord: per(lifetimeScore, words),
+    lifetimeScore,
+    relicsDiscovered: (s.relicsEverUsed || []).length, relicsTotal: totals.relicsTotal || 0,
+    modsDiscovered: (s.modsEverApplied || []).length, modsTotal: totals.modsTotal || 0,
+    achievementsDone: (profile?.completed || []).length,
+    achievementsClaimed: (profile?.claimedAchievements || []).length,
+    achievementsTotal: totals.achievementsTotal || 0,
+  };
 }

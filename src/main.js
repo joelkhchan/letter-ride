@@ -11,7 +11,7 @@ import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay,
 import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
 import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingCount } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
-import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
+import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, renderStats, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
 import { play as sfx, resumeAudio } from './audio.js';
 import { logEvent } from './playlog.js';
 import { applyDisplayPrefs } from './settings.js';
@@ -49,6 +49,7 @@ try {
     if (view === 'meta') return renderMetaShop(meta, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS);
     if (view === 'settings') return renderSettings(!!run);
     if (view === 'achievements') return renderAchievements(profile, CONFIG, ACHIEVEMENTS, ALL_RELIC_IDS, ALL_MOD_IDS);
+    if (view === 'stats') return renderStats(profile, CONFIG, ALL_RELIC_IDS, ALL_MOD_IDS, ACHIEVEMENTS);
     return renderMenu(!!run, meta.meta, pendingCount(profile, CONFIG));   // 'menu' (badge = items ready to collect)
   };
   const pool = () => poolFromMeta(meta);
@@ -112,7 +113,7 @@ try {
       // Track the run's best line for the end-of-run broadside (in-memory; not persisted).
       if (!run.bestPlay || r.scored.score > run.bestPlay.score) run.bestPlay = { word: playedWord, score: r.scored.score };
       logEvent('play', { word: playedWord, letters: sel.map(s => s.letter), score: r.scored.score, points: r.scored.points, mult: r.scored.mult, breakdown: r.scored.breakdown, status: run.status, ...snap() });
-      profileRecordPlay(profile, { word: playedWord, score: r.scored.score });
+      profileRecordPlay(profile, { word: playedWord, score: r.scored.score, roundTotal: run.roundTotal });
       markCompletions(checkAchievements(profile, {
         phase: 'play',
         letters: sel.map(s => s.letter.toUpperCase()),
@@ -219,6 +220,7 @@ try {
     onOpenSettings() { view = 'settings'; render(); },
     onOpenMetaShop() { view = 'meta'; render(); },
     onOpenAchievements() { view = 'achievements'; render(); },
+    onOpenStats() { view = 'stats'; render(); },
     // Collect an earned-but-unclaimed reward on the Achievements screen (the only path that pays Meta).
     onCollectAchievement(id) { const r = collectAchievement(profile, id, CONFIG); if (r > 0) meta.meta += r; saveAll(); render(); return r; },
     onCollectBounty(key) { const r = collectBounty(profile, key, CONFIG); if (r > 0) meta.meta += r; saveAll(); render(); return r; },

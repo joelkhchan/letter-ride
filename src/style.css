@@ -395,6 +395,25 @@ html.text-large { font-size: 112.5%; }
 .ach-stats { color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
 .ach-stats p { margin: 2px 0; }
 .ach-stats b { color: var(--ink); }
+
+/* ================================================================ Stats screen */
+#menu-screen.stats { align-items: stretch; max-width: 600px; margin: 0 auto; text-align: left; }
+.stats .menu-title { text-align: center; }
+.stat-rank { margin: 6px 0 2px; padding: 13px 15px; border-radius: var(--radius-md); border: 1px solid var(--line); border-left: 3px solid var(--gold); background: linear-gradient(180deg, var(--night-2), var(--night-sunk)); }
+.stat-rank-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.stat-rank-name { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; color: var(--gold); }
+.stat-rank-score { font-size: 0.82rem; color: var(--ink-soft); }
+.stat-rank-bar { height: 7px; border-radius: 4px; background: var(--night-sunk); border: 1px solid var(--line); margin: 9px 0 5px; overflow: hidden; }
+.stat-rank-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-deep), var(--gold)); }
+.stat-rank-next { font-size: 0.74rem; color: var(--ink-soft); }
+.stat-section h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 16px 0 9px; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 9px; }
+.stat-tile { display: flex; flex-direction: column; gap: 2px; padding: 11px 13px; border-radius: var(--radius-sm); border: 1px solid var(--line); border-top: 2px solid var(--gold-deep); background: linear-gradient(180deg, var(--night-2), var(--night-sunk)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 6px rgba(0,0,0,0.4); }
+.stat-val { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; color: var(--ink); line-height: 1.06; word-break: break-word; }
+.stat-tile.word .stat-val { font-size: 1.05rem; }
+.stat-of { font-size: 0.95rem; color: var(--ink-soft); font-weight: 700; }
+.stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--ink-soft); margin-top: 1px; }
+.stat-sub { font-size: 0.72rem; color: var(--gold); }
 .ach-pending { color: var(--gold); font-weight: 700; text-align: center; margin: 4px 0; }
 .ach-section { margin: 10px 0; }
 .ach-section h3 { color: var(--gold); font-family: var(--font-display); margin: 0 0 6px; font-size: 1rem; }
