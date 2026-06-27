@@ -3,6 +3,7 @@ import { shuffle } from './rng.js';
 import { makeTile, getMod, ALL_MOD_IDS } from './tiles.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { ALL_ARCHETYPE_IDS } from './archetypes.js';
+import { handSizeFor, handFloor } from './run.js';
 
 const RARE_LETTERS = new Set(['J', 'Q', 'X', 'Z']);
 const COUNT_MODS = new Set(['resonator']);  // value needs 2+ of the tile's OWN letter
@@ -26,7 +27,13 @@ export function generateShop(run, rng, pool = {}) {
   candidates.push({ type: 'thinLetter', cost: cfg.cost.thinLetter });
   candidates.push({ type: 'recastTile', cost: cfg.cost.recastTile });
   candidates.push({ type: 'transferMods', cost: cfg.cost.transferMods });
-  for (const relicId of relicIds) if (!owned.has(relicId)) candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic });
+  for (const relicId of relicIds) {
+    const relic = RELICS[relicId];
+    if (owned.has(relicId) && !relic?.stackable) continue;   // unique relics: only offer if not owned
+    // A -hand stackable relic stops being offered at the hand floor, so every copy you buy costs a real -1 hand.
+    if (relic?.handDelta < 0 && handSizeFor(run.relics, run.config) <= handFloor(run.config)) continue;
+    candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic });
+  }
   for (const archetypeId of ALL_ARCHETYPE_IDS) candidates.push({ type: 'hone', archetypeId, cost: run.config.HONE.cost });
 
   const offers = shuffle(candidates, rng).slice(0, Math.min(cfg.offersPerShop, candidates.length));
@@ -72,7 +79,7 @@ export function purchase(run, offer, opts = {}) {
       run.bag.remove(src.id); break;
     }
     case 'buyRelic':
-      if (run.relics.some(r => r.id === offer.relicId)) return { ok: false, reason: 'owned' };
+      if (!RELICS[offer.relicId]?.stackable && run.relics.some(r => r.id === offer.relicId)) return { ok: false, reason: 'owned' };
       run.relics.push(RELICS[offer.relicId]); break;
     case 'hone': {
       if (!run.honeLevels) run.honeLevels = {};

@@ -227,10 +227,15 @@ function relicsModsPanelHtml(run, stagedBreakdown) {
         return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${r.name}: <b>${contrib}</b></span>`;
       }).join(' · ');
     } else {
-      relicsText = run.relics.map(r => {
+      // Group stacked (duplicate) relics into one entry with a ×N count.
+      const counts = {};
+      for (const r of run.relics) counts[r.id] = (counts[r.id] || 0) + 1;
+      const seen = new Set();
+      relicsText = run.relics.filter(r => !seen.has(r.id) && seen.add(r.id)).map(r => {
+        const n = counts[r.id];
         const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
         const safeName = (r.name || '').replace(/"/g, '&quot;');
-        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${r.name}</span>`;
+        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${r.name}${n > 1 ? ` ×${n}` : ''}</span>`;
       }).join(' · ');
     }
   } else {

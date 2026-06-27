@@ -1,7 +1,7 @@
 // test/run.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { newRun, playWord, discard, nextRound, awardCoins } from '../src/run.js';
+import { newRun, playWord, discard, nextRound, awardCoins, handSizeFor } from '../src/run.js';
 import { honeModifiers } from '../src/archetypes.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
@@ -516,4 +516,23 @@ test('flawlessSoFar flips false on a final-play clear', () => {
   playWord(run, seatCat(run));
   assert.equal(run.status, 'roundCleared');
   assert.equal(run.flawlessSoFar, false);
+});
+
+test('handSizeFor: RACK_SIZE + relic handDeltas, clamped to the hand floor (floor never exceeds RACK_SIZE)', () => {
+  const cfg = { RACK_SIZE: 9, HAND_FLOOR: 6 };
+  assert.equal(handSizeFor([], cfg), 9);
+  assert.equal(handSizeFor([{ handDelta: 1 }], cfg), 10);                                                              // +hand
+  assert.equal(handSizeFor([{ handDelta: -1 }, { handDelta: -1 }, { handDelta: -1 }], cfg), 6);                        // -3 -> floor
+  assert.equal(handSizeFor([{ handDelta: -1 }, { handDelta: -1 }, { handDelta: -1 }, { handDelta: -1 }], cfg), 6);     // -4 clamped to floor
+  assert.equal(handSizeFor([{ handDelta: 1 }, { handDelta: -1 }, { handDelta: -1 }], cfg), 8);                         // net -1
+  assert.equal(handSizeFor([{ handDelta: -2 }], { RACK_SIZE: 3 }), 3);                                                 // no HAND_FLOOR -> floor = RACK_SIZE, -hand no-ops
+});
+
+test('refillHand deals to the effective hand size (a -hand relic shrinks the hand)', () => {
+  resetTileIds();
+  const cfg = { STARTING_BAG: ['C','A','T','B','A','T','S','E'], TILE_VALUES: { C:3,A:1,T:1,B:3,S:1,E:1 },
+    RACK_SIZE: 5, HAND_FLOOR: 3, PLAYS_PER_ROUND: 4, DISCARDS_PER_ROUND: 2, MIN_WORD_LEN: 3, LENGTH_BONUS_PER_LETTER: 5, ROUND_TARGETS: [999, 999] };
+  assert.equal(newRun({ config: cfg, dictionary: dictB, seed: 1 }).rack.length, 5);          // base hand
+  const squeezed = newRun({ config: cfg, dictionary: dictB, seed: 1, loadout: { startRelics: [{ id: 'sq', handDelta: -1, evaluate: () => ({}) }] } });
+  assert.equal(squeezed.rack.length, 4);                                                     // -1 hand
 });

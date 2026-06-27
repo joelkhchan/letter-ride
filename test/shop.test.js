@@ -238,3 +238,29 @@ test('generateShop candidate pool includes recastTile + transferMods', () => {
   const types = new Set(shop.offers.map(o => o.type));
   assert.ok(types.has('recastTile') && types.has('transferMods'));
 });
+
+test('stackable -hand relic is re-offered while owned (until the floor); unique relics are not', () => {
+  const cfg2 = { ...config, RACK_SIZE: 9, HAND_FLOOR: 6, SHOP: { ...config.SHOP, offersPerShop: 999 } };
+  const r = newRun({ config: cfg2, dictionary: dict, seed: 1 }); r.coins = 100;
+  r.relics = [RELICS.tightLeading, RELICS.comboCounter];                       // own one of each
+  const offers = generateShop(r, r.rng, { relicIds: ['tightLeading', 'comboCounter'] }).offers.filter(o => o.type === 'buyRelic');
+  assert.ok(offers.some(o => o.relicId === 'tightLeading'), 'stackable re-offered while owned');
+  assert.ok(!offers.some(o => o.relicId === 'comboCounter'), 'unique not re-offered once owned');
+});
+
+test('stackable -hand relic stops being offered once the hand is at the floor', () => {
+  const cfg2 = { ...config, RACK_SIZE: 9, HAND_FLOOR: 6, SHOP: { ...config.SHOP, offersPerShop: 999 } };
+  const r = newRun({ config: cfg2, dictionary: dict, seed: 1 }); r.coins = 100;
+  r.relics = [RELICS.tightLeading, RELICS.tightLeading, RELICS.tightLeading];   // 9 - 3 = 6 = floor
+  const offers = generateShop(r, r.rng, { relicIds: ['tightLeading'] }).offers.filter(o => o.type === 'buyRelic');
+  assert.ok(!offers.some(o => o.relicId === 'tightLeading'), 'not offered at the hand floor');
+});
+
+test('purchase allows duplicate stackable relics, blocks duplicate unique relics', () => {
+  const r = mkRun(); r.relics = [];
+  assert.equal(purchase(r, { type: 'buyRelic', relicId: 'tightLeading', cost: 8 }).ok, true);
+  assert.equal(purchase(r, { type: 'buyRelic', relicId: 'tightLeading', cost: 8 }).ok, true);   // duplicate allowed (stackable)
+  assert.equal(r.relics.filter(x => x.id === 'tightLeading').length, 2);
+  assert.equal(purchase(r, { type: 'buyRelic', relicId: 'comboCounter', cost: 8 }).ok, true);
+  assert.deepEqual(purchase(r, { type: 'buyRelic', relicId: 'comboCounter', cost: 8 }), { ok: false, reason: 'owned' });   // duplicate blocked (unique)
+});

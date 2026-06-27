@@ -8,6 +8,7 @@ export const CONFIG = {
     D:2,G:2, B:3,C:3,M:3,P:3, F:4,H:4,V:4,W:4,Y:4, K:5, J:8,X:8, Q:10,Z:10, '*':0
   },
   RACK_SIZE: 9,
+  HAND_FLOOR: 6,        // effective hand size never drops below this - the -hand stack cap (tunable)
   PLAYS_PER_ROUND: 4,
   DISCARDS_PER_ROUND: 2,
   MIN_WORD_LEN: 3,
@@ -36,7 +37,7 @@ export const CONFIG = {
   META: {
     earn: { perRoundCleared: 2, winBonus: 10 },
     baseUnlocked: {
-      relics: ['vowelBonus','shortAndSweet','lengthy','freshStart','comboCounter','recycler'],
+      relics: ['vowelBonus','shortAndSweet','lengthy','freshStart','comboCounter','recycler','wideMargins','tightLeading'],
       mods: ['resonator','polished','catalyst','anchor'],
       decks: ['standard','rareRich','doubled','lean'],
       stakes: [0],

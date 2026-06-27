@@ -227,3 +227,14 @@ test('throughLine +Points scales with chainLength (neutral at 1)', () => {
   assert.deepEqual(r.evaluate({ chainLength: 4 }), { addPoints: 24 });  // 8*3
   assert.ok(ALL_RELIC_IDS.includes('throughLine'));
 });
+
+test('hand-size relics: Wide Margins +1 hand (no score); Tight Leading -1 hand, +1 Mult, stacks', () => {
+  assert.equal(RELICS.wideMargins.handDelta, 1);
+  assert.deepEqual(RELICS.wideMargins.evaluate(), {});
+  assert.equal(RELICS.tightLeading.handDelta, -1);
+  assert.equal(RELICS.tightLeading.stackable, true);
+  assert.deepEqual(RELICS.tightLeading.evaluate(), { addMult: 1 });
+  const b = base('CAT');
+  const two = base('CAT', { relics: [RELICS.tightLeading, RELICS.tightLeading] });
+  assert.equal(two.mult - b.mult, 2);                      // (1 + 2 addMult) - 1 = 2
+});

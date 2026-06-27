@@ -156,6 +156,16 @@ export const RELICS = {
     desc: '+8 Points per chained word after the first',
     evaluate: (ctx) => ({ addPoints: 8 * Math.max(0, (ctx.chainLength || 1) - 1) }),
   },
+
+  // ── Hand-size relics (handDelta is read by handSizeFor in run.js; the floor/clamp lives there) ──
+  wideMargins: {
+    id: 'wideMargins', name: 'Wide Margins', desc: 'Hold 1 more tile in hand (more options, longer words)',
+    handDelta: 1, evaluate: () => ({}),
+  },
+  tightLeading: {
+    id: 'tightLeading', name: 'Tight Leading', desc: '+1 Mult per word, but hold 1 fewer tile in hand. Stacks.',
+    handDelta: -1, stackable: true, evaluate: () => ({ addMult: 1 }),
+  },
 };
 
 export const ALL_RELIC_IDS = Object.keys(RELICS);

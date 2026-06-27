@@ -26,10 +26,21 @@ function applyEncounterBoss(run) {
 }
 
 const sumExtraPlays = (relics = []) => relics.reduce((n, r) => n + (r.extraPlays || 0), 0);
+const sumHandDelta = (relics = []) => relics.reduce((n, r) => n + (r.handDelta || 0), 0);
 
-// Model B: fill the hand up to RACK_SIZE from the depleting draw-pile.
+// The hand floor: HAND_FLOOR, but never above RACK_SIZE (a floor above the base hand is meaningless).
+// Configs without HAND_FLOOR keep hand == RACK_SIZE, so -hand relics simply no-op there.
+export const handFloor = (config) => Math.min(config.RACK_SIZE, config.HAND_FLOOR ?? config.RACK_SIZE);
+
+// Effective hand size = RACK_SIZE + relic handDeltas (+hand / -hand), clamped to handFloor so a stacked
+// -hand build can never shrink the hand into an unplayable brick. Used by refillHand and the shop.
+export function handSizeFor(relics = [], config) {
+  return Math.max(handFloor(config), config.RACK_SIZE + sumHandDelta(relics));
+}
+
+// Model B: fill the hand up to the effective hand size from the depleting draw-pile.
 function refillHand(run) {
-  const need = run.config.RACK_SIZE - run.rack.length;
+  const need = handSizeFor(run.relics, run.config) - run.rack.length;
   if (need > 0) run.rack.push(...run.drawPile.splice(0, need));
 }
 
