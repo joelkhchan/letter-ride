@@ -4,7 +4,7 @@ import { makeRng, shuffle } from './rng.js';
 import { validate, isLegalSelection } from './word.js';
 import { scoreWord } from './scoring.js';
 import { honeModifiers, ARCHETYPES, ALL_ARCHETYPE_IDS } from './archetypes.js';
-import { BOSSES, ALL_BOSS_IDS, bossTileValues, applyBossToScore } from './bosses.js';
+import { BOSSES, ALL_BOSS_IDS, bossTileValues, applyBossToScore, bossHandDelta } from './bosses.js';
 import { EVENTS, ALL_EVENT_IDS } from './events.js';
 
 // Encounter structure: the target ladder is PASSAGES groups of (Word, Phrase, Sentence).
@@ -40,7 +40,10 @@ export function handSizeFor(relics = [], config) {
 
 // Model B: fill the hand up to the effective hand size from the depleting draw-pile.
 function refillHand(run) {
-  const need = handSizeFor(run.relics, run.config) - run.rack.length;
+  // Effective size includes the active boss's hand-lock (e.g. The Margin), re-clamped to the floor.
+  const boss = run.boss ? BOSSES[run.boss] : null;
+  const size = Math.max(handFloor(run.config), run.config.RACK_SIZE + sumHandDelta(run.relics) + bossHandDelta(boss));
+  const need = size - run.rack.length;
   if (need > 0) run.rack.push(...run.drawPile.splice(0, need));
 }
 
@@ -127,8 +130,8 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     boss: null,
     nodeEventId: null,
   };
+  applyEncounterBoss(run);   // set the boss BEFORE dealing, so a -hand boss shrinks the dealt hand
   startRound(run);
-  applyEncounterBoss(run);
   return run;
 }
 
@@ -214,7 +217,7 @@ export function nextRound(run) {
   run.chainLength = 0;
   run.lastWord = null;
   run.status = 'playing';
+  applyEncounterBoss(run);   // set the boss BEFORE dealing, so a -hand boss shrinks the dealt hand
   startRound(run);
-  applyEncounterBoss(run);
   return run;
 }

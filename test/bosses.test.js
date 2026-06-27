@@ -1,9 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { BOSSES, ALL_BOSS_IDS, bossTileValues, applyBossToScore } from '../src/bosses.js';
+import { BOSSES, ALL_BOSS_IDS, bossTileValues, applyBossToScore, bossHandDelta } from '../src/bosses.js';
 
-test('roster has the four starter bosses', () => {
-  assert.deepEqual(ALL_BOSS_IDS.sort(), ['ceiling', 'mute', 'toll', 'vise']);
+test('roster has the five bosses', () => {
+  assert.deepEqual(ALL_BOSS_IDS.sort(), ['ceiling', 'margin', 'mute', 'toll', 'vise']);
+});
+
+test('bossHandDelta: The Margin shrinks the hand, other bosses are 0', () => {
+  assert.equal(bossHandDelta(BOSSES.margin), -2);
+  assert.equal(bossHandDelta(BOSSES.vise), 0);     // discard-lock, not a hand-lock
+  assert.equal(bossHandDelta(BOSSES.mute), 0);
+  assert.equal(bossHandDelta(null), 0);
 });
 
 test('bossTileValues zeroes vowels for The Mute, no-op otherwise', () => {

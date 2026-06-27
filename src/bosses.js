@@ -1,6 +1,7 @@
 // src/bosses.js — boss content + pure warp helpers. A boss warps one Sentence encounter.
 // Verbs (from the systems bible): disable (zero some tile values) · cap (clamp mult) ·
-// tax (subtract points) · lock (encounter-setup, handled in run.js). scoring.js is never touched.
+// tax (subtract points) · lock (encounter-setup, handled in run.js: discards or hand size).
+// scoring.js is never touched.
 const VOWELS = ['A', 'E', 'I', 'O', 'U'];
 
 export const BOSSES = {
@@ -8,9 +9,16 @@ export const BOSSES = {
   ceiling: { id: 'ceiling', name: 'The Ceiling', desc: 'Mult is capped at x3',             warp: { verb: 'cap',     maxMult: 3 } },
   toll:    { id: 'toll',    name: 'The Toll',    desc: 'Each word scores 10 fewer Points', warp: { verb: 'tax',     points: 10 } },
   vise:    { id: 'vise',    name: 'The Vise',    desc: 'Only 1 discard this round',        warp: { verb: 'lock',    lock: 'discard', keep: 1 } },
+  margin:  { id: 'margin',  name: 'The Margin',  desc: 'Hold 2 fewer tiles this round',     warp: { verb: 'lock',    lock: 'hand',    delta: -2 } },
 };
 
 export const ALL_BOSS_IDS = Object.keys(BOSSES);
+
+// hand-lock: how much this boss shrinks (or grows) the hand for its round. 0 for non-hand bosses.
+// Applied in run.js refillHand and re-clamped to HAND_FLOOR, so a boss can never brick the hand.
+export function bossHandDelta(boss) {
+  return (boss && boss.warp.verb === 'lock' && boss.warp.lock === 'hand') ? (boss.warp.delta || 0) : 0;
+}
 
 // disable: return a tileValues copy with the disabled letters zeroed. Injected into scoreWord (pure DI).
 // Returns the SAME reference when there is nothing to disable (so callers can cheaply detect no-op).

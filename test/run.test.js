@@ -1,7 +1,7 @@
 // test/run.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { newRun, playWord, discard, nextRound, awardCoins, handSizeFor } from '../src/run.js';
+import { newRun, playWord, discard, nextRound, awardCoins, handSizeFor, startRound } from '../src/run.js';
 import { honeModifiers } from '../src/archetypes.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { makeTile, resetTileIds } from '../src/tiles.js';
@@ -358,7 +358,7 @@ test('bossOrder is seeded + deterministic + one of each boss', () => {
   const a = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
   const b = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
   assert.deepEqual(a.bossOrder, b.bossOrder);
-  assert.deepEqual([...a.bossOrder].sort(), ['ceiling','mute','toll','vise']);
+  assert.deepEqual([...a.bossOrder].sort(), ['ceiling','margin','mute','toll','vise']);
   assert.equal(a.boss, null);                 // encounter 0 is a Word, no boss
 });
 
@@ -535,4 +535,15 @@ test('refillHand deals to the effective hand size (a -hand relic shrinks the han
   assert.equal(newRun({ config: cfg, dictionary: dictB, seed: 1 }).rack.length, 5);          // base hand
   const squeezed = newRun({ config: cfg, dictionary: dictB, seed: 1, loadout: { startRelics: [{ id: 'sq', handDelta: -1, evaluate: () => ({}) }] } });
   assert.equal(squeezed.rack.length, 4);                                                     // -1 hand
+});
+
+test('a -hand boss (The Margin) shrinks the dealt hand, re-clamped to the floor', () => {
+  resetTileIds();
+  const cfg = { STARTING_BAG: ['C','A','T','B','A','T','S','E','R'], TILE_VALUES: { C:3,A:1,T:1,B:3,S:1,E:1,R:1 },
+    RACK_SIZE: 6, HAND_FLOOR: 3, PLAYS_PER_ROUND: 4, DISCARDS_PER_ROUND: 2, MIN_WORD_LEN: 3, LENGTH_BONUS_PER_LETTER: 5, ROUND_TARGETS: [999, 999] };
+  const run = newRun({ config: cfg, dictionary: dictB, seed: 1 });
+  assert.equal(run.rack.length, 6);                  // no boss on round 0
+  run.boss = 'margin'; run.rack = [];                // The Margin active (-2 hand)
+  startRound(run);
+  assert.equal(run.rack.length, 4);                  // 6 - 2
 });
