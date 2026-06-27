@@ -173,6 +173,10 @@ try {
       logEvent('node_pick', { pick: 'event', event: run.nodeEventId });
       if (ev.interactive) {
         pressStart(run);
+      } else if (ev.autoResolve) {
+        // Single-option, no-input events (Ink Merchant, The Blank) resolve on pick - no confirm click.
+        const r = applyEventOption(run, run.nodeEventId, 0, {});
+        if (r?.ok !== false) run.nodeResolved = true;
       }
       saveAll(); render();
     },

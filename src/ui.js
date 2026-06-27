@@ -811,6 +811,9 @@ function renderEventOneShot(run) {
 
 function renderEventDone(run, ev) {
   const coins = run.coins || 0;
+  const result = (ev.id === 'inkMerchant' && run.relics.length)
+    ? `Gained ${run.relics[run.relics.length - 1].name}!`
+    : 'Done!';
   app().innerHTML = `
     <div id="hud">
       <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} &middot; Event</div>
@@ -821,7 +824,7 @@ function renderEventDone(run, ev) {
     <div id="event-ui">
       <h3>${ev.name}</h3>
       <div class="event-desc">${ev.desc}</div>
-      <p style="font-weight:700;color:#27ae60;">Done!</p>
+      <p style="font-weight:700;color:#27ae60;">${result}</p>
       <button id="continue-btn">Continue</button>
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };

@@ -21,6 +21,24 @@ test('roster: 5 events, exactly 1 interactive (The Press)', () => {
   assert.equal(interactive[0].id, 'thePress');
 });
 
+test('autoResolve events are single-option, need no input, and apply cleanly on pick', () => {
+  for (const id of ['inkMerchant', 'theBlank']) {
+    assert.equal(EVENTS[id].autoResolve, true, `${id} should auto-resolve`);
+    assert.equal(EVENTS[id].options.length, 1, `${id} should have exactly one option`);
+  }
+  for (const id of ['wordsmith', 'redaction', 'thePress']) {
+    assert.notEqual(EVENTS[id].autoResolve, true, `${id} should not auto-resolve`);
+  }
+  // Ink Merchant applies with no opts: spends $5, grants one relic.
+  const run = newRun({ config, dictionary: dict, seed: 3 });
+  run.coins = 10;
+  const before = run.relics.length;
+  const r = applyEventOption(run, 'inkMerchant', 0, {});
+  assert.equal(r.ok, true);
+  assert.equal(run.relics.length, before + 1);
+  assert.equal(run.coins, 5);
+});
+
 test('Redaction removes 2 chosen tiles via opts.tileIds (free thinning)', () => {
   const run = newRun({ config, dictionary: dict, seed: 1 });
   const before = run.bag.tiles.length;

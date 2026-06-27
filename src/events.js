@@ -13,6 +13,7 @@ export const EVENTS = {
   theBlank: {
     id: 'theBlank', name: 'The Blank',
     desc: 'Swap 3 random tiles in your bag for 1 Wild',
+    autoResolve: true,   // single option, no player input: resolves on pick (no confirm click)
     options: [{ label: 'Swap 3 tiles for a Wild', apply: (run) => {
       const victims = pickRandomTiles(run, 3);
       for (const t of victims) run.bag.remove(t.id);
@@ -44,6 +45,7 @@ export const EVENTS = {
   inkMerchant: {
     id: 'inkMerchant', name: 'Ink Merchant',
     desc: 'Pay $5: gain a random relic you do not own',
+    autoResolve: true,   // single option, no player input: buys on pick (no confirm click)
     options: [{ label: 'Pay $5 for a random relic', apply: (run) => {
       if (run.coins < 5) return { ok: false, reason: 'broke' };
       const owned = new Set(run.relics.map(r => r.id));
