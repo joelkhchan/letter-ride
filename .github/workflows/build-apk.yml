@@ -53,6 +53,14 @@ jobs:
       - name: Sync web assets into Android
         run: npx cap sync android
 
+      - name: Bump Android compileSdk + AGP/Gradle (a plugin dep, androidx.work, needs SDK 35)
+        run: |
+          sed -i 's/compileSdkVersion = 34/compileSdkVersion = 35/' android/variables.gradle
+          sed -i 's#com.android.tools.build:gradle:8.2.1#com.android.tools.build:gradle:8.6.1#' android/build.gradle
+          sed -i 's#gradle-8.2.1-all.zip#gradle-8.7-all.zip#' android/gradle/wrapper/gradle-wrapper.properties
+          yes | sdkmanager "platforms;android-35" "build-tools;35.0.0" >/dev/null 2>&1 || true
+          echo "compileSdk now: $(grep compileSdkVersion android/variables.gradle)"
+
       - name: Lock to portrait
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
