@@ -1205,7 +1205,8 @@ export function renderStats(profile, config, allRelicIds = [], allModIds = [], A
   // Word-length usage histogram (reuses the bar-chart styles; .len tints the bars gold).
   const minLen = config.MIN_WORD_LEN || 3;
   const wlc = sum.wordLenCounts || {};
-  const maxLen = Math.max(minLen + 4, sum.longestWordLen || 0);
+  // Span the full spellable range: minLen .. hand size (RACK_SIZE), extending if a longer word exists.
+  const maxLen = Math.max(config.RACK_SIZE || 9, sum.longestWordLen || 0);
   const lenEntries = [];
   for (let L = minLen; L <= maxLen; L++) lenEntries.push([L, wlc[L] || 0]);
   const maxLenBar = Math.max(1, ...lenEntries.map(([, c]) => c));
