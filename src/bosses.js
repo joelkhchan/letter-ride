@@ -7,7 +7,7 @@ const VOWELS = ['A', 'E', 'I', 'O', 'U'];
 export const BOSSES = {
   mute:    { id: 'mute',    name: 'The Mute',    desc: 'Vowels score 0',                   warp: { verb: 'disable', letters: 'vowels' } },
   ceiling: { id: 'ceiling', name: 'The Ceiling', desc: 'Mult is capped at x3',             warp: { verb: 'cap',     maxMult: 3 } },
-  toll:    { id: 'toll',    name: 'The Toll',    desc: 'Each word scores 10 fewer Points', warp: { verb: 'tax',     points: 10 } },
+  toll:    { id: 'toll',    name: 'The Toll',    desc: 'Each word scores 10 less',         warp: { verb: 'tax',     points: 10 } },
   vise:    { id: 'vise',    name: 'The Vise',    desc: 'Only 1 discard this round',        warp: { verb: 'lock',    lock: 'discard', keep: 1 } },
   margin:  { id: 'margin',  name: 'The Margin',  desc: 'Hold 2 fewer tiles this round',     warp: { verb: 'lock',    lock: 'hand',    delta: -2 } },
 };

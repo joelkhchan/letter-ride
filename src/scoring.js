@@ -23,13 +23,17 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
   let base = 0;
   for (const { tile, letter } of selection) {
     const baseVal = tile.letter === '*' ? 0 : (tileValues[letter.toUpperCase()] || 0);
+    // Evaluate each of the tile's mods ONCE, then reuse that delta for both the retrigger count
+    // and the apply loop. Mods are pure today, so this is behavior-identical, but it removes the
+    // latent fragility of double-evaluating (a future mod reading RNG / mutating would double-fire).
+    const modDeltas = (tile.mods || []).map(mod => ({ mod, d: mod.evaluate?.(tile, ctx) }));
     let retrigger = 0;
-    for (const mod of (tile.mods || [])) retrigger += (mod.evaluate?.(tile, ctx)?.retrigger || 0);
+    for (const { d } of modDeltas) retrigger += (d?.retrigger || 0);
     for (const relic of relics) retrigger += (relic.retriggerTile?.(tile, ctx) || 0);
     const times = 1 + retrigger;
     base += baseVal * times;
-    for (const mod of (tile.mods || []))
-      for (let i = 0; i < times; i++) apply(mod.evaluate?.(tile, ctx), mod.name || mod.id);
+    for (const { mod, d } of modDeltas)
+      for (let i = 0; i < times; i++) apply(d, mod.name || mod.id);
   }
 
   const lengthBonus = Math.max(0, letters.length - 3) * lengthBonusPerLetter;  // word-level, once
