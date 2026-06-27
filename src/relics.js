@@ -102,35 +102,35 @@ export const RELICS = {
   // ── Task 1: Snowball relics ───────────────────────────────────────────────
   rareAvalanche: snowball({
     id: 'rareAvalanche', name: 'Avalanche',
-    desc: 'Grows +0.14 Mult every time you play a rare letter (this run)',
-    perStack: 0.14, condition: (ctx) => hasRareCtx(ctx),
+    desc: 'Grows +0.07 Mult every time you play a rare letter (this run)',
+    perStack: 0.07, condition: (ctx) => hasRareCtx(ctx),
   }),
 
   // ── Task 2: Five more snowball relics ──────────────────────────────────────
   flywheel: snowball({
     id: 'flywheel', name: 'Flywheel',
-    desc: 'Grows +0.2 Mult every time you play a word of 3 letters or fewer (this run)',
-    perStack: 0.2, condition: (ctx) => ctx.letters.length <= 3,
+    desc: 'Grows +0.1 Mult every time you play a word of 3 letters or fewer (this run)',
+    perStack: 0.1, condition: (ctx) => ctx.letters.length <= 3,
   }),
   juggernaut: snowball({
     id: 'juggernaut', name: 'Juggernaut',
-    desc: 'Grows +0.1 Mult every time you play a word of 6+ letters (this run)',
-    perStack: 0.10, condition: (ctx) => ctx.letters.length >= 6,
+    desc: 'Grows +0.05 Mult every time you play a word of 6+ letters (this run)',
+    perStack: 0.05, condition: (ctx) => ctx.letters.length >= 6,
   }),
   resonanceEngine: snowball({
     id: 'resonanceEngine', name: 'Resonance',
-    desc: 'Grows +0.14 Mult every time you play a word with a doubled letter (this run)',
-    perStack: 0.14, condition: (ctx) => isDoubledCtx(ctx),
+    desc: 'Grows +0.07 Mult every time you play a word with a doubled letter (this run)',
+    perStack: 0.07, condition: (ctx) => isDoubledCtx(ctx),
   }),
   risingTide: snowball({
     id: 'risingTide', name: 'Rising Tide',
-    desc: 'Grows +0.08 Mult every time you play a word with 3+ vowels (this run)',
-    perStack: 0.08, condition: (ctx) => ctx.letters.filter(isVowel).length >= 3,
+    desc: 'Grows +0.04 Mult every time you play a word with 3+ vowels (this run)',
+    perStack: 0.04, condition: (ctx) => ctx.letters.filter(isVowel).length >= 3,
   }),
   perpetualEngine: snowball({
     id: 'perpetualEngine', name: 'Perpetual Engine',
-    desc: 'Grows +0.07 Mult every word you play (this run)',
-    perStack: 0.07, condition: () => true,
+    desc: 'Grows +0.035 Mult every word you play (this run)',
+    perStack: 0.035, condition: () => true,
   }),
 
   // ── Phase 3 SP1: Retrigger relics ──────────────────────────────────────────
