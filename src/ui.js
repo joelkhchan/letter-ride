@@ -1240,6 +1240,44 @@ export function renderStats(profile, config, allRelicIds = [], allModIds = [], A
   wireBack();
 }
 
+// Dump the persistent stores (profile + balance telemetry + meta) as JSON, so phone play can feed
+// the tuning loop without a backend: the author copies it and pastes it back for analysis.
+function buildExportJSON() {
+  const read = (k) => { try { return JSON.parse(window.localStorage.getItem(k)); } catch { return null; } };
+  return JSON.stringify({
+    letterRideExport: 1,
+    exportedAt: new Date().toISOString(),
+    profile: read('letterRide.profile'),
+    telemetry: read('letterRide.telemetry'),
+    meta: read('letterRide.meta'),
+  }, null, 2);
+}
+
+function showExportOverlay() {
+  document.getElementById('export-overlay')?.remove();
+  const json = buildExportJSON();
+  const overlay = document.createElement('div');
+  overlay.id = 'export-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:200;padding:18px;';
+  overlay.innerHTML = `
+    <div style="font-family:var(--font-display);font-weight:700;color:var(--gold);font-size:1.15rem;">Export data</div>
+    <div style="font-size:0.8rem;color:var(--ink-soft);max-width:520px;text-align:center;line-height:1.4;">Your stats + balance telemetry as JSON. Copy it and paste it back to feed the tuning loop.</div>
+    <textarea readonly style="width:min(560px,92vw);height:44vh;background:var(--night-sunk);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:monospace;font-size:0.72rem;resize:none;">${json.replace(/</g, '&lt;')}</textarea>
+    <div style="display:flex;gap:10px;">
+      <button id="export-copy" class="menu-btn">Copy</button>
+      <button id="export-close" class="menu-btn">Close</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  const ta = overlay.querySelector('textarea');
+  overlay.querySelector('#export-copy').onclick = async () => {
+    const btn = overlay.querySelector('#export-copy');
+    try { await navigator.clipboard.writeText(json); btn.textContent = 'Copied!'; }
+    catch { ta.focus(); ta.select(); btn.textContent = 'Select + copy'; }
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1800);
+  };
+  overlay.querySelector('#export-close').onclick = () => overlay.remove();
+}
+
 export function renderSettings(hasRun) {
   const ts = getPref('textSize') === 'large' ? 'Large' : 'Normal';
   app().innerHTML = `
@@ -1263,6 +1301,7 @@ export function renderSettings(hasRun) {
       <h3 class="settings-h">Developer</h3>
       <div class="menu-buttons">
         <button id="set-telemetry" class="menu-btn">${lineIconHtml('chart-bar')}Balance telemetry</button>
+        <button id="set-export" class="menu-btn">Export data (JSON)</button>
       </div>
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
@@ -1272,6 +1311,7 @@ export function renderSettings(hasRun) {
   on('set-textsize', () => { setPref('textSize', getPref('textSize') === 'large' ? 'normal' : 'large'); applyDisplayPrefs(); renderSettings(hasRun); });
   on('set-abandon', () => handlers.onAbandonRun?.());
   on('set-telemetry', () => handlers.onOpenTelemetry?.());
+  on('set-export', () => showExportOverlay());
   wireBack();
 }
 
