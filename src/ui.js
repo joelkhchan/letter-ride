@@ -1199,6 +1199,19 @@ export function renderStats(profile, config, allRelicIds = [], allModIds = [], A
     ? `<div class="stat-section"><h3>Where runs end</h3>${sum.wall ? `<p class="wall-headline">Your wall: <b>Round ${sum.wall.roundIndex + 1}</b> &middot; Passage ${passageOf(sum.wall.roundIndex)} &middot; ${sum.wall.count} run${sum.wall.count === 1 ? '' : 's'} ended here</p>` : `<p class="wall-headline">No losses yet. ${sum.wins} win${sum.wins === 1 ? '' : 's'} so far.</p>`}<div class="wall-chart">${cols}${wonCol}</div></div>`
     : '';
 
+  // Word-length usage histogram (reuses the bar-chart styles; .len tints the bars gold).
+  const minLen = config.MIN_WORD_LEN || 3;
+  const wlc = sum.wordLenCounts || {};
+  const maxLen = Math.max(minLen + 4, sum.longestWordLen || 0);
+  const lenEntries = [];
+  for (let L = minLen; L <= maxLen; L++) lenEntries.push([L, wlc[L] || 0]);
+  const maxLenBar = Math.max(1, ...lenEntries.map(([, c]) => c));
+  const modeLen = lenEntries.reduce((best, e) => (e[1] > best[1] ? e : best), [0, -1])[0];
+  const lenCols = lenEntries.map(([L, c]) => `<div class="wall-col len"><span class="wall-bar" style="height:${Math.round((c / maxLenBar) * 100)}%"${c ? ` title="${c} word${c === 1 ? '' : 's'} of ${L} letters"` : ''}></span><span class="wall-num">${L}</span></div>`).join('');
+  const lenSection = sum.wordsPlayed > 0
+    ? `<div class="stat-section"><h3>Word length</h3><p class="wall-headline">Most of your words are <b>${modeLen}</b> letters</p><div class="wall-chart">${lenCols}</div></div>`
+    : '';
+
   const section = (label, body) => `<div class="stat-section"><h3>${label}</h3><div class="stat-grid">${body}</div></div>`;
   const emptyNote = sum.runs === 0 ? `<p class="setup-sub">Play a run to start building your stats.</p>` : '';
 
@@ -1212,6 +1225,7 @@ export function renderStats(profile, config, allRelicIds = [], allModIds = [], A
       ${section('Runs', runsSection)}
       ${wallSection}
       ${section('Words', wordsSection)}
+      ${lenSection}
       ${section('Collection', collectionSection)}
     </div>`;
   wireBack();

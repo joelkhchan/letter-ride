@@ -427,6 +427,7 @@ html.text-large { font-size: 112.5%; }
 .wall-bar { width: 100%; min-height: 2px; border-radius: 2px 2px 0 0; background: var(--ink-soft); display: block; }
 .wall-col.boss .wall-bar { background: var(--coral); }
 .wall-col.won .wall-bar { background: var(--gold); }
+.wall-col.len .wall-bar { background: var(--gold-deep); }
 .wall-num { font-size: 0.58rem; color: var(--ink-soft); font-family: var(--font-ui); }
 .wall-col.boss .wall-num { color: var(--coral); }
 .wall-col.won .wall-num { color: var(--gold); }

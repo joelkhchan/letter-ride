@@ -112,6 +112,14 @@ test('statsSummary is safe on an empty profile (no divide-by-zero)', () => {
   assert.equal(sum.wall, null);
 });
 
+test('recordPlay builds a word-length histogram', () => {
+  const p = makeProfile();
+  for (const w of ['CAT', 'DOGS', 'OXEN', 'QUART']) recordPlay(p, { word: w, score: 10 });
+  assert.deepEqual(p.stats.wordLenCounts, { 3: 1, 4: 2, 5: 1 });
+  const cfg = { LEVELS: { names: ['Novice'], thresholds: [0] } };
+  assert.deepEqual(statsSummary(p, cfg, {}).wordLenCounts, { 3: 1, 4: 2, 5: 1 });
+});
+
 test('recordRunEnd tallies the wall (loss round) and lifetime archetype plays', () => {
   const p = makeProfile();
   recordRunEnd(p, { won: false, roundsCleared: 5,  runScore: 100, archetypeTally: { longWord: 3, vowelHeavy: 1 } });

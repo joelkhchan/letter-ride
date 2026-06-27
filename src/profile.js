@@ -8,6 +8,7 @@ export function makeProfile() {
     stats: {
       runs: 0, wins: 0, roundsCleared: 0, wordsPlayed: 0,
       lettersPlayed: 0,
+      wordLenCounts: {},        // {length: count} histogram of words played, by length
       lifetimeScore: 0,
       bestWordScore: 0, bestWord: '', bestRunScore: 0, bestRoundScore: 0,
       longestWord: '', longestWordLen: 0,
@@ -53,6 +54,7 @@ export function recordPlay(profile, ctx) {
   const word = ctx.word || '';
   s.wordsPlayed += 1;
   s.lettersPlayed = (s.lettersPlayed || 0) + word.length;
+  if (word.length) { s.wordLenCounts = s.wordLenCounts || {}; s.wordLenCounts[word.length] = (s.wordLenCounts[word.length] || 0) + 1; }
   s.lifetimeScore += ctx.score || 0;
   if ((ctx.score || 0) > s.bestWordScore) { s.bestWordScore = ctx.score || 0; s.bestWord = word; }
   if (word.length > (s.longestWordLen || 0)) { s.longestWordLen = word.length; s.longestWord = word; }
@@ -126,6 +128,7 @@ export function statsSummary(profile, config, totals = {}) {
     roundsCleared: s.roundsCleared || 0, avgRoundsPerRun: per(s.roundsCleared || 0, runs),
     bestRunScore: s.bestRunScore || 0,
     wordsPlayed: words, avgWordLength: per(s.lettersPlayed || 0, words),
+    wordLenCounts: s.wordLenCounts || {},
     longestWord: s.longestWord || '', longestWordLen: s.longestWordLen || 0,
     bestWord: s.bestWord || '', bestWordScore: s.bestWordScore || 0,
     bestRoundScore: s.bestRoundScore || 0, avgScorePerWord: per(lifetimeScore, words),
