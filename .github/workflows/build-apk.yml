@@ -1,0 +1,105 @@
+name: Build Android APK + publish OTA bundle
+
+# Builds an installable debug .apk in the cloud (no local Android SDK needed) AND publishes the web
+# bundle for in-app over-the-air (OTA) self-update. Runs on every push to main, or on demand.
+#   - First time: download the .apk artifact from the run and sideload it once.
+#   - After that:  the app auto-updates its web content from the "ota" GitHub Release on launch,
+#                  so you only re-sideload the APK for rare native/Capacitor changes.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write          # to publish/refresh the "ota" release that carries the OTA bundle
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web bundle (www/)
+        run: npm run cap:copy
+
+      - name: Bake OTA config into the bundle
+        run: |
+          printf '{"manifestUrl":"https://github.com/%s/releases/download/ota/latest.json","bundleVersion":%s}\n' \
+            "${{ github.repository }}" "${{ github.run_number }}" > www/ota.json
+          echo "Baked www/ota.json:"; cat www/ota.json
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Sync web assets into Android
+        run: npx cap sync android
+
+      - name: Lock to portrait
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          sed -i 's#android:name=".MainActivity"#android:name=".MainActivity"\n            android:screenOrientation="portrait"#' "$MANIFEST"
+          grep -q 'screenOrientation="portrait"' "$MANIFEST" && echo "portrait lock applied" || { echo "ERROR: orientation patch did not apply"; exit 1; }
+
+      - name: Generate app icons (only if resources/icon.png exists)
+        if: ${{ hashFiles('resources/icon.png') != '' }}
+        run: |
+          npm i -D @capacitor/assets
+          npx capacitor-assets generate --assetPath resources --android --iconBackgroundColor '#0d182e' --iconBackgroundColorDark '#0d182e'
+
+      # Stable signing: a fixed debug keystore stored as the DEBUG_KEYSTORE_B64 secret keeps the APK
+      # signature constant, so a rebuilt APK installs OVER the old app and keeps your saved data
+      # (run + Meta in localStorage). Without it, an ephemeral key is used and a reinstall won't upgrade in place.
+      - name: Use stable debug keystore (if configured)
+        env:
+          DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$DEBUG_KEYSTORE_B64" ]; then
+            mkdir -p ~/.android
+            printf '%s' "$DEBUG_KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+            echo "Signing with the stable debug keystore."
+          else
+            echo "No DEBUG_KEYSTORE_B64 secret set - using an ephemeral debug key."
+          fi
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: letter-ride-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Publish OTA web bundle (GitHub Release "ota")
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd www && zip -qr ../bundle.zip .)
+          printf '{"version":%s,"url":"https://github.com/%s/releases/download/ota/bundle.zip"}\n' \
+            "${{ github.run_number }}" "${{ github.repository }}" > latest.json
+          gh release view ota >/dev/null 2>&1 || gh release create ota --title "Letter Ride OTA bundles" --notes "Auto-published web bundles for in-app self-update. Do not delete this release."
+          gh release upload ota bundle.zip latest.json --clobber
+          echo "Published OTA bundle version ${{ github.run_number }}"

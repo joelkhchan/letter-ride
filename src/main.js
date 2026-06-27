@@ -15,8 +15,10 @@ import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, ren
 import { play as sfx, resumeAudio } from './audio.js';
 import { logEvent } from './playlog.js';
 import { applyDisplayPrefs } from './settings.js';
+import { initUpdater } from './updater.js';
 
 try {
+  initUpdater();   // OTA self-update check on launch (Android only; a no-op on the web)
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
   const dictionary = await loadFromFile('assets/enable1.txt', blocklist);
   const meta = loadMeta(window.localStorage, CONFIG);

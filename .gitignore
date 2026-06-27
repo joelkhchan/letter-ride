@@ -9,3 +9,7 @@ logs/
 
 # eval-harness build scratch
 .sdd/
+
+# session scratch (Playwright screenshots + standalone preview pages at repo root)
+/*.png
+/*-preview.html
