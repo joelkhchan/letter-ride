@@ -13,3 +13,7 @@ logs/
 # session scratch (Playwright screenshots + standalone preview pages at repo root)
 /*.png
 /*-preview.html
+# downloaded build artifact (grab from CI; never commit)
+*.apk
+# canvas dataURL scratch (icon rendering)
+/icon-*.txt
