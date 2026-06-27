@@ -159,8 +159,8 @@ test('rareAvalanche: ×Mult grows with its stacks, applies to every word', () =>
   const av = RELICS.rareAvalanche;
   // 0 stacks → timesMult 1 (no-op)
   assert.deepEqual(av.evaluate({ relicState: {} }), { timesMult: 1 });
-  // 3 stacks → timesMult 1 + 0.07*3, regardless of the current word
-  assert.deepEqual(av.evaluate({ relicState: { rareAvalanche: { stacks: 3 } } }), { timesMult: 1 + 0.07 * 3 });
+  // 3 stacks → timesMult 1 + 0.2*3, regardless of the current word
+  assert.deepEqual(av.evaluate({ relicState: { rareAvalanche: { stacks: 3 } } }), { timesMult: 1 + 0.2 * 3 });
 });
 
 test('rareAvalanche: condition is "word uses a rare letter"', () => {
@@ -182,8 +182,8 @@ test('all six snowball relics: condition + ×Mult-from-stacks', () => {
   }
   // perpetualEngine fires on every word
   assert.equal(RELICS.perpetualEngine.snowball.condition({ letters: ['C','A','T'] }), true);
-  // stacks read (flywheel perStack 0.1)
-  assert.deepEqual(RELICS.flywheel.evaluate({ relicState: { flywheel: { stacks: 2 } } }), { timesMult: 1 + 0.1 * 2 });
+  // stacks read (flywheel perStack 0.3)
+  assert.deepEqual(RELICS.flywheel.evaluate({ relicState: { flywheel: { stacks: 2 } } }), { timesMult: 1 + 0.3 * 2 });
 });
 
 test('pressLead retriggers only the first tile', () => {

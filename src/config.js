@@ -20,10 +20,10 @@ export const CONFIG = {
   // median ("skill beats luck"). Bosses provide the Sentence difficulty spikes, so targets stay
   // smooth (not inflated on Sentences). FLOOR-tuned starting point — refine via author playtest.
   ROUND_TARGETS: [
-    40,  52,  65,      // Passage 1: Word, Phrase, Sentence(boss)
-    82,  102, 125,     // Passage 2
-    150, 182, 218,     // Passage 3
-    270, 320, 380,     // Passage 4 (pass-2 2026-06-27: snowball -50% is the main lever; curve only modestly restored, top ~380; tune via play)
+    40,  50,  70,      // Passage 1: Word, Phrase, Sentence(boss)
+    100, 140, 190,     // Passage 2
+    250, 320, 400,     // Passage 3
+    490, 590, 700,     // Passage 4 (author-set 2026-06-27: steep round-number curve + strong engines = high-ceiling)
   ],
   COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 }, // Tier 1
   INTEREST: { enabled: true, per: 5, rate: 1, cap: 5 },             // $1 per $5 held, max $5
