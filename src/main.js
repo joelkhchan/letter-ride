@@ -145,8 +145,7 @@ try {
         run.boughtAnythingThisRun = true;
         if (offer.type === 'buyRelic') recordPurchase(telemetry, offer.relicId);
         else if (offer.type === 'buyEnchantedTile' || offer.type === 'enchantTile') recordPurchase(telemetry, offer.modId);
-        run.shop = generateShop(run, run.rng, pool());
-        recordOffers(telemetry, extractOfferIds(run.shop));
+        run.shop.offers = run.shop.offers.filter(o => o !== offer);   // consume only the bought slot; the rest stay (reroll replaces the set)
       }
       saveAll(); render(); return r;
     },
