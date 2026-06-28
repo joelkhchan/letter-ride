@@ -13,6 +13,7 @@ import { getPref, setPref, togglePref, applyDisplayPrefs } from './settings.js';
 import { levelFor, statsSummary } from './profile.js';
 import { pendingMeta } from './achievements.js';
 import { relicSealHtml, bossSealHtml, metaSealHtml, lineIconHtml, bucketBadgeHtml, bagHtml } from './icons.js';
+import { updaterState, checkNow } from './updater.js';
 
 const app = () => document.getElementById('app');
 let handlers = {};
@@ -1320,6 +1321,11 @@ export function renderSettings(hasRun) {
         <button id="set-telemetry" class="menu-btn">${lineIconHtml('chart-bar')}Balance telemetry</button>
         <button id="set-export" class="menu-btn">Export data (JSON)</button>
       </div>
+      <h3 class="settings-h">App update</h3>
+      ${updaterStatusHtml()}
+      <div class="menu-buttons">
+        <button id="set-update-check" class="menu-btn">Check for update now</button>
+      </div>
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('set-sound', () => { toggleMuted(); renderSettings(hasRun); });
@@ -1329,7 +1335,35 @@ export function renderSettings(hasRun) {
   on('set-abandon', () => handlers.onAbandonRun?.());
   on('set-telemetry', () => handlers.onOpenTelemetry?.());
   on('set-export', () => showExportOverlay());
+  on('set-update-check', async () => {
+    const btn = document.getElementById('set-update-check');
+    if (btn) { btn.disabled = true; btn.textContent = 'Checking…'; }
+    await checkNow();
+    renderSettings(hasRun);
+  });
   wireBack();
+}
+
+// OTA self-update diagnostics for Settings → Developer. Reads the persisted updater state so an
+// on-device failure (download error, offline, stale bundle) is visible instead of silently swallowed.
+function updaterStatusHtml() {
+  const s = updaterState();
+  if (!s.supported) {
+    return `<p class="setup-sub">Over-the-air updates are Android-only. In a browser there is nothing to update.</p>`;
+  }
+  const label = {
+    idle: 'Idle', checking: 'Checking…', 'up-to-date': 'Up to date', downloading: 'Downloading update…',
+    applying: 'Applying update…', offline: 'Offline / cannot reach update server', error: 'Error', unsupported: 'Not supported',
+  }[s.status] || s.status;
+  const rows = [
+    ['Status', label],
+    ['Installed version', s.currentVersion ?? '—'],
+    ['Latest version', s.remoteVersion ?? '—'],
+    ['Last checked', s.lastCheck ? `${s.lastCheck}${s.trigger ? ` (${s.trigger})` : ''}` : 'never'],
+  ];
+  if (s.lastError) rows.push(['Last error', s.lastError]);
+  const tr = rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+  return `<table class="telem-table">${tr}</table>`;
 }
 
 // Dev/author balance view: surfaces telemetry.summarize() - per-archetype play share + avg Score
