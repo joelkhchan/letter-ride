@@ -210,71 +210,44 @@ function wireDescPopovers(containerEl) {
 }
 
 // Build relics + tile-mods panel HTML (always rendered during play and shop).
-// stagedBreakdown: optional breakdown object from scoreWord when a word is staged.
-function relicsModsPanelHtml(run, stagedBreakdown) {
-  let relicsText;
-  if (run.relics && run.relics.length) {
-    if (stagedBreakdown) {
-      // Merge all labeled parts from the breakdown into a lookup.
-      const contributions = {};
-      for (const p of stagedBreakdown.pointParts)    contributions[p.label] = `+${p.amount} Points`;
-      for (const p of stagedBreakdown.addMultParts)  contributions[p.label] = `+${p.amount} Mult`;
-      for (const p of stagedBreakdown.timesMultParts) contributions[p.label] = `×${p.amount} Mult`;
-      relicsText = run.relics.map(r => {
-        const contrib = contributions[r.name] || '·';
-        const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
-        const safeName = (r.name || '').replace(/"/g, '&quot;');
-        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${r.name}: <b>${contrib}</b></span>`;
-      }).join(' · ');
-    } else {
-      // Group stacked (duplicate) relics into one entry with a ×N count.
-      const counts = {};
-      for (const r of run.relics) counts[r.id] = (counts[r.id] || 0) + 1;
-      const seen = new Set();
-      relicsText = run.relics.filter(r => !seen.has(r.id) && seen.add(r.id)).map(r => {
-        const n = counts[r.id];
-        const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
-        const safeName = (r.name || '').replace(/"/g, '&quot;');
-        return `<span class="relic-entry tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${r.name}${n > 1 ? ` ×${n}` : ''}</span>`;
-      }).join(' · ');
-    }
-  } else {
-    relicsText = '<span class="none-label">none yet</span>';
+// Short display value per relic for the compact strip (the headline effect; author can reword).
+const RELIC_TAGS = {
+  vowelBonus: '+2/vowel', rareHoarder: '+40 rare', shortAndSweet: '×3', pithy: '+15',
+  lengthy: '+1/letter', doubleTrouble: '+40 dbl', freshStart: '+2 Mult', comboCounter: '+1/word',
+  recycler: '+$2/play', rareSurge: '×1.8', wildcardRares: 'wild→rare', longHaul: '× length',
+  longReach: 'reach −1', echoChamber: '×2 dbl', looseDoubles: '2+=dbl', momentum: '+10/word',
+  overtime: '+1 play', pressLead: 'retrig 1st', rareReprint: 'retrig rare',
+  chainReaction: '× chain', throughLine: '+8/chain', wideMargins: '+1 hand', tightLeading: '+1M / −1 hand',
+  rareAvalanche: '× grows', flywheel: '× grows', juggernaut: '× grows',
+  resonanceEngine: '× grows', risingTide: '× grows', perpetualEngine: '× grows',
+};
+// Snowball relics show their LIVE x Mult (grows over the run); others show their static tag.
+function relicChipValue(relic, run) {
+  if (relic.snowball) {
+    const tm = relic.evaluate?.({ relicState: run.relicState || {}, letters: [], selection: [] })?.timesMult || 1;
+    if (tm > 1.0001) return `×${(Math.round(tm * 10) / 10).toFixed(1)}`;
   }
+  return RELIC_TAGS[relic.id] || '';
+}
 
-  // Collect all rack + bag tiles with mods
-  const allTiles = [
-    ...(run.rack || []),
-    ...(run.bag?.tiles || []),
-  ];
-  const moddedTiles = allTiles.filter(t => t.mods && t.mods.length);
-  const modsText = moddedTiles.length
-    ? moddedTiles.map(t => {
-        const modsLabel = t.mods.map(m => m.name || m.id).join('+');
-        const modsDesc = t.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ');
-        const safeDesc = modsDesc.replace(/"/g, '&quot;');
-        const safeName = (`${t.letter}: ${modsLabel}`).replace(/"/g, '&quot;');
-        return `<span class="mod-chip tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${t.letter}:${modsLabel}</span>`;
-      }).join(', ')
-    : '<span class="none-label">none yet</span>';
-
-  // Hone levels: show only archetypes with level > 0.
-  const honeLevels = run.honeLevels || {};
-  const activeHones = Object.entries(honeLevels).filter(([, lvl]) => lvl > 0);
-  const honeText = activeHones.length
-    ? activeHones.map(([id, lvl]) => {
-        const a = ARCHETYPES[id];
-        const safeDesc = honeDescription(id, lvl).replace(/"/g, '&quot;');
-        const safeName = (a?.name || id).replace(/"/g, '&quot;');
-        return `<span class="hone-entry tappable-chip" data-pop-name="${safeName} Lv${lvl}" data-pop-desc="${safeDesc}">${lineIconHtml('tools')}${a?.name || id} Lv${lvl}</span>`;
-      }).join(', ')
-    : '<span class="none-label">none yet</span>';
-
-  return `<div id="relics-mods-panel">
-    <div class="rp-row"><span class="rp-label">Relics:</span> ${relicsText}</div>
-    <div class="rp-row"><span class="rp-label">Tile-mods:</span> ${modsText}</div>
-    <div class="rp-row"><span class="rp-label">Hone:</span> ${honeText}</div>
-  </div>`;
+// Compact relics strip: each owned relic = its seal icon + a short value; tap a chip for the full
+// name + effect. Tile-mods live on the rack tiles (the mod badge) and hones fire visibly during
+// scoring, so neither needs a row here.
+function relicsModsPanelHtml(run) {
+  if (!run.relics || !run.relics.length) {
+    return `<div id="relics-mods-panel" class="rp-empty"><span class="none-label">No relics yet — find them in the shop</span></div>`;
+  }
+  const counts = {};
+  for (const r of run.relics) counts[r.id] = (counts[r.id] || 0) + 1;
+  const seen = new Set();
+  const chips = run.relics.filter(r => !seen.has(r.id) && seen.add(r.id)).map(r => {
+    const n = counts[r.id];
+    const val = relicChipValue(r, run);
+    const safeDesc = (r.desc || '').replace(/"/g, '&quot;');
+    const safeName = ((r.name || '') + (n > 1 ? ` ×${n}` : '')).replace(/"/g, '&quot;');
+    return `<span class="relic-chip tappable-chip" data-pop-name="${safeName}" data-pop-desc="${safeDesc}">${relicSealHtml(r.id)}${val ? `<span class="rc-val">${val}</span>` : ''}${n > 1 ? `<span class="rc-n">×${n}</span>` : ''}</span>`;
+  }).join('');
+  return `<div id="relics-mods-panel">${chips}</div>`;
 }
 
 // Show the help overlay (Feature 4).
@@ -307,6 +280,29 @@ function showHelpOverlay() {
 
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+}
+
+// Show what's left in the bag (the draw pile): tile count + letter composition.
+function showBagOverlay(run) {
+  document.getElementById('bag-overlay')?.remove();
+  const tiles = run.bag?.tiles || [];
+  const counts = {};
+  for (const t of tiles) { const k = t.letter === '*' ? '★' : t.letter; counts[k] = (counts[k] || 0) + 1; }
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const grid = entries.map(([l, n]) => `<span class="bag-cell"><b>${l}</b><span class="bag-n">×${n}</span></span>`).join('');
+  const overlay = document.createElement('div');
+  overlay.id = 'bag-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:200;padding:16px;box-sizing:border-box;';
+  overlay.innerHTML = `
+    <div style="background:var(--night-2);color:var(--ink);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:10px;padding:18px 20px;max-width:380px;width:100%;box-shadow:0 12px 32px rgba(0,0,0,0.6);box-sizing:border-box;">
+      <h3 style="margin:0 0 4px;color:var(--gold);font-family:var(--font-display);">In the bag</h3>
+      <p style="margin:0 0 12px;font-size:0.85rem;color:var(--ink-soft);">${tiles.length} tile${tiles.length === 1 ? '' : 's'} left to draw (your hand is separate).</p>
+      <div class="bag-grid">${grid || '<span class="none-label">Bag is empty</span>'}</div>
+    </div>
+    <button id="bag-close" class="menu-btn">Close</button>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#bag-close').onclick = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
 // Build live scorebug HTML from a pre-computed scoreWord result.
@@ -534,35 +530,7 @@ export function renderRun(run, profile) {
     ? `<div id="last-play">Last: <b>${run.lastPlay.word}</b> = ${run.lastPlay.score} Score</div>`
     : '';
 
-  // Live score preview (only when playing and selection non-empty).
-  // Also extract the breakdown for per-relic contributions in the relics panel.
-  let preview = '';
-  let stagedBreakdown = null;
-  if (!done && selection.length) {
-    // Faithful preview: mirror playWord's scoring (boss warp, hone, snowball stacks, and the
-    // prospective chain length) so the previewed Score equals what you actually get on submit.
-    const boss = run.boss ? BOSSES[run.boss] : null;
-    const cf = selection[0]?.letter?.toUpperCase();
-    const chainLength = (run.lastWord && run.lastWord.lastLetter === cf) ? (run.chainLength || 0) + 1 : 1;
-    const scored0 = scoreWord(selection, {
-      tileValues: bossTileValues(run.tileValues, boss),
-      lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
-      relics: [...(run.relics || []), ...honeModifiers(run.honeLevels)],
-      context: {
-        wordsPlayedThisRound: run.wordsPlayedThisRound,
-        enablers: (run.relics || []).filter(r => r.enabler).map(r => r.enabler),
-        relicState: run.relicState,
-        chainLength,
-      },
-    });
-    const scored = applyBossToScore(scored0, boss);
-    let bossNote = '';
-    if (boss?.warp.verb === 'tax') bossNote = `&minus;${boss.warp.points} (${boss.name})`;
-    else if (boss?.warp.verb === 'cap' && scored0.mult > boss.warp.maxMult) bossNote = `(${boss.name}: Mult capped &times;${boss.warp.maxMult})`;
-    else if (boss?.warp.verb === 'disable') bossNote = `(${boss.name})`;
-    stagedBreakdown = scored.breakdown;
-    preview = scorePreviewHtml(selection, scored, bossNote);
-  }
+  // (No pre-submit score preview: the per-letter scoring animation on submit is the score reveal.)
 
   const pct = run.target > 0 ? Math.min(100, Math.round((run.roundTotal / run.target) * 100)) : 0;
   const toGo = Math.max(0, run.target - run.roundTotal);
@@ -581,7 +549,7 @@ export function renderRun(run, profile) {
       <div class="rt-label"><b>Round ${run.roundIndex + 1}/${totalRounds}</b> &middot; ${tierOf(run.roundIndex)}${isBossRound(run.roundIndex) ? ' &middot; Boss' : ''}</div>
     </div>
     <div id="hud">
-      <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft}</div>
+      <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft} · <button id="bag-btn" class="hud-link" title="Tiles left in the bag">Bag ${run.bag.tiles.length}</button></div>
       ${coinsHtml}
       <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
       <button id="mute-btn" class="${isMuted() ? 'muted' : ''}" title="${isMuted() ? 'Sound off (tap for on)' : 'Sound on (tap for off)'}" style="font-size:0.95em;padding:2px 8px;border-radius:50%;cursor:pointer;">&#9834;</button>
@@ -592,7 +560,7 @@ export function renderRun(run, profile) {
       <div class="score-track"><div class="score-fill${pct >= 100 ? ' full' : ''}" style="width:${pct}%"></div></div>
       <div class="score-togo">${toGo > 0 ? `${toGo} to clear` : 'Target met'}</div>
     </div>
-    ${relicsModsPanelHtml(run, stagedBreakdown)}
+    ${relicsModsPanelHtml(run)}
     ${lastPlayHtml}
     <div id="staging">${staged || '<span class="staging-hint">Tap tiles to spell a word</span>'}</div>
     ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner">${bossSealHtml(run.boss, { size: 'md' })}<span><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</span></div>` : ''}
@@ -645,6 +613,7 @@ export function renderRun(run, profile) {
   on('new', () => { selection = []; lastShownScore = null; handlers.onRunEnd?.(); });
   on('shuffle', () => { handlers.onShuffle?.(); });
   on('help-btn', () => showHelpOverlay());
+  on('bag-btn', () => showBagOverlay(run));
   on('mute-btn', () => { toggleMuted(); renderRun(run); });
   on('exit-btn', () => handlers.onExitToMenu?.());
   wireDescPopovers(document.getElementById('relics-mods-panel'));

@@ -138,7 +138,19 @@ h1 { color: var(--gold); }
 #last-play { text-align: center; font-size: 0.97rem; color: var(--teal); font-weight: 700; margin: 5px 0 2px; }
 
 /* ================================================================ Relics + mods panel */
-#relics-mods-panel { background: var(--night-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 13px; margin-bottom: 10px; font-size: 0.86rem; }
+#relics-mods-panel { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; margin-bottom: 10px; min-height: 1.7rem; }
+#relics-mods-panel.rp-empty { background: var(--night-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 6px 13px; font-size: 0.86rem; }
+.relic-chip { display: inline-flex; align-items: center; gap: 3px; background: var(--night-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 3px 8px 3px 4px; cursor: pointer; transition: border-color 0.1s; }
+.relic-chip:hover, .relic-chip:focus-visible { border-color: var(--gold); outline: none; }
+.relic-chip svg, .relic-chip img { width: 24px; height: 24px; flex: none; }
+.rc-val { font-family: var(--font-display); font-weight: 700; font-size: 0.82rem; color: var(--gold); white-space: nowrap; }
+.rc-n { font-size: 0.72rem; font-weight: 700; color: var(--ink-soft); }
+.hud-link { background: none; border: none; color: var(--gold); font: inherit; font-weight: 700; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+.hud-link:hover { color: var(--ink); }
+.bag-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.bag-cell { display: inline-flex; align-items: baseline; gap: 3px; background: var(--night-sunk); border: 1px solid var(--line); border-radius: 5px; padding: 4px 8px; font-family: var(--font-display); font-weight: 700; }
+.bag-cell b { font-size: 1.05rem; color: var(--ink); }
+.bag-n { font-size: 0.78rem; color: var(--ink-soft); }
 .rp-row { margin: 3px 0; }
 .rp-label { font-weight: 700; font-family: var(--font-display); }
 .relic-entry { border-bottom: 1px dotted var(--line); }
