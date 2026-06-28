@@ -21,6 +21,7 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
   // Retrigger replays a tile's own contribution only; it never re-fires word-level relics or
   // the length bonus. Looping `apply()` (not scaling) makes a retriggered ×Mult mod compound.
   let base = 0;
+  const tileFires = [];   // per-tile base contribution (post-retrigger), for the per-letter scoring animation
   for (const { tile, letter } of selection) {
     const baseVal = tile.letter === '*' ? 0 : (tileValues[letter.toUpperCase()] || 0);
     // Evaluate each of the tile's mods ONCE, then reuse that delta for both the retrigger count
@@ -32,6 +33,7 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
     for (const relic of relics) retrigger += (relic.retriggerTile?.(tile, ctx) || 0);
     const times = 1 + retrigger;
     base += baseVal * times;
+    tileFires.push({ letter: tile.letter, points: baseVal * times, retrigger });
     for (const { mod, d } of modDeltas)
       for (let i = 0; i < times; i++) apply(d, mod.name || mod.id);
   }
@@ -40,7 +42,7 @@ export function scoreWord(selection, { tileValues, lengthBonusPerLetter, relics 
   points += base + lengthBonus;
 
   const mult = (1 + addMult) * timesMult;                            // +Mult then ×Mult
-  const breakdown = { base, lengthBonus, pointParts, addMultParts, timesMultParts };
+  const breakdown = { base, lengthBonus, pointParts, addMultParts, timesMultParts, tileFires };
   // Score is rounded to an integer: fractional multipliers (×1.5, snowball per-stack, mods) otherwise
   // leak IEEE float noise (e.g. 304.29999999999995) into roundTotal, the breakdown, and lifetimeScore.
   // Points and mult stay exact; only the final Score is rounded.

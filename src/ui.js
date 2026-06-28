@@ -426,71 +426,77 @@ function _pullDetail(bd) {
   return parts.join(' ') + (mp.length ? ` · ${mp.join('; ')}` : '');
 }
 
-// Animate the commit->score reveal in place, then onDone() to settle (re-render).
+// Animate a Balatro-style PER-LETTER score build in a centered overlay, then onDone() to settle.
+// Each played tile fires in turn adding its Points; then length + relic/mod Points; then the Mult
+// builds (+Mult, then xMult); then Score = Points x Mult flourishes. Tap to skip; reduced-motion /
+// fast-scoring skip straight to the result. Timings (ms) are feel-tunable presentation, not balance.
+const SA_STEP = 165;
 export function animatePull(sel, scored, onDone) {
   sfx('chunk');                                   // the platen comes down (plays even in reduced-motion)
   const reduce = getPref('reducedMotion') || getPref('fastScoring') || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const bug = document.getElementById('scorebug');
-  const stage = document.getElementById('staging');
-  if (reduce || !scored || !bug) { if (onDone) onDone(); return; }
+  if (reduce || !scored || !sel.length) { if (onDone) onDone(); return; }
 
+  const stage = document.getElementById('staging');
+  if (!stage) { if (onDone) onDone(); return; }
   _pulling = true;
   let finished = false;
-  let flourished = false;
-  const flourish = () => { if (!flourished) { flourished = true; sfx('flourish'); } };
-  const intFmt = v => String(Math.round(v));
   const bd = scored.breakdown || {};
-  const hasMult = ((bd.addMultParts || []).length + (bd.timesMultParts || []).length) > 0;
+  const fires = bd.tileFires && bd.tileFires.length === sel.length ? bd.tileFires : sel.map(s => ({ letter: s.letter, points: 0 }));
+  const intFmt = v => String(Math.round(v));
 
-  bug.classList.add('pulling');
-  bug.innerHTML =
-    `<span class="sb-word">${sel.map(s => s.letter).join('')}</span>` +
-    `<span class="sb-formula"><span id="pull-pts">0</span> Points <span id="pull-mult">×1</span> Mult = <b><span id="pull-score">0</span></b> Score</span>` +
-    `<span class="sb-detail" id="pull-detail">${_pullDetail(bd)}</span>`;
-  const ptsEl = document.getElementById('pull-pts');
-  const multEl = document.getElementById('pull-mult');
-  const scoreEl = document.getElementById('pull-score');
-  const detailEl = document.getElementById('pull-detail');
-  if (detailEl) detailEl.style.opacity = '0';
+  // Inline: the played tiles (still in the rack until the post-animation re-render) fire in place;
+  // the running Points x Mult = Score builds in the staging slot just above them. No modal overlay.
+  const rackTile = (id) => document.querySelector(`#rack .tile[data-id="${id}"]`);
+  stage.classList.add('sa-readout');
+  stage.innerHTML =
+    `<span class="sa-part" id="sa-part"></span>` +
+    `<span class="sa-formula"><span id="sa-points">0</span> Points <span id="sa-mult" class="sa-multv">×1</span> Mult = <b id="sa-score">0</b> Score</span>`;
+  const ptEl = stage.querySelector('#sa-points');
+  const multEl = stage.querySelector('#sa-mult');
+  const scoreEl = stage.querySelector('#sa-score');
+  const partEl = stage.querySelector('#sa-part');
+
+  let runPts = 0, runMult = 1;
+  const bump = (el) => { if (!el) return; el.classList.remove('sa-bump'); void el.offsetWidth; el.classList.add('sa-bump'); };
+  const setPts = () => { ptEl.textContent = intFmt(runPts); bump(ptEl); };
+  const setMult = () => { multEl.textContent = _multStr(runMult); bump(multEl); };
+  const flashPart = (txt) => { if (partEl) { partEl.textContent = txt; partEl.classList.remove('sa-flash'); void partEl.offsetWidth; if (txt) partEl.classList.add('sa-flash'); } };
 
   const settle = () => {
-    if (finished) return;
-    finished = true;
+    if (finished) return; finished = true;
     _clearPullTimers();
     document.removeEventListener('click', onTap, { capture: true });
     _pulling = false;
-    if (onDone) onDone();
+    if (onDone) onDone();                     // re-render refills the rack + resets staging
   };
   const showFinals = () => {
-    flourish();
-    if (ptsEl) ptsEl.textContent = intFmt(scored.points);
+    sel.forEach(s => { const el = rackTile(s.tile.id); if (el) el.classList.add('sa-fired'); });
+    if (ptEl) ptEl.textContent = intFmt(scored.points);
     if (multEl) multEl.textContent = _multStr(scored.mult);
-    if (scoreEl) { scoreEl.textContent = intFmt(scored.score); scoreEl.classList.add('pull-pop'); }
-    if (detailEl) detailEl.style.opacity = '1';
+    if (scoreEl) { scoreEl.textContent = intFmt(scored.score); scoreEl.classList.add('sa-pop'); }
+    if (partEl) partEl.textContent = '';
+    sfx('flourish');
   };
-  function onTap(e) {
-    e.stopPropagation(); e.preventDefault();
-    _clearPullTimers();
-    showFinals();
-    _pullAfter(PULL.skipHold, settle);
-  }
+  function onTap(e) { e.stopPropagation(); e.preventDefault(); _clearPullTimers(); showFinals(); _pullAfter(240, settle); }
   document.addEventListener('click', onTap, { capture: true });
 
-  if (stage) { stage.classList.add('pull-pressing'); _pullAfter(PULL.press, () => stage.classList.remove('pull-pressing')); }
-
-  let t = PULL.press;
-  _pullAfter(t, () => _pullTween(ptsEl, 0, scored.points, PULL.points, intFmt));
-  t += PULL.points;
-  _pullAfter(t, () => {
-    if (detailEl) detailEl.style.opacity = '1';
-    if (hasMult) _pullTween(multEl, 1, scored.mult, PULL.mult, _multStr);
-    else if (multEl) multEl.textContent = _multStr(scored.mult);
+  let t = 150;
+  // 1) each played tile fires IN PLACE in the rack, adding its base Points
+  fires.forEach((f, i) => {
+    _pullAfter(t, () => { const el = rackTile(sel[i].tile.id); if (el) el.classList.add('sa-firing'); runPts += f.points; setPts(); sfx('tap'); });
+    t += SA_STEP;
   });
-  t += hasMult ? PULL.mult : 80;
-  _pullAfter(t, () => { flourish(); _pullTween(scoreEl, 0, scored.score, PULL.score, intFmt); });
-  t += PULL.score;
-  _pullAfter(t, () => { if (scoreEl) scoreEl.classList.add('pull-pop'); });
-  _pullAfter(t + PULL.hold, settle);
+  // 2) length bonus, then 3) Points from relics/mods
+  if (bd.lengthBonus > 0) { _pullAfter(t, () => { runPts += bd.lengthBonus; setPts(); flashPart(`+${bd.lengthBonus} length`); sfx('tap'); }); t += SA_STEP; }
+  for (const p of (bd.pointParts || [])) { _pullAfter(t, () => { runPts += p.amount; setPts(); flashPart(`+${p.amount} ${p.label}`); sfx('tap'); }); t += SA_STEP; }
+  // 4) Mult builds: +Mult then xMult
+  for (const p of (bd.addMultParts || [])) { _pullAfter(t, () => { runMult += p.amount; setMult(); flashPart(`+${p.amount} Mult · ${p.label}`); sfx('tap'); }); t += SA_STEP; }
+  for (const p of (bd.timesMultParts || [])) { _pullAfter(t, () => { runMult *= p.amount; setMult(); flashPart(`×${p.amount} Mult · ${p.label}`); sfx('tap'); }); t += SA_STEP; }
+  // 5) Score reveal (snap Points/Mult to the exact final, then tween the Score)
+  _pullAfter(t + 70, () => { if (ptEl) ptEl.textContent = intFmt(scored.points); if (multEl) multEl.textContent = _multStr(scored.mult); flashPart(''); sfx('flourish'); _pullTween(scoreEl, 0, scored.score, 470, intFmt); });
+  t += 70 + 470;
+  _pullAfter(t, () => { if (scoreEl) scoreEl.classList.add('sa-pop'); });
+  _pullAfter(t + 540, settle);
 }
 
 export function renderRun(run, profile) {
@@ -589,7 +595,6 @@ export function renderRun(run, profile) {
     ${relicsModsPanelHtml(run, stagedBreakdown)}
     ${lastPlayHtml}
     <div id="staging">${staged || '<span class="staging-hint">Tap tiles to spell a word</span>'}</div>
-    ${preview}
     ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner">${bossSealHtml(run.boss, { size: 'md' })}<span><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</span></div>` : ''}
     ${run.chainLength > 1 ? `<div id="chain-banner">Chain &times;${run.chainLength}${run.lastWord ? ` &middot; continue with ${run.lastWord.lastLetter}` : ''}</div>` : ''}
     <div id="rack">

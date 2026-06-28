@@ -129,7 +129,7 @@ h1 { color: var(--gold); }
 #chain-banner { text-align: center; font-family: var(--font-body); font-weight: 700; padding: 8px 14px; margin: 8px 0 4px; border: 1px solid var(--teal); border-left: 5px solid var(--teal); border-radius: var(--radius-sm); background: var(--chain-bg); color: #84ddc5; font-size: 0.95rem; }
 
 /* ================================================================ Staging + scorebug */
-#staging { min-height: 2.4rem; font-family: var(--font-display); font-weight: 700; font-size: 2.1rem; letter-spacing: 4px; text-align: center; color: var(--ink); }
+#staging { min-height: 2.7rem; line-height: 1; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 2.1rem; letter-spacing: 4px; text-align: center; color: var(--ink); }
 .staging-hint { font-size: 0.95rem; letter-spacing: 0; font-weight: 400; color: var(--ink-soft); opacity: 0.5; }
 #scorebug { display: flex; flex-direction: column; align-items: center; gap: 3px; margin: 8px auto; padding: 11px 18px; background: linear-gradient(var(--night-2), var(--night-sunk)); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: var(--radius-sm); max-width: 380px; box-shadow: 0 2px 7px rgba(0,0,0,0.5); }
 .sb-word    { font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; letter-spacing: 2px; }
@@ -355,6 +355,27 @@ button { font-family: var(--font-body); color: var(--ink); }
 #pull-detail { transition: opacity 220ms ease; }
 @media (prefers-reduced-motion: reduce) {
   #staging.pull-pressing, #pull-score.pull-pop { animation: none; }
+}
+
+/* ============================================ Per-letter score animation (the Pull, inline) */
+/* The played tiles fire in place in the rack; the running Points x Mult = Score builds in the
+   staging slot just above them (single line, so staging height is unchanged -> no rack shift). */
+#staging.sa-readout { position: relative; font-size: 1.2rem; font-weight: 700; letter-spacing: 0; }
+.sa-formula { font-family: var(--font-display); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.sa-formula #sa-score { color: var(--gold); font-size: 1.3em; }
+#sa-points, #sa-mult, .sa-formula #sa-score { display: inline-block; }
+.sa-multv { color: var(--gold); }
+.sa-part { position: absolute; left: 0; right: 0; top: 100%; font-size: 0.82rem; font-weight: 700; color: var(--gold); opacity: 0; letter-spacing: 0; line-height: 1.1; pointer-events: none; }
+.sa-part.sa-flash { animation: sa-partflash 720ms ease-out; }
+@keyframes sa-partflash { 0% { opacity: 0; transform: translateY(4px); } 22% { opacity: 1; transform: none; } 100% { opacity: 0.82; } }
+.sa-bump { animation: sa-bump 210ms ease-out; }
+@keyframes sa-bump { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.sa-pop { animation: pull-pop 320ms cubic-bezier(.2,1.5,.4,1); }
+.tile.sa-firing { animation: sa-fire 300ms cubic-bezier(.2,1.5,.4,1); z-index: 2; }
+.tile.sa-fired { box-shadow: 0 0 0 2px var(--gold), 0 5px 13px rgba(0,0,0,0.55); }
+@keyframes sa-fire { 0% { transform: translateY(0) scale(1); } 45% { transform: translateY(-12px) scale(1.15); box-shadow: 0 0 0 2px var(--gold), 0 11px 19px rgba(0,0,0,0.6); } 100% { transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .tile.sa-firing, .sa-bump, .sa-pop, .sa-part.sa-flash { animation: none; }
 }
 
 /* ================================================================ The Broadside (SP4) */
