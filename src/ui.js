@@ -101,6 +101,10 @@ function offerLabel(offer) {
       const mod = getMod(offer.modId);
       return `Enchant a tile: ${mod?.name || offer.modId} · ${mod?.desc || ''} · $${offer.cost}`;
     }
+    case 'enchantMulti': {
+      const mod = getMod(offer.modId);
+      return `Imprint ${mod?.name || offer.modId} on ${offer.count} tiles · ${mod?.desc || ''} · $${offer.cost}`;
+    }
     case 'upgradeLetter':    return `Upgrade ${offer.letter} +${offer.plus} · $${offer.cost}`;
     case 'thinLetter':       return `Remove a tile from your bag · $${offer.cost}`;
     case 'recastTile':       return `Recast a tile to a letter you choose · $${offer.cost}`;
@@ -195,6 +199,60 @@ function showTransferPicker(run, offer) {
     buildPickOverlay('Move its mods onto which tile?', tileChoices(run, (tgt) =>
       reportBuy(handlers.onBuy?.(offer, { sourceTileId: src.id, targetTileId: tgt.id })), src.id));
   }));
+}
+
+// imprint: pick exactly offer.count tiles to receive the mod, then confirm (multi-select).
+function showImprintPicker(run, offer) {
+  const old = document.getElementById('tile-picker-overlay');
+  if (old) old.remove();
+  const count = offer.count || 2;
+  const mod = getMod(offer.modId);
+  const picked = new Set();
+  const overlay = document.createElement('div');
+  overlay.id = 'tile-picker-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:100;';
+  const title = document.createElement('div');
+  title.textContent = `Imprint ${mod?.name || offer.modId} on ${count} tiles`;
+  title.style.cssText = 'color:#fff;font-weight:bold;font-size:1.1em;';
+  const sub = document.createElement('div');
+  sub.style.cssText = 'color:#cbb6a0;font-size:0.85em;margin-bottom:2px;text-align:center;max-width:320px;';
+  overlay.appendChild(title);
+  overlay.appendChild(sub);
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:320px;';
+  const confirm = document.createElement('button');
+  const setSel = (btn, on) => { btn.style.outline = on ? '2px solid #c4a052' : ''; btn.style.fontWeight = on ? '700' : ''; };
+  const updateState = () => {
+    sub.textContent = `${picked.size} / ${count} selected` + (mod?.desc ? ` — ${mod.desc}` : '');
+    confirm.disabled = picked.size !== count;
+    confirm.style.opacity = confirm.disabled ? '0.5' : '1';
+    confirm.style.cursor = confirm.disabled ? 'default' : 'pointer';
+  };
+  run.bag.tiles.forEach(tile => {
+    const modsLabel = tile.mods && tile.mods.length ? ` [${tile.mods.map(m => m.name || m.id[0].toUpperCase()).join(', ')}]` : '';
+    const btn = document.createElement('button');
+    btn.textContent = tile.letter + modsLabel;
+    if (tile.mods && tile.mods.length) btn.title = tile.mods.map(m => `${m.name || m.id}: ${m.desc || ''}`).join('; ');
+    btn.style.cssText = 'padding:10px 14px;font-size:1em;border-radius:6px;cursor:pointer;';
+    btn.onclick = () => {
+      if (picked.has(tile.id)) { picked.delete(tile.id); setSel(btn, false); }
+      else if (picked.size < count) { picked.add(tile.id); setSel(btn, true); }
+      updateState();
+    };
+    grid.appendChild(btn);
+  });
+  overlay.appendChild(grid);
+  confirm.textContent = `Imprint ($${offer.cost})`;
+  confirm.style.cssText = 'margin-top:8px;padding:8px 20px;font-size:0.95em;border-radius:6px;cursor:pointer;';
+  confirm.onclick = () => { if (picked.size !== count) return; overlay.remove(); reportBuy(handlers.onBuy?.(offer, { targetTileIds: [...picked] })); };
+  overlay.appendChild(confirm);
+  const cancel = document.createElement('button');
+  cancel.textContent = 'Cancel';
+  cancel.style.cssText = 'margin-top:4px;padding:8px 20px;font-size:0.95em;border-radius:6px;cursor:pointer;';
+  cancel.onclick = () => overlay.remove();
+  overlay.appendChild(cancel);
+  document.body.appendChild(overlay);
+  updateState();
 }
 
 // Show a small inline popover anchored below the tapped chip element.
@@ -995,7 +1053,8 @@ function renderPress(run) {
 function offerInfoData(offer) {
   switch (offer.type) {
     case 'buyEnchantedTile':
-    case 'enchantTile': {
+    case 'enchantTile':
+    case 'enchantMulti': {
       const mod = getMod(offer.modId);
       if (!mod?.desc) return null;
       return { name: mod.name || offer.modId, desc: mod.desc };
@@ -1032,6 +1091,10 @@ function shopOfferCard(offer) {
     case 'enchantTile': {
       const m = getMod(offer.modId);
       return { cat: 'Enchant', name: m?.name || offer.modId, desc: `Enchant a tile: ${m?.desc || ''}`, icon: badge('mod', (m?.name || '?').slice(0, 1)) };
+    }
+    case 'enchantMulti': {
+      const m = getMod(offer.modId);
+      return { cat: 'Imprint', name: `${m?.name || offer.modId} ×${offer.count}`, desc: `Stamp this mod onto ${offer.count} tiles you choose: ${m?.desc || ''}`, icon: badge('mod', (m?.name || '?').slice(0, 1)) };
     }
     case 'buyLetter':
       return { cat: 'Letter', name: `Buy ${offer.letter}`, desc: `Add ${/^[AEIOU]/.test(offer.letter) ? 'an' : 'a'} ${offer.letter} tile to your bag`, icon: tile(offer.letter) };
@@ -1102,6 +1165,7 @@ function renderShop(run) {
     btn.onclick = () => {
       if (offer.type === 'recastTile') showRecastPicker(run, offer);
       else if (offer.type === 'transferMods') showTransferPicker(run, offer);
+      else if (offer.type === 'enchantMulti') showImprintPicker(run, offer);
       else if (needsTilePicker(offer)) showTilePicker(run, offer);
       else reportBuy(handlers.onBuy?.(offer));
     };

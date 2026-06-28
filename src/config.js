@@ -33,8 +33,9 @@ export const CONFIG = {
   SHOP: {
     offersPerShop: 4,
     rerollCost: 2,
-    cost: { buyLetter: 3, buyEnchantedTile: 7, enchantTile: 6, upgradeLetter: 5, thinLetter: 3, buyRelic: 8, recastTile: 5, transferMods: 5 },
+    cost: { buyLetter: 3, buyEnchantedTile: 7, enchantTile: 6, enchantMulti: 10, upgradeLetter: 5, thinLetter: 3, buyRelic: 8, recastTile: 5, transferMods: 5 },
     upgradePlus: 3,                                  // +points per upgradeLetter purchase (was 1; +1 was dead weight vs xMult). TUNE.
+    imprintCount: 2,                                 // "imprint" = spread one mod onto this many chosen tiles at once (enchantMulti). TUNE (2 vs 3).
     buyableLetters: ['E','A','R','T','S','N','L','D','G','C','K','J','Q','X','Z'],  // shop letter pool
   },
   META: {

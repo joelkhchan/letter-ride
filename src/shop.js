@@ -23,6 +23,12 @@ export function generateShop(run, rng, pool = {}) {
     candidates.push({ type: 'buyEnchantedTile', letter, modId, cost: cfg.cost.buyEnchantedTile });
   }
   for (const modId of modIds) candidates.push({ type: 'enchantTile', modId, cost: cfg.cost.enchantTile });
+  // "Imprint": spread one mod onto several chosen tiles at once (the multi-tile tarot). The player
+  // picks the tiles; the mod isn't letter-bound, so one offer per mod (no letter/count exclusions).
+  if (cfg.cost.enchantMulti != null) {
+    const count = cfg.imprintCount || 2;
+    for (const modId of modIds) candidates.push({ type: 'enchantMulti', modId, count, cost: cfg.cost.enchantMulti });
+  }
   for (const letter of cfg.buyableLetters) candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: cfg.cost.upgradeLetter });
   candidates.push({ type: 'thinLetter', cost: cfg.cost.thinLetter });
   candidates.push({ type: 'recastTile', cost: cfg.cost.recastTile });
@@ -58,6 +64,16 @@ export function purchase(run, offer, opts = {}) {
     case 'enchantTile': {
       const t = findTarget(); if (!t) return { ok: false, reason: 'no-target' };
       t.mods.push(getMod(offer.modId)); break;
+    }
+    case 'enchantMulti': {
+      const ids = opts.targetTileIds || [];
+      const count = offer.count || 2;
+      if (ids.length !== count) return { ok: false, reason: 'bad-count' };
+      if (new Set(ids).size !== ids.length) return { ok: false, reason: 'dup-target' };
+      const targets = ids.map(id => run.bag.tiles.find(t => t.id === id));
+      if (targets.some(t => !t)) return { ok: false, reason: 'no-target' };
+      targets.forEach(t => t.mods.push(getMod(offer.modId)));   // mods are stateless singletons (same as single enchant)
+      break;
     }
     case 'upgradeLetter':
       run.tileValues[offer.letter] = (run.tileValues[offer.letter] || 0) + offer.plus; break;

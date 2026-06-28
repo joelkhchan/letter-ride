@@ -11,7 +11,7 @@ const config = {
   STARTING_BAG: ['C','A','T','E','E'], TILE_VALUES: { C:3,A:1,T:1,E:1 },
   RACK_SIZE: 3, PLAYS_PER_ROUND: 2, DISCARDS_PER_ROUND: 1, MIN_WORD_LEN: 3,
   LENGTH_BONUS_PER_LETTER: 5, ROUND_TARGETS: [5,100], COINS_ON_CLEAR: { base:4, perUnusedPlay:1, perUnusedDiscard:1 },
-  SHOP: { offersPerShop: 4, rerollCost: 2, cost: { buyLetter:3, buyEnchantedTile:7, enchantTile:6, upgradeLetter:5, thinLetter:3, buyRelic:8, recastTile:5, transferMods:5 }, upgradePlus: 1, buyableLetters: ['E','A','R','Z'] },
+  SHOP: { offersPerShop: 4, rerollCost: 2, cost: { buyLetter:3, buyEnchantedTile:7, enchantTile:6, enchantMulti:10, upgradeLetter:5, thinLetter:3, buyRelic:8, recastTile:5, transferMods:5 }, upgradePlus: 1, imprintCount: 2, buyableLetters: ['E','A','R','Z'] },
   HONE: { cost: 6 },
 };
 const mkRun = () => { const r = newRun({ config, dictionary: dict, seed: 1 }); r.coins = 100; return r; };
@@ -77,6 +77,34 @@ test('enchantTile attaches a mod to the targeted tile', () => {
   const res = purchase(run, { type: 'enchantTile', modId: 'polished', cost: 6 }, { targetTileId: target.id });
   assert.equal(res.ok, true);
   assert.equal(target.mods.some(m => m.id === 'polished'), true);
+});
+test('enchantMulti (imprint) attaches the mod to ALL targeted tiles and deducts cost once', () => {
+  const run = mkRun();
+  const a = run.bag.tiles.find(t => t.letter === 'A');
+  const c = run.bag.tiles.find(t => t.letter === 'C');
+  const res = purchase(run, { type: 'enchantMulti', modId: 'polished', count: 2, cost: 10 }, { targetTileIds: [a.id, c.id] });
+  assert.equal(res.ok, true);
+  assert.equal(a.mods.some(m => m.id === 'polished'), true);
+  assert.equal(c.mods.some(m => m.id === 'polished'), true);
+  assert.equal(run.coins, 90); // single deduction for the whole imprint
+});
+test('enchantMulti rejects wrong count, duplicate targets, and a missing tile', () => {
+  const run = mkRun();
+  const a = run.bag.tiles.find(t => t.letter === 'A');
+  const c = run.bag.tiles.find(t => t.letter === 'C');
+  assert.equal(purchase(run, { type: 'enchantMulti', modId: 'polished', count: 2, cost: 10 }, { targetTileIds: [a.id] }).reason, 'bad-count');
+  assert.equal(purchase(run, { type: 'enchantMulti', modId: 'polished', count: 2, cost: 10 }, { targetTileIds: [a.id, a.id] }).reason, 'dup-target');
+  assert.equal(purchase(run, { type: 'enchantMulti', modId: 'polished', count: 2, cost: 10 }, { targetTileIds: [a.id, 'nope'] }).reason, 'no-target');
+  assert.equal(run.coins, 100); // no deduction on any rejection
+  assert.equal(a.mods.length, 0); // no partial mutation
+});
+test('generateShop candidate pool includes enchantMulti, one per mod, at imprintCount', () => {
+  const cfg2 = { ...config, SHOP: { ...config.SHOP, offersPerShop: 999 } };
+  const r = newRun({ config: cfg2, dictionary: dict, seed: 1 }); r.coins = 100;
+  const multi = generateShop(r, r.rng, { modIds: ['polished', 'catalyst'] }).offers.filter(o => o.type === 'enchantMulti');
+  assert.equal(multi.length, 2);
+  assert.ok(multi.every(o => o.count === 2 && o.cost === 10));
+  assert.deepEqual(new Set(multi.map(o => o.modId)), new Set(['polished', 'catalyst']));
 });
 test('buyEnchantedTile adds a tile already carrying the mod', () => {
   const run = mkRun();
