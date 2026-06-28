@@ -129,7 +129,7 @@ h1 { color: var(--gold); }
 #chain-banner { text-align: center; font-family: var(--font-body); font-weight: 700; padding: 8px 14px; margin: 8px 0 4px; border: 1px solid var(--teal); border-left: 5px solid var(--teal); border-radius: var(--radius-sm); background: var(--chain-bg); color: #84ddc5; font-size: 0.95rem; }
 
 /* ================================================================ Staging + scorebug */
-#staging { min-height: 2.7rem; line-height: 1; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 2.1rem; letter-spacing: 4px; text-align: center; color: var(--ink); }
+#staging { min-height: 3.8rem; line-height: 1; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 2.1rem; letter-spacing: 4px; text-align: center; color: var(--ink); }
 .staging-hint { font-size: 0.95rem; letter-spacing: 0; font-weight: 400; color: var(--ink-soft); opacity: 0.5; }
 #scorebug { display: flex; flex-direction: column; align-items: center; gap: 3px; margin: 8px auto; padding: 11px 18px; background: linear-gradient(var(--night-2), var(--night-sunk)); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: var(--radius-sm); max-width: 380px; box-shadow: 0 2px 7px rgba(0,0,0,0.5); }
 .sb-word    { font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; letter-spacing: 2px; }
@@ -383,9 +383,14 @@ button { font-family: var(--font-body); color: var(--ink); }
 /* The formed word shows in the staging slot; each letter lights up + tallies its Points in order,
    then the Mult climbs, then the Score reveals. Sized to stay within the staging height (no shift). */
 #staging.sa-readout { flex-direction: column; gap: 2px; line-height: 1; }
-.sa-word { display: flex; gap: 5px; justify-content: center; font-size: 1.6rem; letter-spacing: 1px; }
-.sa-ltr { color: var(--ink-soft); opacity: 0.45; transition: color 0.12s, opacity 0.12s; }
+.sa-word { display: flex; gap: 9px; justify-content: center; font-size: 1.6rem; letter-spacing: 1px; }
+.sa-ltr { position: relative; color: var(--ink-soft); opacity: 0.45; transition: color 0.12s, opacity 0.12s; }
 .sa-ltr.sa-lit { color: var(--gold); opacity: 1; animation: sa-litpop 240ms cubic-bezier(.2,1.6,.4,1); }
+.sa-lv { position: absolute; top: -0.35em; right: -0.55em; font-family: var(--font-display); font-weight: 700; font-size: 0.4em; color: var(--ink-soft); opacity: 0.7; }
+.sa-ltr.sa-lit .sa-lv { color: var(--gold); opacity: 1; }
+.sa-step { min-height: 1.05rem; font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.3px; color: var(--ink-soft); }
+.sa-step-pt { color: var(--gold); }
+.sa-step-mult { color: var(--gold); }
 @keyframes sa-litpop { 0% { transform: translateY(0) scale(1); } 45% { transform: translateY(-3px) scale(1.28); } 100% { transform: translateY(0) scale(1); } }
 .sa-formula { font-family: var(--font-display); font-weight: 700; font-size: 0.92rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 .sa-formula #sa-score { color: var(--gold); font-size: 1.25em; }

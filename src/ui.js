@@ -481,21 +481,25 @@ export function animatePull(sel, scored, onDone) {
   const fires = bd.tileFires && bd.tileFires.length === sel.length ? bd.tileFires : sel.map(s => ({ letter: s.letter, points: 0 }));
   const intFmt = v => String(Math.round(v));
 
-  // Show the formed WORD and tally each letter in order (it lights up + adds its Points); the running
+  // Show the formed WORD and tally each letter in order (each tile shows its base value + lights up as it
+  // adds its Points); a step caption names every addition so the climb is legible; the running
   // Points x Mult = Score builds below it, inside the staging slot. (No rack-tile animation.)
   stage.classList.add('sa-readout');
   stage.innerHTML =
-    `<div class="sa-word">${sel.map((s, i) => `<span class="sa-ltr" data-i="${i}">${s.letter === '*' ? '★' : s.letter}</span>`).join('')}</div>` +
+    `<div class="sa-word">${sel.map((s, i) => `<span class="sa-ltr" data-i="${i}">${s.letter === '*' ? '★' : s.letter}<span class="sa-lv">${intFmt(fires[i] ? fires[i].points : 0)}</span></span>`).join('')}</div>` +
+    `<div class="sa-step" id="sa-step">&nbsp;</div>` +
     `<div class="sa-formula"><span id="sa-points">0</span> Points <span id="sa-mult" class="sa-multv">×1</span> Mult = <b id="sa-score">0</b> Score</div>`;
   const ltrs = [...stage.querySelectorAll('.sa-ltr')];
   const ptEl = stage.querySelector('#sa-points');
   const multEl = stage.querySelector('#sa-mult');
   const scoreEl = stage.querySelector('#sa-score');
+  const stepEl = stage.querySelector('#sa-step');
 
   let runPts = 0, runMult = 1;
   const bump = (el) => { if (!el) return; el.classList.remove('sa-bump'); void el.offsetWidth; el.classList.add('sa-bump'); };
   const setPts = () => { ptEl.textContent = intFmt(runPts); bump(ptEl); };
   const setMult = () => { multEl.textContent = _multStr(runMult); bump(multEl); };
+  const setStep = (txt, cls) => { if (!stepEl) return; stepEl.textContent = txt; stepEl.className = 'sa-step ' + (cls || ''); bump(stepEl); };
 
   const settle = () => {
     if (finished) return; finished = true;
@@ -506,6 +510,7 @@ export function animatePull(sel, scored, onDone) {
   };
   const showFinals = () => {
     ltrs.forEach(el => el.classList.add('sa-lit'));
+    if (stepEl) { stepEl.innerHTML = '&nbsp;'; stepEl.className = 'sa-step'; }
     if (ptEl) ptEl.textContent = intFmt(scored.points);
     if (multEl) multEl.textContent = _multStr(scored.mult);
     if (scoreEl) { scoreEl.textContent = intFmt(scored.score); scoreEl.classList.add('sa-pop'); }
@@ -515,17 +520,23 @@ export function animatePull(sel, scored, onDone) {
   document.addEventListener('click', onTap, { capture: true });
 
   let t = 220;
-  // 1) tally each letter of the word in order (it lights up + adds its base Points)
+  // 1) tally each letter of the word in order (it lights up + adds its base Points; caption names the letter)
   fires.forEach((f, i) => {
-    _pullAfter(t, () => { if (ltrs[i]) ltrs[i].classList.add('sa-lit'); runPts += f.points; setPts(); sfx('tap'); });
+    _pullAfter(t, () => {
+      if (ltrs[i]) ltrs[i].classList.add('sa-lit');
+      runPts += f.points; setPts();
+      const lbl = f.letter === '*' ? 'Wild' : f.letter;
+      setStep(`${lbl} +${intFmt(f.points)}${f.retrigger ? ` (×${1 + f.retrigger})` : ''} base`, 'sa-step-pt');
+      sfx('tap');
+    });
     t += STEP;
   });
-  // 2) length bonus, then 3) Points from relics/mods (the Points number climbs)
-  if (bd.lengthBonus > 0) { _pullAfter(t, () => { runPts += bd.lengthBonus; setPts(); sfx('tap'); }); t += STEP; }
-  for (const p of (bd.pointParts || [])) { _pullAfter(t, () => { runPts += p.amount; setPts(); sfx('tap'); }); t += STEP; }
-  // 4) the Mult climbs: +Mult then xMult
-  for (const p of (bd.addMultParts || [])) { _pullAfter(t, () => { runMult += p.amount; setMult(); sfx('tap'); }); t += STEP; }
-  for (const p of (bd.timesMultParts || [])) { _pullAfter(t, () => { runMult *= p.amount; setMult(); sfx('tap'); }); t += STEP; }
+  // 2) length bonus, then 3) Points from relics/mods (the Points number climbs; caption names each)
+  if (bd.lengthBonus > 0) { _pullAfter(t, () => { runPts += bd.lengthBonus; setPts(); setStep(`+${intFmt(bd.lengthBonus)} length bonus`, 'sa-step-pt'); sfx('tap'); }); t += STEP; }
+  for (const p of (bd.pointParts || [])) { _pullAfter(t, () => { runPts += p.amount; setPts(); setStep(`+${intFmt(p.amount)} ${p.label}`, 'sa-step-pt'); sfx('tap'); }); t += STEP; }
+  // 4) the Mult climbs: +Mult then xMult (caption names each)
+  for (const p of (bd.addMultParts || [])) { _pullAfter(t, () => { runMult += p.amount; setMult(); setStep(`+${p.amount} Mult ${p.label}`, 'sa-step-mult'); sfx('tap'); }); t += STEP; }
+  for (const p of (bd.timesMultParts || [])) { _pullAfter(t, () => { runMult *= p.amount; setMult(); setStep(`×${p.amount} Mult ${p.label}`, 'sa-step-mult'); sfx('tap'); }); t += STEP; }
   // 5) Score reveal (snap Points/Mult to the exact final, then tween the Score)
   _pullAfter(t + 90, () => { if (ptEl) ptEl.textContent = intFmt(scored.points); if (multEl) multEl.textContent = _multStr(scored.mult); sfx('flourish'); _pullTween(scoreEl, 0, scored.score, 520, intFmt); });
   t += 90 + 520;
