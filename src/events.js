@@ -34,10 +34,10 @@ export const EVENTS = {
   },
   redaction: {
     id: 'redaction', name: 'Redaction',
-    desc: 'Remove 2 tiles of your choice from your bag',
-    options: [{ label: 'Remove 2 tiles (free)', apply: (run, opts) => {
+    desc: 'Remove up to 2 tiles of your choice from your bag',
+    options: [{ label: 'Remove up to 2 tiles (free)', apply: (run, opts) => {
       const ids = opts?.tileIds || [];
-      if (ids.length !== 2) return { ok: false, reason: 'need-2' };
+      if (ids.length < 1 || ids.length > 2) return { ok: false, reason: 'bad-count' };
       for (const id of ids) run.bag.remove(id);
     } }],
     canOffer: (run) => run.bag.tiles.length > run.config.RACK_SIZE + 2,

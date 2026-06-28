@@ -49,6 +49,16 @@ test('Redaction removes 2 chosen tiles via opts.tileIds (free thinning)', () => 
   assert.equal(run.bag.tiles.length, before - 2);
 });
 
+test('Redaction accepts 1 tile (up to 2, not forced) and rejects 0 or 3', () => {
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  const before = run.bag.tiles.length;
+  assert.equal(applyEventOption(run, 'redaction', 0, { tileIds: [run.bag.tiles[0].id] }).ok, true);
+  assert.equal(run.bag.tiles.length, before - 1, 'removing a single tile is allowed');
+  assert.equal(applyEventOption(run, 'redaction', 0, { tileIds: [] }).reason, 'bad-count', '0 tiles rejected');
+  const three = run.bag.tiles.slice(0, 3).map(t => t.id);
+  assert.equal(applyEventOption(run, 'redaction', 0, { tileIds: three }).reason, 'bad-count', '3 tiles rejected');
+});
+
 test('Redaction canOffer is false when bag is too small', () => {
   const run = newRun({ config, dictionary: dict, seed: 1 });
   // Drain bag down to exactly RACK_SIZE + 2 tiles

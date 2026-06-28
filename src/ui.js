@@ -783,7 +783,7 @@ function renderEventOneShot(run) {
         const r = handlers.onEventOption?.(i, { tileIds });
         if (r && !r.ok) {
           const msg = document.getElementById('msg');
-          if (msg) msg.textContent = r.reason === 'need-2' ? 'Pick exactly 2 tiles.' : 'Could not remove tiles.';
+          if (msg) msg.textContent = r.reason === 'bad-count' ? 'Pick 1 or 2 tiles.' : 'Could not remove tiles.';
         } else {
           renderEventDone(run, ev);
         }
@@ -801,6 +801,8 @@ function renderEventOneShot(run) {
       };
     }
   });
+  // Redaction needs tile input but no intro step: open the picker immediately (Cancel reveals the card to retry).
+  if (ev.id === 'redaction') app().querySelector('.event-option-btn[data-opt="0"]')?.click();
   // Wordsmith: each inline archetype button Hones that archetype (no overlay).
   if (ev.id === 'wordsmith') {
     app().querySelectorAll('.arch-choice[data-arch]').forEach(btn => {
@@ -847,7 +849,7 @@ function showEventTilePicker(run, count, onConfirm) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:100;';
 
   const title = document.createElement('div');
-  title.textContent = `Pick ${count} tiles to remove:`;
+  title.textContent = `Choose up to ${count} tiles to remove:`;
   title.style.cssText = 'color:#fff;font-weight:bold;font-size:1.1em;';
   overlay.appendChild(title);
 
@@ -857,7 +859,7 @@ function showEventTilePicker(run, count, onConfirm) {
   grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:320px;';
 
   const confirmBtn = document.createElement('button');
-  confirmBtn.textContent = `Remove ${count} tiles`;
+  confirmBtn.textContent = `Choose 1-${count} tiles`;
   confirmBtn.disabled = true;
   confirmBtn.style.cssText = 'padding:10px 22px;font-size:1em;border-radius:6px;cursor:pointer;margin-top:8px;';
 
@@ -876,8 +878,8 @@ function showEventTilePicker(run, count, onConfirm) {
         selected.add(tile.id);
         btn.style.outline = '2px solid #3b7dd8';
       }
-      confirmBtn.disabled = selected.size !== count;
-      confirmBtn.textContent = selected.size === count ? `Remove ${count} tiles` : `Pick ${count - selected.size} more`;
+      confirmBtn.disabled = selected.size < 1;
+      confirmBtn.textContent = selected.size < 1 ? `Choose 1-${count} tiles` : `Remove ${selected.size} tile${selected.size === 1 ? '' : 's'}`;
     };
     grid.appendChild(btn);
   });
@@ -1189,11 +1191,6 @@ export function renderStats(profile, config, allRelicIds = [], allModIds = [], A
     tile(`${sum.achievementsDone}<span class="stat-of">/${sum.achievementsTotal}</span>`, 'Achievements', `${sum.achievementsClaimed} collected`),
   ].join('');
 
-  const sig = sum.signatureArchetype;
-  const sigBanner = sig
-    ? `<div class="stat-sig"><span class="stat-sig-label">Signature build</span><span class="stat-sig-name">${ARCHETYPES[sig.id]?.name || sig.id}</span><span class="stat-sig-share">${pct(sig.share)} of your plays</span></div>`
-    : '';
-
   // "The wall": where runs end. A bar per round (runs that died there) + a final Won bar; bosses tinted.
   const totalRounds = config.ROUND_TARGETS.length;
   const counts = Array.from({ length: totalRounds }, (_, i) => sum.lossByRound[i] || 0);
@@ -1230,7 +1227,6 @@ export function renderStats(profile, config, allRelicIds = [], allModIds = [], A
       <div class="menu-title small">Stats</div>
       ${emptyNote}
       ${rankBanner}
-      ${sigBanner}
       ${section('Runs', runsSection)}
       ${wallSection}
       ${section('Words', wordsSection)}
@@ -1261,10 +1257,11 @@ function showExportOverlay() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:200;padding:18px;';
   overlay.innerHTML = `
     <div style="font-family:var(--font-display);font-weight:700;color:var(--gold);font-size:1.15rem;">Export data</div>
-    <div style="font-size:0.8rem;color:var(--ink-soft);max-width:520px;text-align:center;line-height:1.4;">Your stats + balance telemetry as JSON. Copy it and paste it back to feed the tuning loop.</div>
+    <div style="font-size:0.8rem;color:var(--ink-soft);max-width:520px;text-align:center;line-height:1.4;">Your stats + balance telemetry as JSON. Copy it or download the file, then send it back to feed the tuning loop.</div>
     <textarea readonly style="width:min(560px,92vw);height:44vh;background:var(--night-sunk);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:monospace;font-size:0.72rem;resize:none;">${json.replace(/</g, '&lt;')}</textarea>
-    <div style="display:flex;gap:10px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
       <button id="export-copy" class="menu-btn">Copy</button>
+      <button id="export-download" class="menu-btn">Download .json</button>
       <button id="export-close" class="menu-btn">Close</button>
     </div>`;
   document.body.appendChild(overlay);
@@ -1274,6 +1271,15 @@ function showExportOverlay() {
     try { await navigator.clipboard.writeText(json); btn.textContent = 'Copied!'; }
     catch { ta.focus(); ta.select(); btn.textContent = 'Select + copy'; }
     setTimeout(() => { btn.textContent = 'Copy'; }, 1800);
+  };
+  overlay.querySelector('#export-download').onclick = () => {
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `letter-ride-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   overlay.querySelector('#export-close').onclick = () => overlay.remove();
 }
