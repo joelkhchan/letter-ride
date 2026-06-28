@@ -8,6 +8,7 @@ const DEFAULTS = {
   reducedMotion: false,        // skip animations (accessibility)
   scoringSpeed: 'full',        // 'full' (slow, readable) | 'fast' (quick) | 'off' (instant final score)
   textSize: 'normal',          // 'normal' | 'large'
+  seenHowTo: false,            // first-run onboarding: auto-show "How it works" once, then never again
 };
 
 let prefs = (() => {

@@ -621,6 +621,10 @@ export function renderRun(run, profile) {
     renderNodeChoice(run); return;
   }
 
+  // First-run onboarding: auto-show the "How it works" card once, the first time play begins.
+  // Deferred so it overlays the freshly-rendered board; gated by a pref so it never repeats.
+  if (!getPref('seenHowTo')) { setPref('seenHowTo', true); setTimeout(showHelpOverlay, 0); }
+
   const inRack = id => selection.some(s => s.tile.id === id);
   const staged = selection.map(s => s.letter).join('');
   const done = run.status !== 'playing';
