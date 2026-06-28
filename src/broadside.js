@@ -133,7 +133,7 @@ export function drawBroadside(canvas, s) {
   // footer
   rule(ctx, cx, H - 92, 140, gold);
   ctx.fillStyle = inkSoft; ctx.font = `400 17px ${F}`;
-  ctx.fillText('a word game with a luck streak', cx, H - 58);
+  ctx.fillText('A word-builder roguelike', cx, H - 58);
 }
 
 // Save or share the card as a PNG. Web Share API (with files) on supporting devices

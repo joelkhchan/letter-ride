@@ -591,6 +591,7 @@ export function renderRun(run, profile) {
       ${coinsHtml}
       <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
       <button id="mute-btn" class="${isMuted() ? 'muted' : ''}" title="${isMuted() ? 'Sound off (tap for on)' : 'Sound on (tap for off)'}" style="font-size:0.95em;padding:2px 8px;border-radius:50%;cursor:pointer;">&#9834;</button>
+      <button id="settings-btn" title="Settings" style="font-size:0.95em;padding:2px 8px;border-radius:50%;cursor:pointer;">&#9881;</button>
       <button id="exit-btn" title="Main menu (your run is saved)" style="font-size:0.72em;padding:3px 10px;border-radius:10px;cursor:pointer;">Menu</button>
     </div>
     <div id="score-bar">
@@ -653,6 +654,7 @@ export function renderRun(run, profile) {
   on('help-btn', () => showHelpOverlay());
   on('bag-btn', () => showBagOverlay(run));
   on('mute-btn', () => { toggleMuted(); renderRun(run); });
+  on('settings-btn', () => handlers.onOpenSettings?.());
   on('exit-btn', () => handlers.onExitToMenu?.());
   wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
@@ -695,18 +697,34 @@ function renderBroadside(run, profile) {
   // Unified rank: show the player's lifetime rank including this run's score (endRun adds it after).
   const lifetimeRank = levelFor((profile?.stats?.lifetimeScore || 0) + (run.roundTotal || 0), run.config).name;
   const s = buildSummary(run, lifetimeRank);
+  const won = run.status === 'won';
+  const totalRounds = (run.targets || run.config.ROUND_TARGETS).length;
+  const roundsCleared = won ? totalRounds : run.roundIndex;
+  const best = run.bestPlay || run.lastPlay || null;
+  const words = run.totalWordsThisRun || 0;
+  const metaEarned = run.lastMetaEarned || 0;
+  const stat = (label, val) => `<div class="re-stat"><span class="re-stat-label">${label}</span><span class="re-stat-val">${val}</span></div>`;
   app().innerHTML = `
-    <div id="broadside-screen">
-      <canvas id="broadside-canvas" width="680" height="800" role="img" aria-label="${s.header}. ${s.rank}. ${s.resultLine}. Best line ${s.bestWord || 'none'}, ${s.bestScore} Score."></canvas>
-      <div id="broadside-actions">
-        <button id="save-broadside">Save image</button>
-        <button id="new">Continue</button>
+    <div id="runend-screen">
+      <div class="runend-head ${won ? 'win' : 'loss'}">${won ? 'You won!' : 'Game Over'}</div>
+      <div class="runend-sub">${s.resultLine}</div>
+      <div class="runend-stats">
+        ${stat('Rank', s.rank)}
+        ${stat('Rounds cleared', `${roundsCleared} / ${totalRounds}`)}
+        ${stat('Words played', words)}
+        ${stat('Best word', best ? `${(best.word || '').toUpperCase()} &middot; ${best.score}` : '&mdash;')}
+        ${metaEarned ? stat('Meta earned', `+${metaEarned}`) : ''}
+      </div>
+      <canvas id="broadside-canvas" width="680" height="800" style="display:none;" aria-hidden="true"></canvas>
+      <div id="runend-actions">
+        <button id="save-broadside" class="menu-btn">Save trophy card</button>
+        <button id="new" class="menu-btn primary">Continue</button>
       </div>
     </div>`;
-  const canvas = document.getElementById('broadside-canvas');
+  const canvas = document.getElementById('broadside-canvas');     // hidden; drawn only for the Save button
   const draw = () => drawBroadside(canvas, s);
-  draw();                                                          // immediate (fallback font if needed)
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);   // redraw once Zilla loads
+  draw();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
   const save = document.getElementById('save-broadside');
   if (save) save.onclick = () => shareBroadside(canvas);
   const back = document.getElementById('new');
@@ -1142,7 +1160,7 @@ export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
   app().innerHTML = `
     <div id="main-menu">
       <div class="menu-title">Letter Ride</div>
-      <div class="menu-tagline">a word game with a luck streak</div>
+      <div class="menu-tagline">A word-builder roguelike</div>
       <div class="menu-rule">&#10086;</div>
       <div class="menu-buttons">
         ${hasRun ? `<button id="menu-resume" class="menu-btn primary">${lineIconHtml('player-play')}Resume Run</button>` : ''}

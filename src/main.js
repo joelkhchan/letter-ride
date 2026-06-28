@@ -26,6 +26,7 @@ try {
   const profile = loadProfile(window.localStorage);
   let run = loadRun(window.localStorage, { config: CONFIG, dictionary });   // resume an in-progress run if any
   let view = 'menu';   // boot to the main menu; Resume picks up an in-progress run
+  let settingsReturn = 'menu';   // where the Settings back-arrow returns to (the run if opened mid-run, else menu)
   // Compact run snapshot attached to each logged event (dev playtest log; see src/playlog.js).
   const snap = () => run ? { round: run.roundIndex, target: run.target, roundTotal: run.roundTotal, coins: run.coins, plays: run.playsLeft, discards: run.discardsLeft, boss: run.boss || null, chain: run.chainLength || 1 } : {};
 
@@ -226,7 +227,7 @@ try {
       }
       view = 'setup'; render();
     },
-    onOpenSettings() { view = 'settings'; render(); },
+    onOpenSettings() { settingsReturn = (view === 'run') ? 'run' : 'menu'; view = 'settings'; render(); },
     onOpenMetaShop() { view = 'meta'; render(); },
     onOpenAchievements() { view = 'achievements'; render(); },
     onOpenStats() { view = 'stats'; render(); },
@@ -234,7 +235,7 @@ try {
     // Collect an earned-but-unclaimed reward on the Achievements screen (the only path that pays Meta).
     onCollectAchievement(id) { const r = collectAchievement(profile, id, CONFIG); if (r > 0) meta.meta += r; saveAll(); render(); return r; },
     onCollectBounty(key) { const r = collectBounty(profile, key, CONFIG); if (r > 0) meta.meta += r; saveAll(); render(); return r; },
-    onBackToMenu() { view = 'menu'; render(); },
+    onBackToMenu() { view = (view === 'settings' && settingsReturn === 'run') ? 'run' : 'menu'; settingsReturn = 'menu'; render(); },
     onExitToMenu() { view = 'menu'; render(); },   // run stays saved; Resume continues it
     onAbandonRun() {
       showConfirm({ title: 'Abandon this run?', body: 'Your current run will be lost.', confirmLabel: 'Abandon', danger: true, onConfirm: () => {

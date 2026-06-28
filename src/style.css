@@ -406,6 +406,18 @@ button { font-family: var(--font-body); color: var(--ink); }
 #broadside-actions button:hover { border-color: var(--gold); }
 #save-broadside { border-color: var(--gold) !important; color: var(--gold) !important; }
 
+/* Clean run-end screen (Game Over / You won + run stats; the trophy card is behind 'Save trophy card') */
+#runend-screen { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 26px 0 16px; text-align: center; }
+.runend-head { font-family: var(--font-display); font-weight: 700; font-size: 2.5rem; letter-spacing: 1px; }
+.runend-head.win { color: var(--gold); }
+.runend-head.loss { color: var(--ink-soft); }
+.runend-sub { font-size: 1rem; color: var(--ink-soft); margin-top: -8px; }
+.runend-stats { display: flex; flex-direction: column; gap: 9px; width: min(360px, 86vw); background: var(--night-2); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 10px; padding: 16px 20px; margin-top: 4px; }
+.re-stat { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.98rem; }
+.re-stat-label { color: var(--ink-soft); }
+.re-stat-val { font-family: var(--font-display); font-weight: 700; color: var(--ink); }
+#runend-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+
 /* ================================================================ Main menu / settings / achievements */
 #main-menu, #menu-screen { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 32px 0 16px; text-align: center; }
 .menu-title { font-family: var(--font-display); font-weight: 700; font-size: 2.8rem; color: var(--gold); letter-spacing: 1px; }
