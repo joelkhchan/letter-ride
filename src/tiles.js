@@ -24,7 +24,7 @@ const MOD_REGISTRY = {
     evaluate: (tile, ctx) => ({ addPoints: ctx.selection[0]?.tile === tile ? 8 : 0 }),
   },
   reprint: {
-    id: 'reprint', name: 'Reprint', desc: 'The sort it sits on prints one extra time',
+    id: 'reprint', name: 'Reprint', desc: 'This tile prints one extra time (scores twice)',
     evaluate: () => ({ retrigger: 1 }),
   },
   // Doubled-archetype enabler: lets the player ENGINEER the doubled condition (a skill lever) rather

@@ -314,7 +314,7 @@ const RELIC_TAGS = {
   lengthy: '+1/letter', doubleTrouble: '+40 dbl', freshStart: '+2 Mult', comboCounter: '+1/word',
   recycler: '+$2/play', rareSurge: '×1.8', wildcardRares: 'wild→rare', longHaul: '× length',
   longReach: 'reach −1', echoChamber: '×2 dbl', looseDoubles: '2+=dbl', momentum: '+10/word',
-  overtime: '+1 play', pressLead: 'retrig 1st', rareReprint: 'retrig rare',
+  overtime: '+1 play', pressLead: 'reprint 1st', rareReprint: 'reprint rare',
   chainReaction: '× chain', throughLine: '+8/chain', wideMargins: '+1 hand', tightLeading: '+1M / −1 hand',
   rareAvalanche: '× grows', flywheel: '× grows', juggernaut: '× grows',
   resonanceEngine: '× grows', risingTide: '× grows', perpetualEngine: '× grows',
