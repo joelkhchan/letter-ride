@@ -1,7 +1,10 @@
 export const CONFIG = {
-  STARTING_BAG: [
-    'A','A','A','E','E','E','I','I','O','O','U',          // 11 vowels
-    'R','S','T','L','N','D','C','M','B','P','G','H','F','Y','K' // 15 consonants
+  STARTING_BAG: [                                          // richer ~54-tile bag (2026-06-28): more draw variety; scarcity stays in the 9-tile hand
+    'A','A','A','A','A','E','E','E','E','E','I','I','I','O','O','O','U','U','U',  // 19 vowels (~35%)
+    'R','R','R','S','S','S','T','T','T','N','N','N',        // 12 high-frequency consonants
+    'L','L','D','D','G','G','C','C','M','M','H','H',        // 12 common consonants
+    'B','P','F','Y','K','V','W',                            // 7 mid / high-value (V, W, K are new spice)
+    'J','Q','X','Z'                                         // 4 rares: sparse spice (verify formability via analyze:corpus)
   ],
   TILE_VALUES: {                                           // base points per letter; WILD '*' = 0
     A:1,E:1,I:1,O:1,U:1,L:1,N:1,S:1,T:1,R:1,
