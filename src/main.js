@@ -11,7 +11,7 @@ import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay,
 import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
 import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingCount } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
-import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, renderStats, renderTelemetry, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull } from './ui.js';
+import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, renderStats, renderTelemetry, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull, showConfirm } from './ui.js';
 import { play as sfx, resumeAudio } from './audio.js';
 import { logEvent } from './playlog.js';
 import { applyDisplayPrefs } from './settings.js';
@@ -219,8 +219,11 @@ try {
     // Menu navigation:
     onResume() { if (run) { view = 'run'; render(); } },
     onNewRun() {
-      if (run && run.status !== 'won' && run.status !== 'lost'
-          && !window.confirm('Start a new run? Your current run will be lost.')) return;
+      const active = run && run.status !== 'won' && run.status !== 'lost';
+      if (active) {
+        showConfirm({ title: 'Start a new run?', body: 'Your current run will be lost.', confirmLabel: 'New run', danger: true, onConfirm: () => { view = 'setup'; render(); } });
+        return;
+      }
       view = 'setup'; render();
     },
     onOpenSettings() { view = 'settings'; render(); },
@@ -234,9 +237,10 @@ try {
     onBackToMenu() { view = 'menu'; render(); },
     onExitToMenu() { view = 'menu'; render(); },   // run stays saved; Resume continues it
     onAbandonRun() {
-      if (!window.confirm('Abandon your current run?')) return;
-      window.localStorage.removeItem('letterRide.run'); run = null;
-      view = 'menu'; render();
+      showConfirm({ title: 'Abandon this run?', body: 'Your current run will be lost.', confirmLabel: 'Abandon', danger: true, onConfirm: () => {
+        window.localStorage.removeItem('letterRide.run'); run = null;
+        view = 'menu'; render();
+      } });
     },
   });
   window.addEventListener('keydown', (e) => { if (view === 'run') handleRunKey(e); });

@@ -151,6 +151,16 @@ h1 { color: var(--gold); }
 .bag-cell { display: inline-flex; align-items: baseline; gap: 3px; background: var(--night-sunk); border: 1px solid var(--line); border-radius: 5px; padding: 4px 8px; font-family: var(--font-display); font-weight: 700; }
 .bag-cell b { font-size: 1.05rem; color: var(--ink); }
 .bag-n { font-size: 0.78rem; color: var(--ink-soft); }
+
+/* Branded overlays: confirm modal + Wild letter picker (replace native confirm/prompt) */
+.lr-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.72); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; z-index: 300; padding: 18px; box-sizing: border-box; }
+.confirm-box { background: var(--night-2); color: var(--ink); border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 10px; padding: 20px 22px; max-width: 360px; width: 100%; box-shadow: 0 14px 36px rgba(0,0,0,0.6); box-sizing: border-box; text-align: center; }
+.confirm-title { margin: 0 0 8px; color: var(--gold); font-family: var(--font-display); font-size: 1.15rem; }
+.confirm-body { margin: 0 0 16px; font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; }
+.confirm-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.letter-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 10px 0 14px; }
+.letter-pick { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; padding: 8px 0; border-radius: 6px; border: 1px solid var(--line); background: linear-gradient(#f6f0db, #dbc9a3); color: #16203a; cursor: pointer; transition: transform 0.06s, box-shadow 0.1s; }
+.letter-pick:hover, .letter-pick:focus-visible { transform: translateY(-2px); box-shadow: 0 0 0 2px var(--gold); outline: none; }
 .rp-row { margin: 3px 0; }
 .rp-label { font-weight: 700; font-family: var(--font-display); }
 .relic-entry { border-bottom: 1px dotted var(--line); }

@@ -38,15 +38,54 @@ export function flashInvalid(reason) {
 
 function tapTile(tile) {
   if (selection.some(s => s.tile.id === tile.id)) return;   // each rack tile once
-  let letter = tile.letter;
-  if (letter === '*') {
-    const choice = (window.prompt('Wild: choose a letter') || '').toUpperCase().slice(0, 1);
-    if (!/[A-Z]/.test(choice)) return;
-    letter = choice;
+  if (tile.letter === '*') {
+    // Wild: choose its letter from a branded A-Z grid (no typing).
+    showLetterPicker((chosen) => { selection.push({ tile, letter: chosen }); sfx('tap'); renderRun(lastRun); });
+    return;
   }
-  selection.push({ tile, letter });
+  selection.push({ tile, letter: tile.letter });
   sfx('tap');
   renderRun(lastRun);
+}
+
+// Branded A-Z picker for assigning a Wild tile's letter (replaces window.prompt).
+function showLetterPicker(onChoose) {
+  document.getElementById('letter-picker-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'letter-picker-overlay';
+  overlay.className = 'lr-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-box">
+      <h3 class="confirm-title">Wild tile — choose a letter</h3>
+      <div class="letter-grid">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l => `<button class="letter-pick" data-l="${l}">${l}</button>`).join('')}</div>
+      <div class="confirm-actions"><button id="letter-cancel" class="menu-btn">Cancel</button></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelectorAll('.letter-pick').forEach(b => { b.onclick = () => { overlay.remove(); onChoose(b.dataset.l); }; });
+  overlay.querySelector('#letter-cancel').onclick = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+// Branded yes/no confirm modal (replaces window.confirm). onConfirm runs only if the user confirms.
+export function showConfirm({ title, body = '', confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false, onConfirm }) {
+  document.getElementById('confirm-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'confirm-overlay';
+  overlay.className = 'lr-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-box">
+      <h3 class="confirm-title">${title}</h3>
+      ${body ? `<p class="confirm-body">${body}</p>` : ''}
+      <div class="confirm-actions">
+        <button id="confirm-no" class="menu-btn">${cancelLabel}</button>
+        <button id="confirm-yes" class="menu-btn ${danger ? 'danger' : 'primary'}">${confirmLabel}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelector('#confirm-no').onclick = close;
+  overlay.querySelector('#confirm-yes').onclick = () => { close(); if (onConfirm) onConfirm(); };
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 }
 
 // Return a short display label for an offer.
