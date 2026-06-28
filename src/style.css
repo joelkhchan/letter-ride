@@ -370,24 +370,22 @@ button { font-family: var(--font-body); color: var(--ink); }
 }
 
 /* ============================================ Per-letter score animation (the Pull, inline) */
-/* The played tiles fire in place in the rack; the running Points x Mult = Score builds in the
-   staging slot just above them (single line, so staging height is unchanged -> no rack shift). */
-#staging.sa-readout { position: relative; font-size: 1.2rem; font-weight: 700; letter-spacing: 0; }
-.sa-formula { font-family: var(--font-display); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
-.sa-formula #sa-score { color: var(--gold); font-size: 1.3em; }
+/* The formed word shows in the staging slot; each letter lights up + tallies its Points in order,
+   then the Mult climbs, then the Score reveals. Sized to stay within the staging height (no shift). */
+#staging.sa-readout { flex-direction: column; gap: 2px; line-height: 1; }
+.sa-word { display: flex; gap: 5px; justify-content: center; font-size: 1.6rem; letter-spacing: 1px; }
+.sa-ltr { color: var(--ink-soft); opacity: 0.45; transition: color 0.12s, opacity 0.12s; }
+.sa-ltr.sa-lit { color: var(--gold); opacity: 1; animation: sa-litpop 240ms cubic-bezier(.2,1.6,.4,1); }
+@keyframes sa-litpop { 0% { transform: translateY(0) scale(1); } 45% { transform: translateY(-3px) scale(1.28); } 100% { transform: translateY(0) scale(1); } }
+.sa-formula { font-family: var(--font-display); font-weight: 700; font-size: 0.92rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.sa-formula #sa-score { color: var(--gold); font-size: 1.25em; }
 #sa-points, #sa-mult, .sa-formula #sa-score { display: inline-block; }
 .sa-multv { color: var(--gold); }
-.sa-part { position: absolute; left: 0; right: 0; top: 100%; font-size: 0.82rem; font-weight: 700; color: var(--gold); opacity: 0; letter-spacing: 0; line-height: 1.1; pointer-events: none; }
-.sa-part.sa-flash { animation: sa-partflash 720ms ease-out; }
-@keyframes sa-partflash { 0% { opacity: 0; transform: translateY(4px); } 22% { opacity: 1; transform: none; } 100% { opacity: 0.82; } }
-.sa-bump { animation: sa-bump 210ms ease-out; }
-@keyframes sa-bump { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
-.sa-pop { animation: pull-pop 320ms cubic-bezier(.2,1.5,.4,1); }
-.tile.sa-firing { animation: sa-fire 300ms cubic-bezier(.2,1.5,.4,1); z-index: 2; }
-.tile.sa-fired { box-shadow: 0 0 0 2px var(--gold), 0 5px 13px rgba(0,0,0,0.55); }
-@keyframes sa-fire { 0% { transform: translateY(0) scale(1); } 45% { transform: translateY(-12px) scale(1.15); box-shadow: 0 0 0 2px var(--gold), 0 11px 19px rgba(0,0,0,0.6); } 100% { transform: translateY(0) scale(1); } }
+.sa-bump { animation: sa-bump 220ms ease-out; }
+@keyframes sa-bump { 0% { transform: scale(1); } 40% { transform: scale(1.32); } 100% { transform: scale(1); } }
+.sa-pop { animation: pull-pop 340ms cubic-bezier(.2,1.5,.4,1); }
 @media (prefers-reduced-motion: reduce) {
-  .tile.sa-firing, .sa-bump, .sa-pop, .sa-part.sa-flash { animation: none; }
+  .sa-ltr.sa-lit, .sa-bump, .sa-pop { animation: none; }
 }
 
 /* ================================================================ The Broadside (SP4) */

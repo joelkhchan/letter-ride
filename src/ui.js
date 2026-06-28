@@ -235,7 +235,7 @@ function relicChipValue(relic, run) {
 // scoring, so neither needs a row here.
 function relicsModsPanelHtml(run) {
   if (!run.relics || !run.relics.length) {
-    return `<div id="relics-mods-panel" class="rp-empty"><span class="none-label">No relics yet — find them in the shop</span></div>`;
+    return `<div id="relics-mods-panel" class="rp-empty"><span class="none-label">No relics yet</span></div>`;
   }
   const counts = {};
   for (const r of run.relics) counts[r.id] = (counts[r.id] || 0) + 1;
@@ -426,11 +426,12 @@ function _pullDetail(bd) {
 // Each played tile fires in turn adding its Points; then length + relic/mod Points; then the Mult
 // builds (+Mult, then xMult); then Score = Points x Mult flourishes. Tap to skip; reduced-motion /
 // fast-scoring skip straight to the result. Timings (ms) are feel-tunable presentation, not balance.
-const SA_STEP = 165;
 export function animatePull(sel, scored, onDone) {
-  sfx('chunk');                                   // the platen comes down (plays even in reduced-motion)
-  const reduce = getPref('reducedMotion') || getPref('fastScoring') || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  sfx('chunk');                                   // the platen comes down (plays even when scoring is Off)
+  const speed = getPref('scoringSpeed') || 'full';
+  const reduce = getPref('reducedMotion') || speed === 'off' || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   if (reduce || !scored || !sel.length) { if (onDone) onDone(); return; }
+  const STEP = speed === 'fast' ? 120 : 300;      // 'full' = slow enough to read each letter tally
 
   const stage = document.getElementById('staging');
   if (!stage) { if (onDone) onDone(); return; }
@@ -440,23 +441,21 @@ export function animatePull(sel, scored, onDone) {
   const fires = bd.tileFires && bd.tileFires.length === sel.length ? bd.tileFires : sel.map(s => ({ letter: s.letter, points: 0 }));
   const intFmt = v => String(Math.round(v));
 
-  // Inline: the played tiles (still in the rack until the post-animation re-render) fire in place;
-  // the running Points x Mult = Score builds in the staging slot just above them. No modal overlay.
-  const rackTile = (id) => document.querySelector(`#rack .tile[data-id="${id}"]`);
+  // Show the formed WORD and tally each letter in order (it lights up + adds its Points); the running
+  // Points x Mult = Score builds below it, inside the staging slot. (No rack-tile animation.)
   stage.classList.add('sa-readout');
   stage.innerHTML =
-    `<span class="sa-part" id="sa-part"></span>` +
-    `<span class="sa-formula"><span id="sa-points">0</span> Points <span id="sa-mult" class="sa-multv">×1</span> Mult = <b id="sa-score">0</b> Score</span>`;
+    `<div class="sa-word">${sel.map((s, i) => `<span class="sa-ltr" data-i="${i}">${s.letter === '*' ? '★' : s.letter}</span>`).join('')}</div>` +
+    `<div class="sa-formula"><span id="sa-points">0</span> Points <span id="sa-mult" class="sa-multv">×1</span> Mult = <b id="sa-score">0</b> Score</div>`;
+  const ltrs = [...stage.querySelectorAll('.sa-ltr')];
   const ptEl = stage.querySelector('#sa-points');
   const multEl = stage.querySelector('#sa-mult');
   const scoreEl = stage.querySelector('#sa-score');
-  const partEl = stage.querySelector('#sa-part');
 
   let runPts = 0, runMult = 1;
   const bump = (el) => { if (!el) return; el.classList.remove('sa-bump'); void el.offsetWidth; el.classList.add('sa-bump'); };
   const setPts = () => { ptEl.textContent = intFmt(runPts); bump(ptEl); };
   const setMult = () => { multEl.textContent = _multStr(runMult); bump(multEl); };
-  const flashPart = (txt) => { if (partEl) { partEl.textContent = txt; partEl.classList.remove('sa-flash'); void partEl.offsetWidth; if (txt) partEl.classList.add('sa-flash'); } };
 
   const settle = () => {
     if (finished) return; finished = true;
@@ -466,33 +465,32 @@ export function animatePull(sel, scored, onDone) {
     if (onDone) onDone();                     // re-render refills the rack + resets staging
   };
   const showFinals = () => {
-    sel.forEach(s => { const el = rackTile(s.tile.id); if (el) el.classList.add('sa-fired'); });
+    ltrs.forEach(el => el.classList.add('sa-lit'));
     if (ptEl) ptEl.textContent = intFmt(scored.points);
     if (multEl) multEl.textContent = _multStr(scored.mult);
     if (scoreEl) { scoreEl.textContent = intFmt(scored.score); scoreEl.classList.add('sa-pop'); }
-    if (partEl) partEl.textContent = '';
     sfx('flourish');
   };
   function onTap(e) { e.stopPropagation(); e.preventDefault(); _clearPullTimers(); showFinals(); _pullAfter(240, settle); }
   document.addEventListener('click', onTap, { capture: true });
 
-  let t = 150;
-  // 1) each played tile fires IN PLACE in the rack, adding its base Points
+  let t = 220;
+  // 1) tally each letter of the word in order (it lights up + adds its base Points)
   fires.forEach((f, i) => {
-    _pullAfter(t, () => { const el = rackTile(sel[i].tile.id); if (el) el.classList.add('sa-firing'); runPts += f.points; setPts(); sfx('tap'); });
-    t += SA_STEP;
+    _pullAfter(t, () => { if (ltrs[i]) ltrs[i].classList.add('sa-lit'); runPts += f.points; setPts(); sfx('tap'); });
+    t += STEP;
   });
-  // 2) length bonus, then 3) Points from relics/mods
-  if (bd.lengthBonus > 0) { _pullAfter(t, () => { runPts += bd.lengthBonus; setPts(); flashPart(`+${bd.lengthBonus} length`); sfx('tap'); }); t += SA_STEP; }
-  for (const p of (bd.pointParts || [])) { _pullAfter(t, () => { runPts += p.amount; setPts(); flashPart(`+${p.amount} ${p.label}`); sfx('tap'); }); t += SA_STEP; }
-  // 4) Mult builds: +Mult then xMult
-  for (const p of (bd.addMultParts || [])) { _pullAfter(t, () => { runMult += p.amount; setMult(); flashPart(`+${p.amount} Mult · ${p.label}`); sfx('tap'); }); t += SA_STEP; }
-  for (const p of (bd.timesMultParts || [])) { _pullAfter(t, () => { runMult *= p.amount; setMult(); flashPart(`×${p.amount} Mult · ${p.label}`); sfx('tap'); }); t += SA_STEP; }
+  // 2) length bonus, then 3) Points from relics/mods (the Points number climbs)
+  if (bd.lengthBonus > 0) { _pullAfter(t, () => { runPts += bd.lengthBonus; setPts(); sfx('tap'); }); t += STEP; }
+  for (const p of (bd.pointParts || [])) { _pullAfter(t, () => { runPts += p.amount; setPts(); sfx('tap'); }); t += STEP; }
+  // 4) the Mult climbs: +Mult then xMult
+  for (const p of (bd.addMultParts || [])) { _pullAfter(t, () => { runMult += p.amount; setMult(); sfx('tap'); }); t += STEP; }
+  for (const p of (bd.timesMultParts || [])) { _pullAfter(t, () => { runMult *= p.amount; setMult(); sfx('tap'); }); t += STEP; }
   // 5) Score reveal (snap Points/Mult to the exact final, then tween the Score)
-  _pullAfter(t + 70, () => { if (ptEl) ptEl.textContent = intFmt(scored.points); if (multEl) multEl.textContent = _multStr(scored.mult); flashPart(''); sfx('flourish'); _pullTween(scoreEl, 0, scored.score, 470, intFmt); });
-  t += 70 + 470;
+  _pullAfter(t + 90, () => { if (ptEl) ptEl.textContent = intFmt(scored.points); if (multEl) multEl.textContent = _multStr(scored.mult); sfx('flourish'); _pullTween(scoreEl, 0, scored.score, 520, intFmt); });
+  t += 90 + 520;
   _pullAfter(t, () => { if (scoreEl) scoreEl.classList.add('sa-pop'); });
-  _pullAfter(t + 540, settle);
+  _pullAfter(t + 580, settle);
 }
 
 export function renderRun(run, profile) {
@@ -1271,7 +1269,7 @@ export function renderSettings(hasRun) {
       <h3 class="settings-h">Motion</h3>
       <div class="menu-buttons">
         <button id="set-motion" class="menu-btn">Reduced motion: ${getPref('reducedMotion') ? 'On' : 'Off'}</button>
-        <button id="set-fast" class="menu-btn">Fast scoring: ${getPref('fastScoring') ? 'On' : 'Off'}</button>
+        <button id="set-scoring" class="menu-btn">Scoring reveal: ${ { full: 'Full', fast: 'Fast', off: 'Off' }[getPref('scoringSpeed')] || 'Full' }</button>
       </div>
       <h3 class="settings-h">Display</h3>
       <div class="menu-buttons">
@@ -1287,7 +1285,7 @@ export function renderSettings(hasRun) {
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('set-sound', () => { toggleMuted(); renderSettings(hasRun); });
   on('set-motion', () => { togglePref('reducedMotion'); renderSettings(hasRun); });
-  on('set-fast', () => { togglePref('fastScoring'); renderSettings(hasRun); });
+  on('set-scoring', () => { const c = getPref('scoringSpeed') || 'full'; setPref('scoringSpeed', c === 'full' ? 'fast' : c === 'fast' ? 'off' : 'full'); renderSettings(hasRun); });
   on('set-textsize', () => { setPref('textSize', getPref('textSize') === 'large' ? 'normal' : 'large'); applyDisplayPrefs(); renderSettings(hasRun); });
   on('set-abandon', () => handlers.onAbandonRun?.());
   on('set-telemetry', () => handlers.onOpenTelemetry?.());

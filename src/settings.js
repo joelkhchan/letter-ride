@@ -5,9 +5,9 @@
 
 const KEY = 'letterRide.prefs';
 const DEFAULTS = {
-  reducedMotion: false,   // skip animations (accessibility)
-  fastScoring: false,     // skip the pull reveal, show the score instantly
-  textSize: 'normal',     // 'normal' | 'large'
+  reducedMotion: false,        // skip animations (accessibility)
+  scoringSpeed: 'full',        // 'full' (slow, readable) | 'fast' (quick) | 'off' (instant final score)
+  textSize: 'normal',          // 'normal' | 'large'
 };
 
 let prefs = (() => {
