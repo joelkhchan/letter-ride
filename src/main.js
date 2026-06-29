@@ -116,7 +116,7 @@ try {
       }
       recordPlay(telemetry, { letters: sel.map(s => s.letter.toUpperCase()), word: sel.map(s => s.letter).join('').toUpperCase(), selection: sel, wordsPlayedThisRound: run.wordsPlayedThisRound, enablers: run.relics.filter(rv => rv.enabler).map(rv => rv.enabler) }, r.scored?.score ?? 0);
       const playedWord = sel.map(s => s.letter).join('');
-      run.lastPlay = { word: playedWord, score: r.scored.score };
+      run.lastPlay = { word: playedWord, score: r.scored.score, coins: r.coinsEarned || 0 };
       // Track the run's best line for the end-of-run broadside (in-memory; not persisted).
       if (!run.bestPlay || r.scored.score > run.bestPlay.score) run.bestPlay = { word: playedWord, score: r.scored.score };
       logEvent('play', { word: playedWord, letters: sel.map(s => s.letter), score: r.scored.score, points: r.scored.points, mult: r.scored.mult, breakdown: r.scored.breakdown, status: run.status, ...snap() });

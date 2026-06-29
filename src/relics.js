@@ -166,6 +166,29 @@ export const RELICS = {
     id: 'tightLeading', name: 'Tight Leading', desc: '+1 Mult per word, but hold 1 fewer tile in hand. Stacks.',
     handDelta: -1, stackable: true, evaluate: () => ({ addMult: 1 }),
   },
+
+  // ── Word-shape relics (affix / digraph — the missing shape family) ──
+  suffixPress: {
+    id: 'suffixPress', name: 'Suffix Press', desc: '+25 Points if the word ends in -ING, -ED, or -ER',
+    evaluate: (ctx) => {
+      const w = ctx.letters.join('').toUpperCase();
+      return { addPoints: (w.endsWith('ING') || w.endsWith('ED') || w.endsWith('ER')) ? 25 : 0 };
+    },
+  },
+  ligature: {
+    id: 'ligature', name: 'Ligature', desc: '+2 Mult per digraph (TH, CH, SH, QU, PH) in the word',
+    evaluate: (ctx) => {
+      const w = ctx.letters.join('').toUpperCase();
+      const n = (w.match(/TH|CH|SH|QU|PH/g) || []).length;
+      return { addMult: 2 * n };
+    },
+  },
+
+  // ── Economy relic (feeds the money engine; pairs with Recycler + interest + the Gilded mod) ──
+  royaltyPress: {
+    id: 'royaltyPress', name: 'Royalty Press', desc: '+$2 each word you play',
+    coinsPerWord: 2, evaluate: () => ({}),
+  },
 };
 
 export const ALL_RELIC_IDS = Object.keys(RELICS);

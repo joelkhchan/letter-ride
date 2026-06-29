@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { newRun, playWord, discard, nextRound, awardCoins, handSizeFor, startRound } from '../src/run.js';
 import { honeModifiers } from '../src/archetypes.js';
 import { makeDictionary } from '../src/dictionary.js';
-import { makeTile, resetTileIds } from '../src/tiles.js';
+import { makeTile, resetTileIds, getMod } from '../src/tiles.js';
 import { RELICS } from '../src/relics.js';
 
 const dict = makeDictionary(['cat']);
@@ -28,6 +28,19 @@ test('a word meeting target clears the round', () => {
   assert.equal(res.run.roundTotal, 5);
   assert.equal(res.run.status, 'roundCleared');
   assert.equal(res.run.wordsPlayedThisRound, 1);
+});
+
+test('coins-on-play: Royalty Press (coinsPerWord) + a Gilded tile (coinsPerPlay) credit $ on a word', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 1 });
+  run.target = 100;                                   // keep playing (don't clear → no awardCoins noise)
+  run.coins = 0;
+  run.relics = [RELICS.royaltyPress];                 // +$2 per word
+  const s = seatCat(run);
+  s[0].tile.mods = [getMod('gilded')];                // the C tile is Gilded (+$1 when played)
+  const res = playWord(run, s);
+  assert.equal(res.coinsEarned, 3, 'royaltyPress $2 + one Gilded tile $1 = $3');
+  assert.equal(run.coins, 3);
 });
 
 test('running out of plays under target loses', () => {

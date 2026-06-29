@@ -238,3 +238,24 @@ test('hand-size relics: Wide Margins +1 hand (no score); Tight Leading -1 hand, 
   const two = base('CAT', { relics: [RELICS.tightLeading, RELICS.tightLeading] });
   assert.equal(two.mult - b.mult, 2);                      // (1 + 2 addMult) - 1 = 2
 });
+
+// --- Word-shape + economy relics (2026-06-29 content drop) ---
+test('suffixPress: +25 Points for -ING/-ED/-ER endings, else 0', () => {
+  resetTileIds();
+  const tvx = { ...tv, R:1, I:1, N:1, G:2, D:2 };
+  const sx = (w) => scoreWord([...w].map(ch => ({ tile: makeTile(ch), letter: ch })), { tileValues: tvx, lengthBonusPerLetter: 0, relics: [RELICS.suffixPress] });
+  const bx = (w) => scoreWord([...w].map(ch => ({ tile: makeTile(ch), letter: ch })), { tileValues: tvx, lengthBonusPerLetter: 0 });
+  assert.equal(sx('RING').points - bx('RING').points, 25, '-ING fires');
+  assert.equal(sx('CATS').points - bx('CATS').points, 0, '-S does not fire (only ING/ED/ER)');
+});
+test('ligature: +2 Mult per digraph (TH/CH/SH/QU/PH)', () => {
+  resetTileIds();
+  const tvx = { ...tv, T:1, H:4, P:3 };
+  const r = scoreWord([...'THUS'].map(ch => ({ tile: makeTile(ch), letter: ch })), { tileValues: tvx, lengthBonusPerLetter: 0, relics: [RELICS.ligature] });
+  const b = scoreWord([...'THUS'].map(ch => ({ tile: makeTile(ch), letter: ch })), { tileValues: tvx, lengthBonusPerLetter: 0 });
+  assert.equal(r.mult - b.mult, 2, 'one digraph (TH) → +2 Mult');
+});
+test('royaltyPress carries coinsPerWord; gilded mod carries coinsPerPlay (read by run.js)', () => {
+  assert.equal(RELICS.royaltyPress.coinsPerWord, 2);
+  assert.deepEqual(RELICS.royaltyPress.evaluate({ letters: ['C','A','T'] }), {});   // no scoring effect
+});

@@ -193,6 +193,11 @@ export function playWord(run, selection) {
   run.roundTotal += scored.score;
   run.wordsPlayedThisRound += 1;
   run.totalWordsThisRun += 1;
+  // Coins-on-play: economy relics (coinsPerWord) + Gilded tiles (coinsPerPlay) earn $ on each word.
+  let coinsEarned = 0;
+  for (const r of run.relics) coinsEarned += r.coinsPerWord || 0;
+  for (const s of selection) for (const m of (s.tile.mods || [])) coinsEarned += m.coinsPerPlay || 0;
+  if (coinsEarned) run.coins += coinsEarned;
   for (const id of ALL_ARCHETYPE_IDS) {
     if (ARCHETYPES[id].matches(ratchetCtx)) run.archetypeTally[id] = (run.archetypeTally[id] || 0) + 1;
   }
@@ -206,7 +211,7 @@ export function playWord(run, selection) {
   if (run.roundTotal >= run.target) { run.status = 'roundCleared'; if (run.playsLeft <= 0) run.flawlessSoFar = false; if (run.config.COINS_ON_CLEAR) awardCoins(run); }
   else if (run.playsLeft <= 0) run.status = 'lost';
   else checkDeadHand(run);
-  return { ok: true, scored, run };
+  return { ok: true, scored, coinsEarned, run };
 }
 
 export function discard(run, selection = []) {

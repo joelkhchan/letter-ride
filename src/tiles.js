@@ -51,6 +51,11 @@ const MOD_REGISTRY = {
     id: 'compact', name: 'Compact', desc: '+2 Mult if the word is 3 letters or fewer',
     evaluate: (tile, ctx) => ({ addMult: ctx.letters.length <= 3 ? 2 : 0 }),
   },
+  // Economy mod: earns $ when played (no scoring effect). coinsPerPlay is read in run.js playWord.
+  gilded: {
+    id: 'gilded', name: 'Gilded', desc: '+$1 when this tile is played in a word',
+    coinsPerPlay: 1, evaluate: () => ({}),
+  },
 };
 
 export const WILD = '*';

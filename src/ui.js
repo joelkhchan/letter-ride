@@ -318,6 +318,7 @@ const RELIC_TAGS = {
   chainReaction: '× chain', throughLine: '+8/chain', wideMargins: '+1 hand', tightLeading: '+1M / −1 hand',
   rareAvalanche: '× grows', flywheel: '× grows', juggernaut: '× grows',
   resonanceEngine: '× grows', risingTide: '× grows', perpetualEngine: '× grows',
+  suffixPress: '+25 suffix', ligature: '×2/digraph', royaltyPress: '+$2/word',
 };
 // Snowball relics show their LIVE x Mult (grows over the run); others show their static tag.
 function relicChipValue(relic, run) {
@@ -640,7 +641,7 @@ export function renderRun(run, profile) {
 
   // Last play result
   const lastPlayHtml = run.lastPlay
-    ? `<div id="last-play">Last: <b>${run.lastPlay.word}</b> = ${run.lastPlay.score} Score</div>`
+    ? `<div id="last-play">Last: <b>${run.lastPlay.word}</b> = ${run.lastPlay.score} Score${run.lastPlay.coins ? ` <span class="last-coins">+$${run.lastPlay.coins}</span>` : ''}</div>`
     : '';
 
   // (No pre-submit score preview: the per-letter scoring animation on submit is the score reveal.)
