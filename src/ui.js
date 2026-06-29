@@ -1137,7 +1137,7 @@ function renderShop(run) {
 
   const freeRerolls = run.freeRerollsLeft || 0;
   const rerollDisabled = (freeRerolls <= 0 && !canAfford(shop.rerollCost)) ? 'disabled' : '';
-  const rerollLabel = freeRerolls > 0 ? `Reroll <span class="free-pill">free &times;${freeRerolls}</span>` : `Reroll ($${shop.rerollCost})`;
+  const rerollLabel = freeRerolls > 0 ? `Reroll <span class="free-pill">free &times;${freeRerolls}</span>` : (shop.rerollCost > 0 ? `Reroll ($${shop.rerollCost})` : `Reroll <span class="free-pill">free</span>`);
 
   let lastAwardHtml = '';
   if (run.lastAward && run.lastAward.length) {
@@ -1370,7 +1370,7 @@ function showExportOverlay() {
     <textarea readonly style="width:min(560px,92vw);height:44vh;background:var(--night-sunk);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:monospace;font-size:0.72rem;resize:none;">${json.replace(/</g, '&lt;')}</textarea>
     <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
       <button id="export-copy" class="menu-btn">Copy</button>
-      <button id="export-download" class="menu-btn">Download .json</button>
+      <button id="export-download" class="menu-btn">Download / Share</button>
       <button id="export-close" class="menu-btn">Close</button>
     </div>`;
   document.body.appendChild(overlay);
@@ -1381,14 +1381,34 @@ function showExportOverlay() {
     catch { ta.focus(); ta.select(); btn.textContent = 'Select + copy'; }
     setTimeout(() => { btn.textContent = 'Copy'; }, 1800);
   };
-  overlay.querySelector('#export-download').onclick = () => {
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `letter-ride-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  overlay.querySelector('#export-download').onclick = async () => {
+    const btn = overlay.querySelector('#export-download');
+    const fname = `letter-ride-${new Date().toISOString().slice(0, 10)}.json`;
+    // On Android (Capacitor WebView) a blob/<a download> click is silently ignored, so prefer the
+    // native Share sheet (email/Drive/messages) when it can share a file. Desktop falls back to a
+    // real download; if both fail, select the textarea so Copy always works.
+    try {
+      const file = new File([json], fname, { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Letter Ride data' });
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;   // user dismissed the share sheet — done
+      // otherwise fall through to the download path
+    }
+    try {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fname;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      ta.focus(); ta.select(); btn.textContent = 'Use Copy instead';
+      setTimeout(() => { btn.textContent = 'Download / Share'; }, 2000);
+    }
   };
   overlay.querySelector('#export-close').onclick = () => overlay.remove();
 }

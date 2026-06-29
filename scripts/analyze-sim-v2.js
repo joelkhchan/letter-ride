@@ -30,7 +30,8 @@ for (const { tag, opts } of POLICIES) {
   console.log('| Persona | Win rate | round p10 | p50 | p90 | dead-rack% (post-thin) |');
   console.log('|---|---|---|---|---|---|');
   for (const persona of PERSONAS) {
-    const s = runPersona({ config: CONFIG, dictionary, words, persona, seeds, ...opts });   // pool {} = everything unlocked
+    // maxRerolls 12: reroll is free (config), so model a player who rerolls freely to find pieces.
+    const s = runPersona({ config: CONFIG, dictionary, words, persona, seeds, maxRerolls: 12, ...opts });   // pool {} = everything unlocked
     const rr = s.roundReached;
     console.log(`| ${persona.name} | ${(s.winRate * 100).toFixed(1)}% | ${rr.p10} | ${rr.p50} | ${rr.p90} | ${(s.deadRackRate * 100).toFixed(2)}% |`);
   }
