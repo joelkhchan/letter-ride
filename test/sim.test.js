@@ -148,6 +148,35 @@ test('pickTargetOffer returns null when nothing affordable stays above reserve',
   assert.equal(pickTargetOffer(run, { targetRelicIds: ['rareHoarder'], reserve: 5 }), null); // 8-6=2 < 5
 });
 
+test('fillerReserve gates filler buys (mod/upgrade) but NOT a target relic — keystone banking', () => {
+  // 10 coins. A target relic (6) and a target-mod tile (7) are both offered. With fillerReserve=8,
+  // the filler tile is held (10-7=3 < 8) but the keystone relic is still bought (uses base reserve 0).
+  const run = {
+    coins: 10, relics: [],
+    shop: { offers: [
+      { type: 'buyEnchantedTile', modId: 'catalyst', cost: 7 },
+      { type: 'buyRelic', relicId: 'rareHoarder', cost: 6 },
+    ] },
+  };
+  const off = pickTargetOffer(run, { targetRelicIds: ['rareHoarder'], targetModIds: ['catalyst'], reserve: 0, fillerReserve: 8 });
+  assert.equal(off.type, 'buyRelic', 'keystone relic ignores the filler gate');
+
+  // With only the filler tile offered and fillerReserve high, nothing is bought (banking).
+  const run2 = { coins: 10, relics: [], shop: { offers: [{ type: 'buyEnchantedTile', modId: 'catalyst', cost: 7 }] } };
+  assert.equal(pickTargetOffer(run2, { targetModIds: ['catalyst'], reserve: 0, fillerReserve: 8 }), null, 'filler held when it would drop below the keystone savings');
+});
+
+test('bankForKeystone policy holds more coins than greedy when the keystone is unavailable', () => {
+  // A shop pool with NO target relic available forces the banker to save; the greedy buyer spends on
+  // filler. Same seed/run → banker ends with >= coins than greedy. (pool restricts relics to a non-target.)
+  const mk = () => { resetTileIds(); const r = newRun({ config: configShop, dictionary: dictCat, seed: 11 }); r.coins = 40; return r; };
+  const greedy = mk();
+  buildPurchasePolicy({ targetRelicIds: ['vowelBonus'], targetModIds: ['polished', 'catalyst'], maxRerolls: 0, pool: { relicIds: [] } })(greedy);
+  const banker = mk();
+  buildPurchasePolicy({ targetRelicIds: ['vowelBonus'], targetModIds: ['polished', 'catalyst'], maxRerolls: 0, pool: { relicIds: [] }, bankForKeystone: true })(banker);
+  assert.ok(banker.coins >= greedy.coins, `banker (${banker.coins}) should hold >= greedy (${greedy.coins}) when the keystone is unbuyable`);
+});
+
 test('buildPurchasePolicy spends toward the target on a real run (buys and/or rerolls)', () => {
   resetTileIds();
   const run = newRun({ config: configShop, dictionary: dictCat, seed: 7 });

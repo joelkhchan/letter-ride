@@ -108,32 +108,41 @@ export function pickEnchantTarget(run, modId) {
 // Pure: choose the best advancing offer from run.shop, or null. Priority (keeps coins >= reserve):
 // target relic > target hone > target-mod tile (pre-enchanted, then enchant an existing tile) >
 // upgrade a common letter. The relic/hone priority is unchanged from v2.
-export function pickTargetOffer(run, { targetRelicIds = [], targetHoneId = null, targetModIds = [], reserve = 0 }) {
+// fillerReserve (default = reserve): a higher floor applied ONLY to filler buys (mods/upgrade), so a
+// keystone-banking policy can save for its engine relic without blowing coins on marginal upgrades.
+// Relic/hone buys always use the base reserve (grab the keystone/target whenever affordable).
+export function pickTargetOffer(run, { targetRelicIds = [], targetHoneId = null, targetModIds = [], reserve = 0, fillerReserve = null }) {
   const offers = (run.shop && run.shop.offers) || [];
   const owned = new Set(run.relics.map(r => r.id));
+  const fr = fillerReserve == null ? reserve : fillerReserve;
   const affordable = (o) => run.coins - o.cost >= reserve;
+  const affordableFiller = (o) => run.coins - o.cost >= fr;
   const relic = offers.find(o => o.type === 'buyRelic' && targetRelicIds.includes(o.relicId) && !owned.has(o.relicId) && affordable(o));
   if (relic) return relic;
   const hone = offers.find(o => o.type === 'hone' && o.archetypeId === targetHoneId && affordable(o));
   if (hone) return hone;
-  const boughtEnch = offers.find(o => o.type === 'buyEnchantedTile' && targetModIds.includes(o.modId) && affordable(o));
+  const boughtEnch = offers.find(o => o.type === 'buyEnchantedTile' && targetModIds.includes(o.modId) && affordableFiller(o));
   if (boughtEnch) return boughtEnch;
-  const enchant = offers.find(o => o.type === 'enchantTile' && targetModIds.includes(o.modId) && affordable(o) && enchantTargetExists(run, o.modId));
+  const enchant = offers.find(o => o.type === 'enchantTile' && targetModIds.includes(o.modId) && affordableFiller(o) && enchantTargetExists(run, o.modId));
   if (enchant) return enchant;
-  const upgrade = offers.find(o => o.type === 'upgradeLetter' && COMMON_LETTERS.has(o.letter) && affordable(o));
+  const upgrade = offers.find(o => o.type === 'upgradeLetter' && COMMON_LETTERS.has(o.letter) && affordableFiller(o));
   if (upgrade) return upgrade;
   return null;
 }
 
 // Factory: returns a shop(run) function that drives generate→buy→reroll toward targets,
 // bounded by maxRerolls + reserve, then clears run.shop. Mirrors UI regen-after-buy behaviour.
-export function buildPurchasePolicy({ targetRelicIds = [], targetHoneId = null, targetModIds = [], reserve = 0, maxRerolls = 3, pool = {} } = {}) {
-  const opts = { targetRelicIds, targetHoneId, targetModIds, reserve };
+export function buildPurchasePolicy({ targetRelicIds = [], targetHoneId = null, targetModIds = [], reserve = 0, maxRerolls = 3, pool = {}, bankForKeystone = false } = {}) {
+  const keystone = bankForKeystone ? targetRelicIds[0] : null;   // the persona's primary engine relic
   return function shopPolicy(run) {
     run.shop = generateShop(run, run.rng, pool);
     let rerolls = 0;
     for (;;) {
-      const offer = pickTargetOffer(run, opts);
+      // Banking: while the keystone engine relic is unowned, hold filler buys (mods/upgrades) above
+      // its cost so coins accrue toward it (and earn interest). Relics/hone ignore this gate.
+      const keystoneUnowned = keystone && !run.relics.some(r => r.id === keystone);
+      const fillerReserve = keystoneUnowned ? Math.max(reserve, run.config.SHOP.cost.buyRelic) : reserve;
+      const offer = pickTargetOffer(run, { targetRelicIds, targetHoneId, targetModIds, reserve, fillerReserve });
       if (offer) {
         const buyOpts = offer.type === 'enchantTile' ? { targetTileId: pickEnchantTarget(run, offer.modId) } : {};
         const res = purchase(run, offer, buyOpts);
@@ -279,7 +288,7 @@ export const PERSONAS = [
 //       otherwise                                                          → config.DECKS[bagId]
 // discardPolicy: optional discard function (default smartDiscard); pass dumpAllDiscard for BEFORE comparison.
 // Returns the summarizePersona summary over all seeds.
-export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard, agentFor = null, forceBoss = undefined }) {
+export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard, agentFor = null, forceBoss = undefined, bankForKeystone = false }) {
   const { bagId, targetRelicIds, targetHoneId, targetModIds = [] } = persona;
   // Resolve deck: 'standard' explicitly uses config.STARTING_BAG.
   // Any other bagId must be a real DECKS entry with a non-null startingBag; throw if missing.
@@ -292,7 +301,7 @@ export function runPersona({ config, dictionary, words, persona, seeds, pool = {
     deck = d;
   }
 
-  const policy = buildPurchasePolicy({ targetRelicIds, targetHoneId, targetModIds, reserve, maxRerolls, pool });
+  const policy = buildPurchasePolicy({ targetRelicIds, targetHoneId, targetModIds, reserve, maxRerolls, pool, bankForKeystone });
   const agent = agentFor ? agentFor(policy) : null;
 
   const results = seeds.map(seed =>
