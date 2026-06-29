@@ -518,12 +518,18 @@ html.text-large { font-size: 112.5%; }
 .relic-seal.locked { filter: grayscale(1); }
 .ach-bar { display: inline-block; width: 56px; height: 6px; background: var(--night-sunk); border-radius: 3px; overflow: hidden; vertical-align: middle; margin-right: 6px; }
 .ach-bar-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-deep), var(--gold)); }
-.bounty-grid { border-collapse: collapse; margin: 4px auto; }
-.bounty-grid th { color: var(--ink-soft); font-weight: 600; padding: 3px 10px; font-size: 0.85rem; }
-.bounty-cell { text-align: center; padding: 3px 8px; }
-.bounty-cell.claimed { color: var(--gold); }
-.bounty-cell.locked { color: var(--ink-soft); opacity: 0.5; }
-.bounty-collect { background: var(--gold); color: var(--night); border: none; border-radius: var(--radius-sm); padding: 2px 7px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+.ach-sub { color: var(--ink-soft); font-size: 0.8rem; margin: 2px 0 8px; }
+.royalty-list { display: flex; flex-direction: column; }
+.royalty-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line-dim); }
+.royalty-bag { width: 30px; height: 30px; display: grid; place-items: center; }
+.royalty-bag .bag-wrap { width: 28px; height: 28px; }
+.royalty-name { font-weight: 700; color: var(--ink); }
+.royalty-pips { display: flex; gap: 6px; }
+.royalty-pip { width: 32px; height: 28px; display: inline-grid; place-items: center; border-radius: 6px; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; border: 1px solid var(--line); }
+.royalty-pip.locked { color: var(--ink-soft); opacity: 0.45; background: var(--night-sunk); }
+.royalty-pip.claimed { color: var(--gold); border-color: var(--gold); background: rgba(196,160,82,0.12); }
+.royalty-pip.ready { color: var(--night); background: var(--gold); border-color: var(--gold); cursor: pointer; }
+.royalty-pip.ready:hover { filter: brightness(1.1); }
 .menu-badge { background: var(--gold); color: var(--night); border-radius: 999px; padding: 0 7px; font-size: 0.75em; font-weight: 700; }
 
 /* ---- Achievement unlock toast ---- */

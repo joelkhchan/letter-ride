@@ -1566,18 +1566,22 @@ export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = 
   }).join('');
   const sections = buckets.map(([k, label]) => `<div class="ach-section"><h3>${label}</h3>${rowsFor(k)}</div>`).join('');
 
-  // Bounty grid: stakes x ALL decks. Earned-unclaimed cells are clickable to collect; claimed are filled.
+  // Royalties: one row per bag with an Edition pip each (the one-time Meta for first-winning bag x
+  // Edition). Earned-unclaimed pips are collect buttons; claimed are filled; locked show the numeral.
   const stakes = config.STAKES.map(x => x.id);
   const decks = Object.keys(config.DECKS);
-  const gridHead = `<tr><th></th>${stakes.map(x => `<th>S${x}</th>`).join('')}</tr>`;
-  const gridRows = decks.map(d => {
-    const cells = stakes.map(st => {
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+  const editionLabel = (st) => config.STAKES.find(x => x.id === st)?.name || `Edition ${st + 1}`;
+  const royaltyLegend = stakes.map(st => `${ROMAN[st] || st + 1} +${config.META.bounty[st] || 0}`).join(' &middot; ');
+  const royaltyRows = decks.map(d => {
+    const pips = stakes.map(st => {
       const key = `${st}:${d}`;
-      if (profile?.bountyClaimed?.[key]) return `<td class="bounty-cell claimed">&#9733;</td>`;
-      if (profile?.bountyEarned?.[key]) return `<td class="bounty-cell ready"><button class="bounty-collect" data-collect-bounty="${key}">+${config.META.bounty[st] || 0}</button></td>`;
-      return `<td class="bounty-cell locked">&middot;</td>`;
+      const amt = config.META.bounty[st] || 0;
+      if (profile?.bountyClaimed?.[key]) return `<span class="royalty-pip claimed" title="${editionLabel(st)} &middot; collected">&#9733;</span>`;
+      if (profile?.bountyEarned?.[key]) return `<button class="royalty-pip ready" data-collect-bounty="${key}" title="${editionLabel(st)} &middot; collect +${amt} Meta">+${amt}</button>`;
+      return `<span class="royalty-pip locked" title="${editionLabel(st)} &middot; win to earn +${amt} Meta">${ROMAN[st] || st + 1}</span>`;
     }).join('');
-    return `<tr><th>${config.DECKS[d].name}</th>${cells}</tr>`;
+    return `<div class="royalty-row"><span class="royalty-bag">${bagHtml(d)}</span><span class="royalty-name">${config.DECKS[d].name}</span><span class="royalty-pips">${pips}</span></div>`;
   }).join('');
 
   const lvl = levelFor(s.lifetimeScore || 0, config);
@@ -1597,7 +1601,7 @@ export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = 
       ${statsPanel}
       ${pendingHtml}
       ${sections}
-      <div class="ach-section"><h3>Royalties</h3><table class="bounty-grid">${gridHead}${gridRows}</table></div>
+      <div class="ach-section"><h3>Royalties</h3><p class="ach-sub">First-win each bag on each Edition for a one-time payout &middot; ${royaltyLegend} Meta</p><div class="royalty-list">${royaltyRows}</div></div>
     </div>`;
   wireBack();
   app().querySelectorAll('[data-collect-ach]').forEach(b => { b.onclick = () => handlers.onCollectAchievement?.(b.dataset.collectAch); });
