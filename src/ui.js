@@ -366,7 +366,7 @@ function showHelpOverlay() {
     <p>Each tile is worth <b>Points</b> (shown on the tile). Longer words add bonus Points.</p>
     <p><b>Relics</b> and <b>tile mods</b> add Points or Mult. Buy them in the shop with <b>$</b>.</p>
     <p><b>Refine</b> (in the shop) deepens one <b>build path</b> &mdash; e.g. Refine <i>Short-word</i> so short words score more each level. Pick a build and commit to it; deeper levels cost more.</p>
-    <p><b>Chain:</b> start a word with the <b>last letter of your previous word</b> to keep a chain going (the HUD shows which letter continues it). A few relics score more the longer your chain runs.</p>
+    <p><b>Word Chain:</b> start a word with the <b>last letter of your previous word</b> to keep the chain going (the HUD shows which letter continues it). A few relics score more the longer your chain runs.</p>
     <p>Beat the round's <b>Score target</b> before running out of plays. Discard your rack if you're stuck (limited discards per round).</p>
     <p>Use the <b>Shuffle</b> button to rearrange your rack tiles if you can't spot a word.</p>
   `;
@@ -678,7 +678,7 @@ export function renderRun(run, profile) {
     ${lastPlayHtml}
     <div id="staging">${staged || '<span class="staging-hint">Tap tiles to spell a word</span>'}</div>
     ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner">${bossSealHtml(run.boss, { size: 'md' })}<span><b>${BOSSES[run.boss].name}</b> &middot; ${run.boss === 'censor' && run.censorLetter ? `The letter ${run.censorLetter} scores 0 this round` : BOSSES[run.boss].desc}</span></div>` : ''}
-    ${run.chainLength > 1 ? `<div id="chain-banner">Chain &times;${run.chainLength}${run.lastWord ? ` &middot; continue with ${run.lastWord.lastLetter}` : ''}</div>` : ''}
+    ${run.chainLength > 1 ? `<div id="chain-banner">Word Chain &times;${run.chainLength}${run.lastWord ? ` &middot; continue with ${run.lastWord.lastLetter}` : ''}</div>` : ''}
     <div id="rack">
       ${run.rack.map(t => {
         const modBadge = t.mods && t.mods.length

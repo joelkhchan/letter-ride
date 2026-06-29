@@ -130,13 +130,11 @@ test('generateShop produces hone offers (one per archetype)', () => {
   const run = mkRun();
   // Use a large pool so all candidates are generated, then check presence
   const shop = generateShop(run, run.rng, { relicIds: [], modIds: [] });
-  // With relicIds=[] and modIds=[], only buyLetter, upgradeLetter, thinLetter, and hone candidates exist
-  // Verify hone offers are in the full candidate list by checking offersPerShop is still returned
+  // With relicIds=[] and modIds=[], only upgradeLetter, thinLetter, recast/transfer, and hone
+  // candidates exist (plain buyLetter was cut as an offer 2026-06-29).
   assert.equal(shop.offers.length, config.SHOP.offersPerShop);
-  // With a small pool that excludes relics+mods, hone offers must appear in the slice
-  // (6 archetypes + 4 buyLetters + 1 thinLetter + 4 upgradeLetters = 15 candidates, shuffled, 4 picked)
-  // Just verify the offers array exists and is valid
   assert.ok(Array.isArray(shop.offers));
+  assert.ok(!shop.offers.some(o => o.type === 'buyLetter'), 'plain buyLetter is no longer offered');
 });
 
 test('generateShop can produce hone offers visible in candidates', () => {

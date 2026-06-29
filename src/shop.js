@@ -19,7 +19,9 @@ export function generateShop(run, rng, pool = {}) {
   const modIds = pool.modIds || ALL_MOD_IDS;
   const owned = new Set(run.relics.map(r => r.id));
   const candidates = [];
-  for (const letter of cfg.buyableLetters) candidates.push({ type: 'buyLetter', letter, cost: cfg.cost.buyLetter });
+  // Plain "buy a tile" was cut (2026-06-29): adding a bare tile only DILUTES the focused bag (works
+  // against the shrink); you add tiles only with a reason (buyEnchantedTile), upgrade, or thin instead.
+  // (The purchase('buyLetter') path is kept for the unit-tested mechanism; it's just never offered.)
   for (const letter of cfg.buyableLetters) for (const modId of modIds) {
     // Count-based mods (e.g. Resonator: +Points for 2+ of this letter) are a dead enchant on a rare
     // letter - you almost never draw two J/Q/X/Z - so skip those pairings.

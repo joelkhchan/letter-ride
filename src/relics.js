@@ -148,12 +148,12 @@ export const RELICS = {
   // ── Phase 3 SP3: Chaining relics (read ctx.chainLength, the letter-chain length this round) ──
   chainReaction: {
     id: 'chainReaction', name: 'Chain Reaction',
-    desc: 'Mult grows with your word-chain: x(1 + 0.5 per chained word after the first)',
+    desc: 'Mult grows with your Word Chain: x(1 + 0.5 per chained word after the first)',
     evaluate: (ctx) => ({ timesMult: 1 + 0.5 * Math.max(0, (ctx.chainLength || 1) - 1) }),
   },
   throughLine: {
     id: 'throughLine', name: 'Through-Line',
-    desc: '+8 Points per chained word after the first',
+    desc: '+8 Points per Word Chain link after the first',
     evaluate: (ctx) => ({ addPoints: 8 * Math.max(0, (ctx.chainLength || 1) - 1) }),
   },
 
