@@ -46,7 +46,7 @@ export const CONFIG = {
     unlockCost: { relic: 25, mod: 20, deck: 35, stake: 15 },   // TUNE: raised to absorb the larger faucet
     achievement: {
       reward: { onboarding: 3, mastery: 12, diversity: 8, discovery: 5, progression: 10 },  // TUNE: Meta by bucket
-      rewardOverride: { winStake2: 25, reachApprentice: 5, reachJourneyman: 10, reachExpert: 15, reachArtisan: 25 },  // TUNE
+      rewardOverride: { winStake2: 25, criticsPick: 20, reachApprentice: 5, reachJourneyman: 10, reachExpert: 15, reachArtisan: 25 },  // TUNE
       bigWordScore: 150,    // TUNE
       bigRoundScore: 400,   // TUNE
       efficientWords: 20,   // TUNE: win in <= N total words (12 rounds, so <=20 ≈ 1.6 words/round)
@@ -54,6 +54,9 @@ export const CONFIG = {
       manyRelics: 4,        // TUNE
       discoverRelics: 12,   // TUNE: Curator - use N different relics across runs (keep the desc in sync)
       discoverMods: 6,      // TUNE: Enchanter - apply N different tile-mods across runs (keep the desc in sync)
+      tidySumCoins: 30,     // TUNE: Tidy Sum - hold $N at once (keep the desc in sync)
+      runOnChain: 4,        // TUNE: Run-on - reach a word-chain of N (keep the desc in sync)
+      deepCutLevel: 3,      // TUNE: Deep Cut - Refine one build to Level N (keep the desc in sync)
     },
     bounty: { 0: 5, 1: 10, 2: 20 },   // TUNE: one-time per (stake,deck) cell, by stake tier
   },

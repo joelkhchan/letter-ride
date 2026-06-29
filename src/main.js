@@ -2,6 +2,7 @@
 import { CONFIG } from './config.js';
 import { loadFromFile } from './dictionary.js';
 import { newRun, playWord, discard, nextRound, offerNode, isBossRound } from './run.js';
+import { ALL_BOSS_IDS } from './bosses.js';
 import { saveRun, loadRun } from './storage.js';
 import { generateShop, purchase } from './shop.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
@@ -86,6 +87,8 @@ try {
       archetypeTally: run.archetypeTally || {},
       relicsCount: relicIds.length, modsCount: modIds.length,
       stakeId: run.stake?.id ?? 0,
+      usedImprint: !!run.usedImprint,
+      bossCount: ALL_BOSS_IDS.length,
       allRelicIds: ALL_RELIC_IDS, allModIds: ALL_MOD_IDS,
     }, CONFIG));
     meta.meta += earned; run.lastMetaEarned = earned;   // base drip auto-pays; achievement/bounty Meta is collected on the Achievements screen
@@ -118,6 +121,9 @@ try {
       if (!run.bestPlay || r.scored.score > run.bestPlay.score) run.bestPlay = { word: playedWord, score: r.scored.score };
       logEvent('play', { word: playedWord, letters: sel.map(s => s.letter), score: r.scored.score, points: r.scored.points, mult: r.scored.mult, breakdown: r.scored.breakdown, status: run.status, ...snap() });
       profileRecordPlay(profile, { word: playedWord, score: r.scored.score, roundTotal: run.roundTotal });
+      // Track peak coins (Tidy Sum) + boss clears (Critic's Pick) before checking achievements this tick.
+      profile.stats.maxCoinsHeld = Math.max(profile.stats.maxCoinsHeld || 0, run.coins || 0);
+      if (run.status === 'roundCleared' && run.boss && !profile.stats.bossesBeaten.includes(run.boss)) profile.stats.bossesBeaten.push(run.boss);
       markCompletions(checkAchievements(profile, {
         phase: 'play',
         letters: sel.map(s => s.letter.toUpperCase()),
@@ -130,6 +136,10 @@ try {
         target: run.target,
         roundTotal: run.roundTotal,
         roundIndex: run.roundIndex,
+        boss: run.boss || null,
+        chainLength: run.chainLength || 1,
+        hasWild: sel.some(s => s.tile && s.tile.letter === '*'),
+        maxHoneLevel: Math.max(0, ...Object.values(run.honeLevels || {})),
       }, CONFIG));
       if (run.status === 'roundCleared') {
         offerNode(run);
@@ -146,6 +156,7 @@ try {
       logEvent('purchase', { offer: offer.type, id: offer.relicId || offer.modId || offer.letter || null, cost: offer.cost, ok: r.ok, coins: run.coins });
       if (r.ok) {
         run.boughtAnythingThisRun = true;
+        if (offer.type === 'enchantMulti') run.usedImprint = true;   // Mass Production achievement
         if (offer.type === 'buyRelic') recordPurchase(telemetry, offer.relicId);
         else if (offer.type === 'buyEnchantedTile' || offer.type === 'enchantTile' || offer.type === 'enchantMulti') recordPurchase(telemetry, offer.modId);
         run.shop.offers = run.shop.offers.filter(o => o !== offer);   // consume only the bought slot; the rest stay (reroll replaces the set)

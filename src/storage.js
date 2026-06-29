@@ -41,6 +41,7 @@ export function serializeRun(run) {
     bossOrder: run.bossOrder || [],
     censorLetter: run.censorLetter ?? null,             // The Censor's chosen zeroed letter (persist mid-round)
     upgradeCounts: run.upgradeCounts || {},             // per-letter upgrade tally (escalating cost)
+    usedImprint: run.usedImprint ?? false,              // Mass Production achievement flag
     nodeEventId: run.nodeEventId ?? null,
     nodeResolved: run.nodeResolved ?? false,
     chainLength: run.chainLength ?? 0,
@@ -88,6 +89,7 @@ export function deserializeRun(data, { config, dictionary }) {
     bossOrder: data.bossOrder || [],
     censorLetter: data.censorLetter ?? null,
     upgradeCounts: data.upgradeCounts || {},
+    usedImprint: data.usedImprint ?? false,
     nodeEventId: data.nodeEventId ?? null,
     nodeResolved: data.nodeResolved ?? false,
     chainLength: data.chainLength ?? 0,

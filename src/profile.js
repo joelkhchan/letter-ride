@@ -15,6 +15,8 @@ export function makeProfile() {
       lossByRound: {},          // {roundIndex: count} of runs that DIED at each round - the "wall"
       archetypePlays: {},       // {archetypeId: lifetime match count} - drives the signature build
       relicsEverUsed: [], modsEverApplied: [],
+      bossesBeaten: [],         // distinct boss ids cleared across runs (for Critic's Pick)
+      maxCoinsHeld: 0,          // peak $ ever held in one run (for Tidy Sum)
     },
     completed: [],            // achievement ids whose predicate fired (Meta uncollected by default)
     claimedAchievements: [],  // achievement ids whose Meta has been collected

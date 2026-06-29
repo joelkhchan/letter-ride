@@ -56,20 +56,36 @@ export const ACHIEVEMENTS = [
     predicate: (p, c) => isPlay(c) && c.status === 'roundCleared' && c.playsLeft <= 0 && (c.prevRoundTotal || 0) < c.target },
   { id: 'flawless',       bucket: 'mastery', name: 'Full Press',   desc: 'Win a run, clearing every round with a play to spare.',
     predicate: (p, c) => isEnd(c) && c.won && c.flawlessSoFar },
+  // Bosses (the Sentence encounters)
+  { id: 'pastCensor',     bucket: 'mastery', name: 'Past the Censor', desc: 'Clear a round while The Censor is active.',
+    predicate: (p, c) => isPlay(c) && c.status === 'roundCleared' && c.boss === 'censor' },
+  { id: 'lastWord',       bucket: 'mastery', name: 'Last Word',       desc: 'Clear The One-Liner (one play, lower target).',
+    predicate: (p, c) => isPlay(c) && c.status === 'roundCleared' && c.boss === 'oneLiner' },
+  { id: 'criticsPick',    bucket: 'mastery', name: "Critic's Pick",   desc: 'Beat every boss type across your runs.',  // reward via rewardOverride
+    predicate: (p, c) => isEnd(c) && (c.bossCount || 0) > 0 && (p.stats.bossesBeaten || []).length >= c.bossCount },
+  // The engine / economy
+  { id: 'tidySum',        bucket: 'mastery', name: 'Tidy Sum',        desc: 'Hold $30 or more at once.',
+    predicate: (p, c, cfg) => (p.stats.maxCoinsHeld || 0) >= cfg.META.achievement.tidySumCoins },
+  { id: 'runOn',          bucket: 'mastery', name: 'Run-on',          desc: 'Build a word-chain of 4 or more.',
+    predicate: (p, c, cfg) => isPlay(c) && (c.chainLength || 1) >= cfg.META.achievement.runOnChain },
+  { id: 'deepCut',        bucket: 'mastery', name: 'Deep Cut',        desc: 'Refine one build to Level 3.',
+    predicate: (p, c, cfg) => isPlay(c) && (c.maxHoneLevel || 0) >= cfg.META.achievement.deepCutLevel },
 
   // --- Build diversity (moderate) ---
-  { id: 'winVowels',      bucket: 'diversity', name: 'Vowel Movement', desc: 'Win a run built mostly on vowel-heavy words.',
+  { id: 'winVowels',      bucket: 'diversity', name: 'Vowel Movement', desc: 'Win a run where most of your scoring words had 3+ vowels.',
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'vowelHeavy' },
-  { id: 'winRare',        bucket: 'diversity', name: 'Rare Earth',     desc: 'Win a run built mostly on rare letters (J/Q/X/Z).',
+  { id: 'winRare',        bucket: 'diversity', name: 'Rare Earth',     desc: 'Win a run where most of your scoring words used J/Q/X/Z.',
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'rareLetter' },
-  { id: 'winShort',       bucket: 'diversity', name: 'Short Stack',    desc: 'Win a run built mostly on short words (3 letters or fewer).',
+  { id: 'winShort',       bucket: 'diversity', name: 'Short Stack',    desc: 'Win a run where most of your scoring words were 3 letters or fewer.',
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'shortWord' },
-  { id: 'winLong',        bucket: 'diversity', name: 'Long Hauler',    desc: 'Win a run built mostly on long words (6+ letters).',
+  { id: 'winLong',        bucket: 'diversity', name: 'Long Hauler',    desc: 'Win a run where most of your scoring words were 6+ letters.',
     predicate: (p, c) => isEnd(c) && c.won && dominantArchetype(c.archetypeTally) === 'longWord' },
   { id: 'winManyMods',    bucket: 'diversity', name: "Enchanter's Run", desc: 'Win a run using 4+ tile-mods.',
     predicate: (p, c, cfg) => isEnd(c) && c.won && (c.modsCount || 0) >= cfg.META.achievement.manyMods },
   { id: 'winManyRelics',  bucket: 'diversity', name: 'Relic Hound',    desc: 'Win a run with 4+ relics.',
     predicate: (p, c, cfg) => isEnd(c) && c.won && (c.relicsCount || 0) >= cfg.META.achievement.manyRelics },
+  { id: 'massProduction', bucket: 'diversity', name: 'Mass Production', desc: 'Use an Imprint to stamp a mod on several tiles at once.',
+    predicate: (p, c) => isEnd(c) && !!c.usedImprint },
 
   // --- Discovery / long-tail prestige (low) ---
   // Earnable through exploration (was "use EVERY relic/mod" - which never fired; with the larger
@@ -83,6 +99,12 @@ export const ACHIEVEMENTS = [
     predicate: (p, c) => isPlay(c) && has(c.letters, 'Q') && !has(c.letters, 'U') },
   { id: 'fullHouse',      bucket: 'discovery', name: 'Full House', desc: 'Play a word using all five vowels.',
     predicate: (p, c) => isPlay(c) && ['A','E','I','O','U'].every(v => has(c.letters, v)) },
+  { id: 'bookend',        bucket: 'discovery', name: 'Bookend',   desc: 'Play a palindrome (reads the same backward).',
+    predicate: (p, c) => isPlay(c) && (c.letters || []).length >= 3 && c.letters.join('') === [...c.letters].reverse().join('') },
+  { id: 'wildCard',       bucket: 'discovery', name: 'Wild Card', desc: 'Play a word using a Wild tile.',
+    predicate: (p, c) => isPlay(c) && !!c.hasWild },
+  { id: 'teetotaler',     bucket: 'discovery', name: 'Teetotaler', desc: 'Play a 5+ letter word with no vowels.',
+    predicate: (p, c) => isPlay(c) && (c.letters || []).length >= 5 && !['A','E','I','O','U'].some(v => has(c.letters, v)) },
 
   // --- Progression / lifetime rank (Meta via rewardOverride; the level itself is prestige only) ---
   { id: 'reachApprentice', bucket: 'progression', name: 'Apprentice', desc: 'Reach the Apprentice rank.',

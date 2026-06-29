@@ -30,37 +30,37 @@ const honeXMult = (lvl) => (lvl >= 3 ? 1 + 0.25 * (lvl - 2) : 1);
 export const ARCHETYPES = {
   shortWord: {
     id: 'shortWord', name: 'Short-word',
-    desc: 'Each level adds +Mult to words of 3 letters or fewer (and ×Mult at higher levels).',
+    desc: 'Words ≤3 letters: +Mult per level (plus ×Mult from Lv 3). Build a short-word engine.',
     matches: (ctx) => ctx.letters.length <= 3,
     honeBonus: (ctx, lvl) => ctx.letters.length <= 3 ? { addMult: lvl, timesMult: honeXMult(lvl) } : {},
   },
   longWord: {
     id: 'longWord', name: 'Long-word',
-    desc: 'Each level adds Points to long words (and ×Mult at higher levels).',
+    desc: 'Words 6+ letters: +Points per level (plus ×Mult from Lv 3).',
     matches: (ctx) => ctx.letters.length >= longThreshold(ctx),
     honeBonus: (ctx, lvl) => ctx.letters.length >= longThreshold(ctx) ? { addPoints: 5 * lvl, timesMult: honeXMult(lvl) } : {},
   },
   rareLetter: {
     id: 'rareLetter', name: 'Rare-letter',
-    desc: 'Each level adds Points to words using J, Q, X, or Z (and ×Mult at higher levels).',
+    desc: 'Words with J/Q/X/Z: +Points per level (plus ×Mult from Lv 3).',
     matches: (ctx) => hasRare(ctx),
     honeBonus: (ctx, lvl) => hasRare(ctx) ? { addPoints: 15 * lvl, timesMult: honeXMult(lvl) } : {},
   },
   doubled: {
     id: 'doubled', name: 'Doubled-letter',
-    desc: 'Each level adds Points to words with a doubled letter (and ×Mult at higher levels).',
+    desc: 'Words with a doubled letter: +Points per level (plus ×Mult from Lv 3).',
     matches: (ctx) => isDoubled(ctx),
     honeBonus: (ctx, lvl) => isDoubled(ctx) ? { addPoints: 12 * lvl, timesMult: honeXMult(lvl) } : {},
   },
   vowelHeavy: {
     id: 'vowelHeavy', name: 'Vowel-heavy',
-    desc: 'Each level adds Points per vowel to words with 3+ vowels (and ×Mult at higher levels).',
+    desc: 'Words with 3+ vowels: +Points per vowel per level (plus ×Mult from Lv 3).',
     matches: (ctx) => ctx.letters.filter(isVowel).length >= 3,
     honeBonus: (ctx, lvl) => { const v = ctx.letters.filter(isVowel).length; return v >= 3 ? { addPoints: 2 * lvl * v, timesMult: honeXMult(lvl) } : {}; },
   },
   escalation: {
     id: 'escalation', name: 'Escalation',
-    desc: 'Each level adds +Mult for every word already played this round; chained words feed it too (and ×Mult at higher levels).',
+    desc: 'Each word after the 1st this round: +Mult per level; chained words count too (plus ×Mult from Lv 3).',
     // Real condition (was () => true, the universal fallback that diluted its identity): escalation
     // applies once momentum has started — the 2nd+ word of a round, or a chained word. This also
     // folds in the chain mechanic (chainReaction / throughLine): a chained word counts as escalation,
