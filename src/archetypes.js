@@ -78,7 +78,7 @@ export function honeModifiers(honeLevels = {}) {
     const lvl = honeLevels[id] || 0;
     if (lvl <= 0) continue;
     const a = ARCHETYPES[id];
-    mods.push({ id: `hone:${id}`, name: `Hone: ${a.name}`, evaluate: (ctx) => a.honeBonus(ctx, lvl) });
+    mods.push({ id: `hone:${id}`, name: `Refine: ${a.name}`, evaluate: (ctx) => a.honeBonus(ctx, lvl) });   // id stays 'hone:' (internal); display name is Refine
   }
   return mods;
 }

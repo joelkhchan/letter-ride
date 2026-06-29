@@ -29,7 +29,11 @@ export function generateShop(run, rng, pool = {}) {
     const count = cfg.imprintCount || 2;
     for (const modId of modIds) candidates.push({ type: 'enchantMulti', modId, count, cost: cfg.cost.enchantMulti });
   }
-  for (const letter of cfg.buyableLetters) candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: cfg.cost.upgradeLetter });
+  // upgradeLetter cost escalates per letter: each successive upgrade of the SAME letter costs more.
+  for (const letter of cfg.buyableLetters) {
+    const ups = (run.upgradeCounts && run.upgradeCounts[letter]) || 0;
+    candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: cfg.cost.upgradeLetter * (ups + 1) });
+  }
   candidates.push({ type: 'thinLetter', cost: cfg.cost.thinLetter });
   candidates.push({ type: 'recastTile', cost: cfg.cost.recastTile });
   candidates.push({ type: 'transferMods', cost: cfg.cost.transferMods });
@@ -38,9 +42,16 @@ export function generateShop(run, rng, pool = {}) {
     if (owned.has(relicId) && !relic?.stackable) continue;   // unique relics: only offer if not owned
     // A -hand stackable relic stops being offered at the hand floor, so every copy you buy costs a real -1 hand.
     if (relic?.handDelta < 0 && handSizeFor(run.relics, run.config) <= handFloor(run.config)) continue;
-    candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic });
+    // Stackable relics cost more per copy already owned (a rising investment); one-time relics: base.
+    const copies = run.relics.filter(r => r.id === relicId).length;
+    candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic * (copies + 1) });
   }
-  for (const archetypeId of ALL_ARCHETYPE_IDS) candidates.push({ type: 'hone', archetypeId, cost: run.config.HONE.cost });
+  // Refine (hone) cost escalates with the archetype's current level: each level deeper costs more
+  // (base x (level+1)), so repeatedly deepening one build is a rising investment, not a flat tax.
+  for (const archetypeId of ALL_ARCHETYPE_IDS) {
+    const lvl = (run.honeLevels && run.honeLevels[archetypeId]) || 0;
+    candidates.push({ type: 'hone', archetypeId, cost: run.config.HONE.cost * (lvl + 1) });
+  }
 
   const offers = shuffle(candidates, rng).slice(0, Math.min(cfg.offersPerShop, candidates.length));
   return { offers, rerollCost: cfg.rerollCost };
@@ -76,7 +87,9 @@ export function purchase(run, offer, opts = {}) {
       break;
     }
     case 'upgradeLetter':
-      run.tileValues[offer.letter] = (run.tileValues[offer.letter] || 0) + offer.plus; break;
+      run.tileValues[offer.letter] = (run.tileValues[offer.letter] || 0) + offer.plus;
+      run.upgradeCounts = run.upgradeCounts || {};
+      run.upgradeCounts[offer.letter] = (run.upgradeCounts[offer.letter] || 0) + 1; break;
     case 'thinLetter': {
       const t = findTarget(); if (!t) return { ok: false, reason: 'no-target' };
       run.bag.remove(t.id); break;

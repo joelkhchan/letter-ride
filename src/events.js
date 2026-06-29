@@ -23,8 +23,8 @@ export const EVENTS = {
   },
   wordsmith: {
     id: 'wordsmith', name: 'Wordsmith',
-    desc: 'Gain a free Hone level for an archetype you choose',
-    options: [{ label: 'Hone an archetype (free)', apply: (run, opts) => {
+    desc: 'Gain a free Refine level for a build path you choose',
+    options: [{ label: 'Refine a build (free)', apply: (run, opts) => {
       const arch = opts?.archetypeId;
       if (!arch) return { ok: false, reason: 'no-target' };
       if (!run.honeLevels) run.honeLevels = {};

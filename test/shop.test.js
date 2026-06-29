@@ -267,6 +267,41 @@ test('generateShop candidate pool includes recastTile + transferMods', () => {
   assert.ok(types.has('recastTile') && types.has('transferMods'));
 });
 
+test('Refine (hone) cost escalates with the archetype level (base x (level+1))', () => {
+  const run = mkRun();
+  run.config = { ...config, SHOP: { ...config.SHOP, offersPerShop: 999 } };
+  run.honeLevels = { shortWord: 2 };                          // already refined twice
+  const offers = generateShop(run, run.rng).offers.filter(o => o.type === 'hone');
+  const sw = offers.find(o => o.archetypeId === 'shortWord');
+  const other = offers.find(o => o.archetypeId !== 'shortWord');
+  assert.equal(sw.cost, 6 * 3, 'shortWord at level 2 costs base*3');
+  assert.equal(other.cost, 6 * 1, 'an un-refined archetype costs base*1');
+});
+
+test('upgradeLetter cost escalates per letter; purchase tracks the count', () => {
+  const run = mkRun();
+  run.config = { ...config, SHOP: { ...config.SHOP, offersPerShop: 999 } };
+  // First upgrade of E: base cost (5*1).
+  let eOffer = generateShop(run, run.rng).offers.find(o => o.type === 'upgradeLetter' && o.letter === 'E');
+  assert.equal(eOffer.cost, 5);
+  purchase(run, eOffer, {});
+  assert.equal(run.upgradeCounts.E, 1);
+  // Next E upgrade now costs base*2.
+  eOffer = generateShop(run, run.rng).offers.find(o => o.type === 'upgradeLetter' && o.letter === 'E');
+  assert.equal(eOffer.cost, 10);
+});
+
+test('stackable relic cost rises per copy owned; one-time relics stay at base', () => {
+  const run = mkRun();
+  run.config = { ...config, SHOP: { ...config.SHOP, offersPerShop: 999 } };
+  run.relics = [RELICS.tightLeading];                         // own 1 copy of a stackable relic
+  const offers = generateShop(run, run.rng).offers.filter(o => o.type === 'buyRelic');
+  const tl = offers.find(o => o.relicId === 'tightLeading');
+  if (tl) assert.equal(tl.cost, 8 * 2, 'second copy of a stackable relic costs base*2');
+  const oneTime = offers.find(o => RELICS[o.relicId] && !RELICS[o.relicId].stackable);
+  if (oneTime) assert.equal(oneTime.cost, 8, 'a one-time relic stays at base');
+});
+
 test('stackable -hand relic is re-offered while owned (until the floor); unique relics are not', () => {
   const cfg2 = { ...config, RACK_SIZE: 9, HAND_FLOOR: 6, SHOP: { ...config.SHOP, offersPerShop: 999 } };
   const r = newRun({ config: cfg2, dictionary: dict, seed: 1 }); r.coins = 100;

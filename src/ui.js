@@ -117,7 +117,7 @@ function offerLabel(offer) {
       const archetype = ARCHETYPES[offer.archetypeId];
       const currentLevel = (lastRun?.honeLevels?.[offer.archetypeId] || 0);
       const archetypeDesc = archetype?.desc ? ` · ${archetype.desc}` : '';
-      return `Hone: ${archetype?.name || offer.archetypeId} (Lv ${currentLevel}→${currentLevel + 1})${archetypeDesc} · $${offer.cost}`;
+      return `Refine: ${archetype?.name || offer.archetypeId} (Lv ${currentLevel}→${currentLevel + 1})${archetypeDesc} · $${offer.cost}`;
     }
     default:                 return `${offer.type} · $${offer.cost}`;
   }
@@ -365,6 +365,8 @@ function showHelpOverlay() {
     <p><b>Score = Points × Mult.</b></p>
     <p>Each tile is worth <b>Points</b> (shown on the tile). Longer words add bonus Points.</p>
     <p><b>Relics</b> and <b>tile mods</b> add Points or Mult. Buy them in the shop with <b>$</b>.</p>
+    <p><b>Refine</b> (in the shop) deepens one <b>build path</b> &mdash; e.g. Refine <i>Short-word</i> so short words score more each level. Pick a build and commit to it; deeper levels cost more.</p>
+    <p><b>Chain:</b> start a word with the <b>last letter of your previous word</b> to keep a chain going (the HUD shows which letter continues it). A few relics score more the longer your chain runs.</p>
     <p>Beat the round's <b>Score target</b> before running out of plays. Discard your rack if you're stuck (limited discards per round).</p>
     <p>Use the <b>Shuffle</b> button to rearrange your rack tiles if you can't spot a word.</p>
   `;
@@ -911,7 +913,7 @@ function renderEventOneShot(run) {
     app().querySelectorAll('.arch-choice[data-arch]').forEach(btn => {
       btn.onclick = () => {
         const r = handlers.onEventOption?.(0, { archetypeId: btn.dataset.arch });
-        if (r && !r.ok) { const msg = document.getElementById('msg'); if (msg) msg.textContent = 'Could not apply hone.'; }
+        if (r && !r.ok) { const msg = document.getElementById('msg'); if (msg) msg.textContent = 'Could not apply refine.'; }
         else renderEventDone(run, ev);
       };
     });
@@ -1113,7 +1115,7 @@ function shopOfferCard(offer) {
     case 'hone': {
       const a = ARCHETYPES[offer.archetypeId];
       const lvl = (lastRun?.honeLevels?.[offer.archetypeId] || 0);
-      return { cat: `Hone &middot; Lv ${lvl}&rarr;${lvl + 1}`, name: a?.name || offer.archetypeId, desc: a?.desc || '', icon: badge('hone', lineIconHtml('tools')) };
+      return { cat: `Refine &middot; Lv ${lvl}&rarr;${lvl + 1}`, name: a?.name || offer.archetypeId, desc: a?.desc || '', icon: badge('hone', lineIconHtml('tools')) };
     }
     default:
       return { cat: '', name: offerLabel(offer), desc: '', icon: '' };
@@ -1583,7 +1585,7 @@ export function renderAchievements(profile, config, ACHIEVEMENTS, allRelicIds = 
       ${statsPanel}
       ${pendingHtml}
       ${sections}
-      <div class="ach-section"><h3>Bounties</h3><table class="bounty-grid">${gridHead}${gridRows}</table></div>
+      <div class="ach-section"><h3>Royalties</h3><table class="bounty-grid">${gridHead}${gridRows}</table></div>
     </div>`;
   wireBack();
   app().querySelectorAll('[data-collect-ach]').forEach(b => { b.onclick = () => handlers.onCollectAchievement?.(b.dataset.collectAch); });
@@ -1645,7 +1647,7 @@ function runPreviewHtml(meta, config, deckId, stakeId) {
       <div class="run-stat"><span>Plays / round</span><b>${plays}</b></div>
       <div class="run-stat"><span>Discards / round</span><b>${discards}</b></div>
       <div class="run-stat"><span>Starting $</span><b>${startCoins}</b></div>
-      <div class="run-stat"><span>Difficulty</span><b>${stake.name || `Stake ${stakeId}`}</b></div>
+      <div class="run-stat"><span>Difficulty</span><b>${stake.name || `Edition ${(Number(stakeId) || 0) + 1}`}</b></div>
     </div>
     <div class="run-target">First target: ${target !== base ? `<span class="base">${base}</span>` : ''}<b>${target}</b></div>`;
 }
@@ -1675,7 +1677,7 @@ export function renderSetup(meta, config, profile) {
   };
   const totalStakes = config.STAKES.length;
   const stakeButtonsHtml = meta.unlockedStakes.map(id => {
-    const s = config.STAKES.find(x => x.id === id) || { id, name: `Stake ${id}` };
+    const s = config.STAKES.find(x => x.id === id) || { id, name: `Edition ${(Number(id) || 0) + 1}` };
     const active = id === selectedStakeId ? ' active' : '';
     const danger = id >= 2 ? ' danger' : '';
     const filled = (Number(id) || 0) + 1;
@@ -1684,10 +1686,10 @@ export function renderSetup(meta, config, profile) {
     const bountyAmt = config.META?.bounty?.[id] ?? 0;
     const claimed = profile?.bountyClaimed?.[`${id}:${selectedDeckId}`];
     const bountyHtml = bountyAmt
-      ? `<div class="stake-bounty${claimed ? ' done' : ''}">${claimed ? '✓ Bounty claimed' : `Win bounty: +${bountyAmt} Meta`}</div>`
+      ? `<div class="stake-bounty${claimed ? ' done' : ''}">${claimed ? '✓ Royalty claimed' : `Win royalty: +${bountyAmt} Meta`}</div>`
       : '';
     return `<button class="pick-card stake-pick${active}${danger}" data-stake="${id}">
-      <span class="stake-head"><b class="pick-name">${s.name || `Stake ${id}`}</b><span class="stake-meter" title="Difficulty">${meter}</span></span>
+      <span class="stake-head"><b class="pick-name">${s.name || `Edition ${(Number(id) || 0) + 1}`}</b><span class="stake-meter" title="Difficulty">${meter}</span></span>
       <div class="stake-desc">${stakeDesc(s)}</div>
       ${bountyHtml}
     </button>`;
@@ -1776,7 +1778,7 @@ export function renderMetaShop(meta, config, allRelicIds, allModIds) {
     ['unlockRelic', 'Relics'],
     ['unlockMod', 'Tile-mods'],
     ['unlockDeck', 'Bags'],
-    ['unlockStake', 'Stakes'],
+    ['unlockStake', 'Editions'],
     ['loadout', 'Loadout'],
   ];
   const known = new Set(SECTIONS.map(s => s[0]));

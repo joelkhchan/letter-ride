@@ -86,9 +86,9 @@ export const CONFIG = {
     lean:       { id: 'lean',       name: 'Lean Bag',    desc: 'Few, high-value tiles. Vowels can run dry.',       startingBag: ['A','E','I','O','U','R','S','T','N','L','D','C','M','B','P','K','F','H','Y','G'] },  // intentionally SMALLEST (20)
   },
   STAKES: [
-    { id: 0, name: 'Stake 0', targetMult: 1.0,  playsDelta: 0,  discardsDelta: 0 },
-    { id: 1, name: 'Stake 1', targetMult: 1.25, playsDelta: 0,  discardsDelta: 0 },
-    { id: 2, name: 'Stake 2', targetMult: 1.5,  playsDelta: -1, discardsDelta: 0 },
+    { id: 0, name: 'First Edition',  targetMult: 1.0,  playsDelta: 0,  discardsDelta: 0 },
+    { id: 1, name: 'Second Edition', targetMult: 1.25, playsDelta: 0,  discardsDelta: 0 },
+    { id: 2, name: 'Third Edition',  targetMult: 1.5,  playsDelta: -1, discardsDelta: 0 },
   ],
   LOADOUT: {
     extraDiscards: { name: '+1 Discard / round', max: 2, cost: 10, desc: 'More discards each round to dig for better letters' },

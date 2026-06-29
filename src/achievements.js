@@ -42,9 +42,9 @@ export const ACHIEVEMENTS = [
     predicate: (p, c) => isPlay(c) && c.status === 'roundCleared' && c.wordsPlayedThisRound === 1 },
   { id: 'bigWord',        bucket: 'mastery', name: 'Heavy Impression', desc: 'Play a single word worth 150+ Score.',
     predicate: (p, c, cfg) => isPlay(c) && (c.score || 0) >= cfg.META.achievement.bigWordScore },
-  { id: 'winStake1',      bucket: 'mastery', name: 'Pressrun',     desc: 'Win on Stake 1.',
+  { id: 'winStake1',      bucket: 'mastery', name: 'Pressrun',     desc: 'Win on the Second Edition.',
     predicate: (p, c) => isEnd(c) && c.won && (c.stakeId || 0) >= 1 },
-  { id: 'winStake2',      bucket: 'mastery', name: 'Master Printer', desc: 'Win on Stake 2.',  // reward via rewardOverride.winStake2
+  { id: 'winStake2',      bucket: 'mastery', name: 'Master Printer', desc: 'Win on the Third Edition.',  // reward via rewardOverride.winStake2
     predicate: (p, c) => isEnd(c) && c.won && (c.stakeId || 0) >= 2 },
   { id: 'bigRound',       bucket: 'mastery', name: 'Engine Room',  desc: 'Score 400+ in a single round.',
     predicate: (p, c, cfg) => isPlay(c) && c.status === 'roundCleared' && (c.roundTotal || 0) >= cfg.META.achievement.bigRoundScore },
