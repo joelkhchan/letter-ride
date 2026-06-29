@@ -189,6 +189,12 @@ export const RELICS = {
     id: 'royaltyPress', name: 'Royalty Press', desc: '+$2 each word you play',
     coinsPerWord: 2, evaluate: () => ({}),
   },
+
+  // ── Foresight relic (the Scrabble bag-tracking lever; `peek` is read by the UI, not scoring) ──
+  galleyProof: {
+    id: 'galleyProof', name: 'Galley Proof', desc: 'See the next 2 tiles you will draw',
+    peek: 2, evaluate: () => ({}),
+  },
 };
 
 export const ALL_RELIC_IDS = Object.keys(RELICS);

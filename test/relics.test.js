@@ -259,3 +259,7 @@ test('royaltyPress carries coinsPerWord; gilded mod carries coinsPerPlay (read b
   assert.equal(RELICS.royaltyPress.coinsPerWord, 2);
   assert.deepEqual(RELICS.royaltyPress.evaluate({ letters: ['C','A','T'] }), {});   // no scoring effect
 });
+test('galleyProof carries a peek count and no scoring effect (foresight is UI-only)', () => {
+  assert.equal(RELICS.galleyProof.peek, 2);
+  assert.deepEqual(RELICS.galleyProof.evaluate({ letters: ['C','A','T'] }), {});
+});

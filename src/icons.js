@@ -9,7 +9,7 @@
 // Relics shown as a struck Zilla glyph seal (original marks, no third-party art). Ampersand IS a
 // ligature; $ = the money relic; the others are representative letters. (Curated engraved game-icons
 // art can replace these later — see assets/icons/CREDITS.md.)
-const LETTER_RELICS = { vowelBonus: 'A', ligature: '&', royaltyPress: '$', suffixPress: 'S' };
+const LETTER_RELICS = { vowelBonus: 'A', ligature: '&', royaltyPress: '$', suffixPress: 'S', galleyProof: '»' };
 
 // a mask-tinted glyph from an svg path
 function glyphMark(src) {

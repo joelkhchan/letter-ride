@@ -318,7 +318,7 @@ const RELIC_TAGS = {
   chainReaction: '× chain', throughLine: '+8/chain', wideMargins: '+1 hand', tightLeading: '+1M / −1 hand',
   rareAvalanche: '× grows', flywheel: '× grows', juggernaut: '× grows',
   resonanceEngine: '× grows', risingTide: '× grows', perpetualEngine: '× grows',
-  suffixPress: '+25 suffix', ligature: '×2/digraph', royaltyPress: '+$2/word',
+  suffixPress: '+25 suffix', ligature: '×2/digraph', royaltyPress: '+$2/word', galleyProof: 'peek 2',
 };
 // Snowball relics show their LIVE x Mult (grows over the run); others show their static tag.
 function relicChipValue(relic, run) {
@@ -692,6 +692,12 @@ export function renderRun(run, profile) {
         return `<button class="tile ${t.mods && t.mods.length ? 'mod ' : ''}${inRack(t.id) ? 'used' : ''}" data-id="${t.id}"${titleAttr}>${t.letter === '*' ? '<span class="tile-star"></span>' : t.letter}${modBadge}${tileVal}</button>`;
       }).join('')}
     </div>
+    ${(() => {
+      const peekN = Math.max(0, ...run.relics.map(r => r.peek || 0));   // Galley Proof: foresight of the draw pile
+      if (peekN <= 0) return '';
+      const next = run.drawPile.slice(0, peekN).map(t => t.letter === '*' ? '★' : t.letter);
+      return `<div id="peek"><span class="peek-label">Next</span>${next.length ? next.map(l => `<span class="peek-tile">${l}</span>`).join('') : '<span class="peek-empty">bag empty</span>'}</div>`;
+    })()}
     <div id="msg"></div>
     <div id="controls">
       <button id="submit" ${done ? 'disabled' : ''}>Submit</button>

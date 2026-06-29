@@ -96,6 +96,10 @@ h1 { color: var(--gold); }
 .rt-label { font-size: 0.8rem; color: var(--ink-soft); }
 .rt-label b { color: var(--gold); }
 #rack { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0; }
+#peek { display: flex; align-items: center; justify-content: center; gap: 6px; margin: -4px 0 8px; font-family: var(--font-ui); }
+#peek .peek-label { font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-soft); }
+#peek .peek-tile { font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; color: var(--gold); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; background: var(--night-sunk); }
+#peek .peek-empty { font-size: 0.7rem; color: var(--ink-soft); font-style: italic; }
 .tile {
   position: relative; width: 58px; height: 64px;
   font-family: var(--font-display); font-size: 1.7rem; font-weight: 700;

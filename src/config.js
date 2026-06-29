@@ -38,7 +38,7 @@ export const CONFIG = {
   META: {
     earn: { perRoundCleared: 2, winBonus: 10 },
     baseUnlocked: {
-      relics: ['vowelBonus','shortAndSweet','lengthy','freshStart','comboCounter','recycler','wideMargins','tightLeading','suffixPress','ligature','royaltyPress'],
+      relics: ['vowelBonus','shortAndSweet','lengthy','freshStart','comboCounter','recycler','wideMargins','tightLeading','suffixPress','ligature','royaltyPress','galleyProof'],
       mods: ['resonator','polished','catalyst','anchor','gilded'],
       decks: ['standard','classic','rareRich','doubled','lean'],
       stakes: [0],
