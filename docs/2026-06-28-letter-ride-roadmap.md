@@ -111,9 +111,34 @@ auto-synthesis step was buggy — placeholder output — but the verified claim 
   — design it deliberately with the author (how strong, what it biases toward, visible or hidden)
   before building.
 
+## Progress — Phase B economy SHIPPED (2026-06-29, pending playtest)
+
+Win-feel STANDARD (the tuning target): a skilled player wins the BASE stake ~40-60% once mastered
+(first win takes many runs); mastery lives in harder stakes where win rate falls to ~30-50%. Map to
+our harness (a greedy FLOOR bot, below a skilled human): target the banker persona ~15-30% on Stake 0.
+
+Levers shipped (author-approved): **interest cap $5 → $12** (rewards saving toward a keystone),
+**reroll cost $2 → $0** (free reroll = the shop never denies a piece; affordability is the only gate),
+starting purse kept $0. NOT done: clear-reward bump / cheaper relic (the two above sufficed) and the
+pick-1-of-3 node (free reroll replaces it).
+
+Harness result: banker persona **0-4.5% → 20-51%** (Escalation 51, Rare 48, Doubled 42, Long 40, Vowel
+22.5, Short 20.5); greedy spender stays 2-9.5% — **skill (saving/prioritizing) decides the run,
+carelessness busts**, which is the build-or-bust-but-fair goal. All six archetypes viable (~2.5×
+spread). CAVEAT: the bot is a floor, so strong builds (40-51% bot) may be slightly generous for a
+skilled human → **STOP economy tuning, ship for author playtest**; pull-back lever if too easy =
+interest cap (12→10) or a small reroll cost, NEVER engine nerfs.
+
+**Hidden pity: DEFERRED (free reroll makes it redundant** — data confirms builds assemble without it).
+Revisit only if playtest shows acquisition still feels luck-gated.
+
+Content backlog (author leans "more content" post-funnel): a **cash-generating tile-mod** ("Gilded":
++$ when this tile scores) so a cash-focused build is viable per-tile (Recycler is the only cash relic
+today); plus the Phase-D gap-fillers (affix/digraph relics, peek/swap). NOT letter-mastery (Tier 4).
+
 ## Roadmap
 
-### Phase A — Instrument (cheap; unblocks everything; mostly internal harness work)
+### Phase A — Instrument (cheap; unblocks everything; mostly internal harness work) — DONE
 - **A1. Discard + letter-usage telemetry.** Track per-letter played / discarded / left-in-rack and
   discard frequency; surface in stats + export. Answers "what do I dump / overuse" and *measures the
   variety problem* directly. (telemetry.js + export.)
