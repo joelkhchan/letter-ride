@@ -4,11 +4,17 @@ import { ARCHETYPES, ALL_ARCHETYPE_IDS } from './archetypes.js';
 const TELEM_KEY = 'letterRide.telemetry';
 
 export function makeTelemetry() {
-  return { items: {}, plays: 0, totalWordLen: 0, runs: 0, wins: 0, archetypes: {} };
+  // letters: per-letter usage (played in a scored word vs discarded) — surfaces dead-weight tiles.
+  // discards: count of discard actions taken.
+  return { items: {}, plays: 0, totalWordLen: 0, runs: 0, wins: 0, archetypes: {}, letters: {}, discards: 0 };
 }
 
 function initItem(t, id) {
   if (!t.items[id]) t.items[id] = { offered: 0, purchased: 0, runsWith: 0, winsWith: 0 };
+}
+
+function initLetter(t, L) {
+  if (!t.letters[L]) t.letters[L] = { played: 0, discarded: 0 };
 }
 
 function initArchetype(t, id) {
@@ -29,6 +35,8 @@ export function loadTelemetry(storage) {
       runs: data.runs || 0,
       wins: data.wins || 0,
       archetypes: data.archetypes || {},
+      letters: data.letters || {},
+      discards: data.discards || 0,
     };
   } catch {
     return makeTelemetry();
@@ -58,6 +66,14 @@ export function recordPlay(t, ctx, score = 0) {
   t.plays++;
   t.totalWordLen += wordLength;
 
+  // Per-letter usage: count each letter played in this scored word.
+  if (!t.letters) t.letters = {};
+  for (const raw of ctx.letters) {
+    const L = String(raw).toUpperCase();
+    initLetter(t, L);
+    t.letters[L].played++;
+  }
+
   // Classify the play against every archetype and accumulate per-archetype stats.
   for (const id of ALL_ARCHETYPE_IDS) {
     if (ARCHETYPES[id].matches(ctx)) {
@@ -65,6 +81,17 @@ export function recordPlay(t, ctx, score = 0) {
       t.archetypes[id].plays++;
       t.archetypes[id].totalScore += score;
     }
+  }
+}
+
+// One discard action of `letters` (an array of letter chars). Counts the action + each tile dumped.
+export function recordDiscard(t, letters = []) {
+  t.discards = (t.discards || 0) + 1;
+  if (!t.letters) t.letters = {};
+  for (const raw of letters) {
+    const L = String(raw).toUpperCase();
+    initLetter(t, L);
+    t.letters[L].discarded++;
   }
 }
 
@@ -99,5 +126,13 @@ export function summarize(t) {
       playShare: t.plays > 0 ? at.plays / t.plays : 0,
       avgScore: at.plays > 0 ? at.totalScore / at.plays : 0,
     })),
+    discards: t.discards || 0,
+    letters: Object.entries(t.letters || {}).map(([letter, lt]) => ({
+      letter,
+      played: lt.played,
+      discarded: lt.discarded,
+      // discardRate: of every time this letter was committed (played or dumped), how often dumped.
+      discardRate: (lt.played + lt.discarded) > 0 ? lt.discarded / (lt.played + lt.discarded) : 0,
+    })).sort((a, b) => (b.played + b.discarded) - (a.played + a.discarded)),
   };
 }

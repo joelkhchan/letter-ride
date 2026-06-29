@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import {
   makeTelemetry, loadTelemetry, saveTelemetry,
-  recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize,
+  recordOffers, recordPurchase, recordPlay, recordDiscard, recordRunEnd, summarize,
 } from '../src/telemetry.js';
 
 const fakeStorage = () => {
@@ -23,7 +23,7 @@ function ctx(word, opts = {}) {
 
 test('makeTelemetry returns correct shape with zero values', () => {
   const t = makeTelemetry();
-  assert.deepEqual(t, { items: {}, plays: 0, totalWordLen: 0, runs: 0, wins: 0, archetypes: {} });
+  assert.deepEqual(t, { items: {}, plays: 0, totalWordLen: 0, runs: 0, wins: 0, archetypes: {}, letters: {}, discards: 0 });
 });
 
 test('loadTelemetry on absent key returns fresh', () => {
@@ -110,6 +110,54 @@ test('recordPlay classifies per-archetype: QI (round-opener) hits rareLetter+sho
   assert.equal(t.archetypes['shortWord'].totalScore, 70, 'shortWord totalScore = 50+20');
   assert.equal(t.archetypes['rareLetter'].totalScore, 50, 'rareLetter totalScore = 50');
   assert.equal(t.archetypes['escalation'].totalScore, 20, 'escalation totalScore = CAT only');
+});
+
+test('recordPlay counts per-letter played (uppercased)', () => {
+  const t = makeTelemetry();
+  recordPlay(t, ctx('CAT'), 10);
+  recordPlay(t, ctx('ACT'), 10);
+  assert.equal(t.letters['A'].played, 2);
+  assert.equal(t.letters['C'].played, 2);
+  assert.equal(t.letters['T'].played, 2);
+  assert.equal(t.letters['A'].discarded, 0);
+});
+
+test('recordDiscard counts the action and per-letter discards (uppercased)', () => {
+  const t = makeTelemetry();
+  recordDiscard(t, ['q', 'z']);
+  recordDiscard(t, ['Q']);
+  assert.equal(t.discards, 2);
+  assert.equal(t.letters['Q'].discarded, 2);
+  assert.equal(t.letters['Z'].discarded, 1);
+  assert.equal(t.letters['Q'].played, 0);
+});
+
+test('summarize includes discards and a per-letter table with discardRate, sorted by volume', () => {
+  const t = makeTelemetry();
+  recordPlay(t, ctx('EEE'), 5);     // E played 3
+  recordDiscard(t, ['Q']);          // Q discarded 1
+  recordDiscard(t, ['Q']);          // Q discarded 2 (never played → discardRate 1.0)
+  const s = summarize(t);
+  assert.equal(s.discards, 2);
+  const E = s.letters.find(l => l.letter === 'E');
+  const Q = s.letters.find(l => l.letter === 'Q');
+  assert.equal(E.played, 3);
+  assert.equal(E.discardRate, 0);
+  assert.equal(Q.discarded, 2);
+  assert.equal(Q.discardRate, 1);
+  assert.equal(s.letters[0].letter, 'E', 'sorted by total volume desc (E:3 before Q:2)');
+});
+
+test('saveTelemetry / loadTelemetry round-trip preserves letters + discards', () => {
+  const s = fakeStorage();
+  const t = makeTelemetry();
+  recordPlay(t, ctx('CAT'), 10);
+  recordDiscard(t, ['Z']);
+  saveTelemetry(t, s);
+  const back = loadTelemetry(s);
+  assert.equal(back.discards, 1);
+  assert.deepEqual(back.letters['C'], { played: 1, discarded: 0 });
+  assert.deepEqual(back.letters['Z'], { played: 0, discarded: 1 });
 });
 
 test('recordRunEnd with won=true increments runs, wins, runsWith, winsWith', () => {

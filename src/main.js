@@ -7,7 +7,7 @@ import { generateShop, purchase } from './shop.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
-import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordRunEnd, summarize } from './telemetry.js';
+import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordDiscard, recordRunEnd, summarize } from './telemetry.js';
 import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
 import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingCount } from './achievements.js';
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
@@ -140,7 +140,7 @@ try {
         }
       }
       saveAll(); animatePull(sel, r.scored, render); return r; },
-    onDiscard(sel) { const dtiles = sel.map(s => s.letter); discard(run, sel); logEvent('discard', { tiles: dtiles, ...snap() }); saveAll(); render(); },
+    onDiscard(sel) { const dtiles = sel.map(s => s.letter); discard(run, sel); recordDiscard(telemetry, dtiles); logEvent('discard', { tiles: dtiles, ...snap() }); saveAll(); render(); },
     onBuy(offer, opts = {}) {
       const r = purchase(run, offer, opts);
       logEvent('purchase', { offer: offer.type, id: offer.relicId || offer.modId || offer.letter || null, cost: offer.cost, ok: r.ok, coins: run.coins });

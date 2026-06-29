@@ -73,14 +73,40 @@ Current empirical snapshot (for context, not a target): per-play spread Escalati
 round ~5/12 — but the bot plays greedy single words and never builds an engine, so it measures the
 *no-engine* line, not a committed build. Recalibrating that instrument is Phase A.
 
+## Research-confirmed patterns (deep-research run, 2026-06-29; 18 claims survived 3-vote verification)
+
+The competitive research confirms our locked direction and hands us a Phase-B toolkit. (The run's
+auto-synthesis step was buggy — placeholder output — but the verified claim set is sound.)
+- **Fair-acquisition triad (all confirmed):** constrained "pick 1 of 3" pools + reroll tools +
+  *hidden pity* that raises offer relevance the longer you go without it. (The stronger "guarantee a
+  build reward after every boss" was KILLED 0-3 — use reliability, not a hard guarantee. Fits
+  build-or-bust: reliable ≠ handed to you.)
+- **Economy (Balatro, confirmed):** interest = $1 per $5 held with the cap as a *deliberate soft
+  ceiling* that rewards saving then forces spending; reroll cost *escalates within a shop*; "buy
+  economy early, don't overspend." → our interest cap ($5) is too tight; consider escalating reroll.
+  (Specific StS gold numbers were KILLED — copy shapes, not absolute values.)
+- **Lean focused deck (confirmed):** "keep the deck lean via removal; adding cards dilutes." Word-
+  specific: "holding duplicate tiles drastically reduces playability"; "low-point tiles are more
+  valuable to retain than high-point" (Scrabble leave value). → validates the bag shrink AND tells us
+  *which* tiles to make cheap to thin (dump high-value clunkers, keep low-point connectors).
+- **Commitment via an ANCHOR (Monster Train champions; Balatro "commit to 1-2 builds", confirmed):**
+  builds want an early, legible anchor piece. → our Hone / a keystone relic should play that role and
+  the bag choice should pre-signal it. The real player never committed because nothing anchored it.
+- **FLAG — content conflict:** "duplicate tiles reduce playability" fights our Doubled-letter
+  archetype + Echo bag (which stack dupes). That archetype trades playability for synergy; tune it
+  carefully or it feels clunky as predicted.
+- **TO DISCUSS (author flagged 2026-06-29): the hidden-pity mechanic** is a planned Phase-B work item
+  — design it deliberately with the author (how strong, what it biases toward, visible or hidden)
+  before building.
+
 ## Roadmap
 
 ### Phase A — Instrument (cheap; unblocks everything; mostly internal harness work)
 - **A1. Discard + letter-usage telemetry.** Track per-letter played / discarded / left-in-rack and
   discard frequency; surface in stats + export. Answers "what do I dump / overuse" and *measures the
   variety problem* directly. (telemetry.js + export.)
-- **A2. Re-run the corpus on the 54-tile bag** and add a count-synergy hit-rate comparison @ 26 vs 54
-  tiles. Quantify the dilution before re-tuning the bag.
+- **A2. Re-run the corpus on the shrunk bag** (verify dead-rack% holds + count-synergy hit-rate
+  recovers vs the 54-tile version). Quantify that the shrink restores engine-piece density.
 - **A3. Recalibrate the harness persona** to a *commit-to-archetype buyer* (buys + thins toward one
   build), so win-rate measures "can a committed build clear the curve?" — the real question. The
   current greedy bot measures the no-engine line and reads 0%, contradicting the "too easy" reality.
