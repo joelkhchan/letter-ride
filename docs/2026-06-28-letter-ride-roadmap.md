@@ -36,6 +36,24 @@ The disease is the **acquisition & commitment funnel**, not the engine's power:
 legible.** Balatro delivers this joy via a small focusable deck + a coherent shop + clear synergy
 reading. We under-deliver on all three. We do NOT cap or nerf the engine.
 
+## Decisions locked (author, 2026-06-28)
+
+1. **Bag: shrink back to the scarcity model.** Reverse the 26→54 enlargement; bring bags back to
+   ~26 tiles (keep their identities, just denser/focused), pull rares out of Standard, keep the new
+   Classic bag. Consistency beats draw-variety for an engine game; a focused bag is pro-skill.
+2. **Difficulty: BUILD-OR-BUST (not floor-smoothing).** Targets stay steep; by ~round 5 a skilled
+   player should already be assembling the engine that carries them. We do NOT lift a no-engine
+   floor. **CRITICAL CONDITION:** build-or-bust is only fair if assembly is *agency-driven* (shop
+   picks, events, saving $, word skill) — and the data shows the funnel currently fails this
+   (3 relics across 3 runs, $0 by round 2). So **the assembly funnel + economy (Phase B) is the
+   entire skill expression**, and fixing it is the central work. Busting must be the player's fault
+   (didn't prioritize/save/pick), never the shop's.
+3. **Position lever: after the funnel** (Phase D, post-B/C).
+
+Consequence for measurement: under build-or-bust the greedy no-engine bot reading ~0% is *correct*
+— the no-engine line should lose. Phase A3 (a build-assembling buyer persona) is therefore required
+to tell a *fair* funnel from a *starved* one.
+
 ## Research sufficiency (audit, 2026-06-28)
 
 Strong on: payoff legibility/juice, what-not-to-do, the position-lever's legitimacy, the archetype
@@ -67,19 +85,29 @@ round ~5/12 — but the bot plays greedy single words and never builds an engine
   build), so win-rate measures "can a committed build clear the curve?" — the real question. The
   current greedy bot measures the no-engine line and reads 0%, contradicting the "too easy" reality.
 
-### Phase B — Make the engine reliably buildable (keeps the fantasy; gated on A)
+### Phase B — Make the assembly funnel FAIR (the heart of build-or-bust; gated on A)
+This is the central work: build-or-bust is only fair if a prioritizing player can reliably assemble
+an engine by ~round 5 through choices, not luck.
 - **B1. Reliable relic acquisition** (2026-06-26 §4b, still open): cheaper/free rerolls +
   archetype-weighted offers + a dedicated **"pick 1 of 3 relic" node**. NOT forcing a relic into
-  every shop (tried and reverted 2026-06-28 — keep the luck-of-the-draw, add reliable *paths*).
-- **B2. Bag consistency.** Pull rares (J/Q/X/Z) out of the Standard bag (let Rare Cache own them);
-  make bag-sculpting (thin / targeted letter buys) cheaper and more available, so the player can
-  *focus* the rich bag toward an engine. Resolution of the tension: **variety is the start, focus is
-  earned** (Balatro's start-broad-then-prune arc).
-- **B3. Early-game economy.** Tune income so the first engine pieces are affordable by ~round 2-3
-  (data shows $0 at round 2). Re-check interest/clear rewards vs shop costs.
-- **Gate:** re-run A2/A3 + author playtest — a committed build should reliably come online mid-run,
-  and a no-engine line should progress on skill past round 5 (compress the variance cliff from the
-  *floor* up, without capping the ceiling).
+  every shop (tried and reverted 2026-06-28 — keep luck-of-the-draw, add reliable *paths*). Goal: the
+  *first* engine piece reliably lands by ~round 2-3.
+- **B2. Economy revisit (the `$` lever the author flagged).** Current state starves assembly:
+  clear ≈ 5-6/round, relic = 8 (can't afford one after round 1), interest cap $5 (saving past $25 is
+  dead weight), starting purse $0. Candidate levers (author owns numbers; verify each via harness):
+  raise the **interest cap** ($5 → ~10-15) to reward saving for a keystone relic; bump **clear
+  rewards** (base 4 → 5-6 or round-scaled); a **cheaper first relic** (node and/or buyRelic 8 → ~6);
+  maybe a small **starting purse** ($3-4). Busting should be the player's fault, not the shop's.
+- **B3. Bag shrink (consistency).** Revert bags to ~26 tiles keeping identities; rares out of
+  Standard; keep Classic. A focused bag makes word-skill and synergy-firing *reliable* (pro-skill,
+  pro-assembly). Verify dead-rack% + count-synergy hit-rate via A2.
+- **B4. Archetypes as committable ENGINES, not floor crutches.** Make each archetype (esp. the
+  current floors, Short-word/Vowel-heavy) a build you can *commit to and assemble into a real
+  ×Mult/Points engine* — not a way to keep raw words afloat. Co-viability = "each is a winnable
+  engine," not "each keeps pace without one."
+- **Gate:** re-run A2/A3 + author playtest — a player who prioritizes assembly reliably gets an
+  engine online by ~round 5 and can win; a player who doesn't, busts (and it reads as their call).
+  Targets stay steep; no floor added.
 
 ### Phase C — Commitment & legibility (the product layer)
 - **C1. Build signposting / shop coherence:** offers lean toward the player's nascent build; a light
@@ -105,15 +133,11 @@ round ~5/12 — but the bot plays greedy single words and never builds an engine
 Android APK via Capacitor is the final tier. Already shipping via the debug APK + reinstall flow;
 proper packaging is gated on Phases B/C landing and an author playtest. See `tier3-plan`.
 
-## Open decisions for the author (these gate scoping)
-1. **Variety-vs-consistency philosophy** — confirm "variety as the start, focus as earned" (keep the
-   rich bag, make focusing cheap) vs. shrinking the bag back toward the research's scarcity model.
-   *Recommended: variety-as-start.*
-2. **Difficulty model** — accept the bimodal "build-or-bust" cliff as intended, or smooth it from the
-   floor (income floor / catch-up so a no-engine line still progresses on skill)? *Recommended:
-   smooth from the floor; never cap the ceiling.*
-3. **Position lever timing** — prototype now (D1) or after the funnel (B/C) lands? *Recommended:
-   after.*
+## Open decisions
+All three framing decisions are now locked — see "Decisions locked (author, 2026-06-28)" above:
+bag shrinks to the scarcity model; difficulty is build-or-bust with a *fair* agency-driven funnel
+(no floor); position lever deferred to Phase D. Remaining open items are tuning numbers (economy
+levers, target curve) — resolved empirically in Phase A/B, with the author owning final values.
 
 ## Tier discipline (unchanged)
 Do not build the Tier-4+ wishlist: leveled alphabet/letter-XP (= letter-mastery, see D2), variable
