@@ -229,6 +229,7 @@ button { font-family: var(--font-body); color: var(--ink); }
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
 .shop-card .shop-cat { font-size: 0.6rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-soft); font-family: var(--font-ui); }
 .shop-card.is-relic .shop-cat { color: var(--gold); }
+.shop-card .shop-flavor { font-size: 0.66rem; color: var(--ink-soft); opacity: 0.6; font-family: var(--font-ui); }
 .shop-card .meta-card-cost { display: inline-flex; align-items: center; gap: 4px; }
 .shop-card .meta-card-cost .lr-line { width: 0.82em; height: 0.82em; background: currentColor; vertical-align: -0.06em; }
 .meta-badge.letter { background: linear-gradient(180deg, var(--tile-a), var(--tile-b)); color: var(--tile-ink); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }

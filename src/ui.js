@@ -1097,7 +1097,7 @@ function shopOfferCard(offer) {
     }
     case 'enchantTile': {
       const m = getMod(offer.modId);
-      return { cat: 'Enchant', name: m?.name || offer.modId, desc: `Enchant a tile: ${m?.desc || ''}`, icon: badge('mod', (m?.name || '?').slice(0, 1)) };
+      return { cat: 'Enchant', name: m?.name || offer.modId, desc: m?.desc || '', icon: badge('mod', (m?.name || '?').slice(0, 1)) };
     }
     case 'enchantMulti': {
       const m = getMod(offer.modId);
@@ -1132,9 +1132,14 @@ function renderShop(run) {
     const { cat, name, desc, icon } = shopOfferCard(offer);
     const cant = !canAfford(offer.cost);
     const cls = `meta-card shop-card${offer.type === 'buyRelic' ? ' is-relic' : ''}${cant ? ' cant' : ''}`;
+    // Effect-first: the EFFECT is the headline (what you're buying), the category caption says what
+    // KIND of thing it is, and the flavor name is demoted to a small secondary line (or dropped when
+    // there's no separate effect text). Mirrors "there's a new thing to buy + its effect".
+    const headline = desc || name;
+    const flavor = (desc && name && name !== desc) ? `<span class="shop-flavor">${name}</span>` : '';
     return `<button class="${cls}" data-idx="${i}"${cant ? ' disabled' : ''}>
       <span class="meta-card-icon">${icon}</span>
-      <span class="meta-card-body">${cat ? `<span class="shop-cat">${cat}</span>` : ''}<b class="meta-card-name">${name}</b>${desc ? `<span class="meta-card-desc">${desc}</span>` : ''}<span class="meta-card-cost">${lineIconHtml('coins')}${offer.cost}</span></span>
+      <span class="meta-card-body">${cat ? `<span class="shop-cat">${cat}</span>` : ''}<b class="meta-card-name">${headline}</b>${flavor}<span class="meta-card-cost">${lineIconHtml('coins')}${offer.cost}</span></span>
     </button>`;
   }).join('');
 

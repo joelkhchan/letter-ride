@@ -6,7 +6,10 @@
 // Glyphs are recolored via CSS mask. The mask url is set INLINE (resolves against the document at
 // the web root); a url() in a custom property would resolve relative to src/style.css and 404.
 
-const LETTER_RELICS = { vowelBonus: 'A' };  // vowel-semantic relic: struck Zilla letter, not a pictogram
+// Relics shown as a struck Zilla glyph seal (original marks, no third-party art). Ampersand IS a
+// ligature; $ = the money relic; the others are representative letters. (Curated engraved game-icons
+// art can replace these later — see assets/icons/CREDITS.md.)
+const LETTER_RELICS = { vowelBonus: 'A', ligature: '&', royaltyPress: '$', suffixPress: 'S' };
 
 // a mask-tinted glyph from an svg path
 function glyphMark(src) {

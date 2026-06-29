@@ -5,8 +5,10 @@ REQUIRES visible attribution** of each icon's author. This file is that attribut
 the app and is referenced from the in-game credits. Source SVGs were recolored (aged gold via CSS
 mask) and reframed as seals; CC BY permits this with attribution.
 
-Two relic marks are **original to Letter Ride** (no third-party attribution needed): Vowel Bonus is
-a struck Zilla Slab letter "A", and Wildcard Rares (`relic-wildcardRares.svg`) is a hand-drawn star.
+Several relic marks are **original to Letter Ride** (no third-party attribution needed): Vowel Bonus
+is a struck Zilla Slab "A"; Wildcard Rares (`relic-wildcardRares.svg`) is a hand-drawn star; and the
+2026-06-29 content relics use struck Zilla glyph-seals — Ligature "&" (an ampersand IS a ligature),
+Royalty Press "$", Suffix Press "S". (These can be replaced with curated engraved game-icons art later.)
 
 ## Relic glyphs — game-icons.net, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
 
