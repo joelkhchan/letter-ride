@@ -274,13 +274,16 @@ export function percentile(values, p) {
 // targetModIds = tile enchantments the persona buys/applies (the passive toolkit the v2 bot ignored).
 // New Phase-3 relics are folded into targetRelicIds where archetype-fitting: pressLead/rareReprint
 // (retrigger, passive) and chainReaction/throughLine (chaining, valued via scoreFor's prospective chainLength).
+// targetRelicIds[0] is the keystone (banked toward). Each persona now buys its archetype-flavored mod
+// (compact/stretch/lode/twin/bloom, added 2026-06-26), its dedicated relics (e.g. Pithy for short),
+// and Overtime as the generic power pick a skilled build always takes (refreshed 2026-06-29).
 export const PERSONAS = [
-  { id: 'shortWord',   name: 'Short Word',   bagId: 'lean',     targetRelicIds: ['shortAndSweet', 'flywheel', 'pressLead'],                       targetHoneId: 'shortWord',  targetModIds: ['catalyst', 'reprint']  },
-  { id: 'longWord',    name: 'Long Word',    bagId: 'standard', targetRelicIds: ['lengthy', 'longHaul', 'juggernaut'],                            targetHoneId: 'longWord',   targetModIds: ['catalyst', 'reprint']  },
-  { id: 'rareLetter',  name: 'Rare Letter',  bagId: 'rareRich', targetRelicIds: ['rareHoarder', 'rareSurge', 'rareAvalanche', 'rareReprint'],     targetHoneId: 'rareLetter', targetModIds: ['polished', 'reprint']  },
-  { id: 'doubled',     name: 'Doubled',      bagId: 'doubled',  targetRelicIds: ['doubleTrouble', 'echoChamber', 'resonanceEngine'],              targetHoneId: 'doubled',    targetModIds: ['resonator', 'catalyst'] },
-  { id: 'vowelHeavy',  name: 'Vowel Heavy',  bagId: 'standard', targetRelicIds: ['vowelBonus', 'freshStart', 'risingTide', 'pressLead'],          targetHoneId: 'vowelHeavy', targetModIds: ['catalyst', 'polished'] },
-  { id: 'escalation',  name: 'Escalation',   bagId: 'standard', targetRelicIds: ['comboCounter', 'momentum', 'perpetualEngine', 'chainReaction', 'throughLine'], targetHoneId: 'escalation', targetModIds: ['catalyst', 'polished'] },
+  { id: 'shortWord',   name: 'Short Word',   bagId: 'classic',  targetRelicIds: ['shortAndSweet', 'pithy', 'flywheel', 'pressLead', 'overtime'],        targetHoneId: 'shortWord',  targetModIds: ['compact', 'reprint']   },
+  { id: 'longWord',    name: 'Long Word',    bagId: 'standard', targetRelicIds: ['longHaul', 'lengthy', 'juggernaut', 'longReach', 'overtime'],         targetHoneId: 'longWord',   targetModIds: ['stretch', 'reprint']   },
+  { id: 'rareLetter',  name: 'Rare Letter',  bagId: 'rareRich', targetRelicIds: ['rareHoarder', 'rareSurge', 'rareAvalanche', 'rareReprint', 'wildcardRares', 'overtime'], targetHoneId: 'rareLetter', targetModIds: ['lode', 'polished'] },
+  { id: 'doubled',     name: 'Doubled',      bagId: 'doubled',  targetRelicIds: ['doubleTrouble', 'echoChamber', 'resonanceEngine', 'looseDoubles', 'overtime'], targetHoneId: 'doubled',    targetModIds: ['twin', 'resonator'] },
+  { id: 'vowelHeavy',  name: 'Vowel Heavy',  bagId: 'standard', targetRelicIds: ['vowelBonus', 'freshStart', 'risingTide', 'pressLead', 'overtime'],   targetHoneId: 'vowelHeavy', targetModIds: ['bloom', 'catalyst'] },
+  { id: 'escalation',  name: 'Escalation',   bagId: 'standard', targetRelicIds: ['comboCounter', 'momentum', 'perpetualEngine', 'chainReaction', 'throughLine', 'overtime'], targetHoneId: 'escalation', targetModIds: ['catalyst', 'polished'] },
 ];
 
 // runPersona — for each seed, build the persona's deck + policy, simulateRun, then summarizePersona.

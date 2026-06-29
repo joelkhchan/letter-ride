@@ -64,8 +64,8 @@ function drawRackFromBag(bagDef, seed) {
 const fixtures = [
   {
     archetypeId: 'shortWord',
-    bagId:       'lean',
-    relicIds:    ['shortAndSweet'],
+    bagId:       'classic',
+    relicIds:    ['shortAndSweet', 'pithy'],
     honeLevels:  { shortWord: 3 },
     // shortWord picks <=3-letter words only; shortAndSweet gives ×3 Mult, hone gives +3 addMult
     filterWord:  (w) => w.length <= 3,
@@ -73,7 +73,7 @@ const fixtures = [
   {
     archetypeId: 'longWord',
     bagId:       'standard',
-    relicIds:    ['lengthy', 'longHaul'],
+    relicIds:    ['lengthy', 'longHaul', 'longReach'],
     honeLevels:  { longWord: 3 },
     // longWord picks >=6-letter words; lengthy +1 addMult per letter > 4, longHaul ×Mult scales
     filterWord:  (w) => w.length >= 6,
@@ -89,7 +89,7 @@ const fixtures = [
   {
     archetypeId: 'doubled',
     bagId:       'doubled',
-    relicIds:    ['doubleTrouble', 'echoChamber'],
+    relicIds:    ['doubleTrouble', 'echoChamber', 'looseDoubles'],
     honeLevels:  { doubled: 3 },
     // doubled: no word filter — pick best-scoring word containing a doubled letter
     filterWord:  null,
