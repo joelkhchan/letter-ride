@@ -44,10 +44,11 @@ All of the above are by their named authors, sourced from https://game-icons.net
 
 ## Boss + Meta-currency glyphs — game-icons.net, CC BY 3.0
 
+The Censor "■" and The One-Liner """ are **original** struck glyph-seals (no third-party art).
+
 | File | Original glyph | Author |
 |---|---|---|
 | `bosses/boss-mute.svg` | silence | Lorc |
-| `bosses/boss-ceiling.svg` | stone-block | Lorc |
 | `bosses/boss-toll.svg` | gate | Delapouite |
 | `bosses/boss-vise.svg` | clamp | Delapouite |
 | `ui/meta.svg` | medal | Lorc |

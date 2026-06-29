@@ -27,10 +27,15 @@ export function relicSealHtml(relicId, { size = 'sm' } = {}) {
   return seal(letter ? `<span class="seal-letter">${letter}</span>` : glyphMark(`assets/icons/relics/relic-${relicId}.svg`), size);
 }
 
+// Bosses without curated art yet: a struck glyph-seal (2026-06-29). Censor "■" = a redaction bar
+// (it blacks out a letter); One-Liner """ = a quoted single line. Replace with engraved art later.
+const BOSS_LETTERS = { censor: '■', oneLiner: '“' };
+
 // A boss's seal (the Sentence-round threat).
 export function bossSealHtml(bossId, { size = 'md' } = {}) {
   if (!bossId) return '';
-  return seal(glyphMark(`assets/icons/bosses/boss-${bossId}.svg`), size);
+  const letter = BOSS_LETTERS[bossId];
+  return seal(letter ? `<span class="seal-letter">${letter}</span>` : glyphMark(`assets/icons/bosses/boss-${bossId}.svg`), size);
 }
 
 // The Meta (prestige, between-runs) currency seal — kept visually distinct from the in-run $.
