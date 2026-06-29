@@ -677,7 +677,7 @@ export function renderRun(run, profile) {
     ${relicsModsPanelHtml(run)}
     ${lastPlayHtml}
     <div id="staging">${staged || '<span class="staging-hint">Tap tiles to spell a word</span>'}</div>
-    ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner">${bossSealHtml(run.boss, { size: 'md' })}<span><b>${BOSSES[run.boss].name}</b> &middot; ${BOSSES[run.boss].desc}</span></div>` : ''}
+    ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner">${bossSealHtml(run.boss, { size: 'md' })}<span><b>${BOSSES[run.boss].name}</b> &middot; ${run.boss === 'censor' && run.censorLetter ? `The letter ${run.censorLetter} scores 0 this round` : BOSSES[run.boss].desc}</span></div>` : ''}
     ${run.chainLength > 1 ? `<div id="chain-banner">Chain &times;${run.chainLength}${run.lastWord ? ` &middot; continue with ${run.lastWord.lastLetter}` : ''}</div>` : ''}
     <div id="rack">
       ${run.rack.map(t => {

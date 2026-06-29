@@ -152,7 +152,7 @@ test('relicState round-trips through serialize/deserialize', () => {
   const run = newRun({ config, dictionary: dict, seed: 7 });
   run.relicState = { rareAvalanche: { stacks: 4 } };
   const data = serializeRun(run);
-  assert.equal(data.version, 6);
+  assert.equal(data.version, 7);
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.deepEqual(restored.relicState, { rareAvalanche: { stacks: 4 } });
 });
@@ -165,22 +165,22 @@ test('a missing relicState deserializes to {}', () => {
   assert.deepEqual(restored.relicState, {});
 });
 
-test('boss + bossOrder round-trip; schema is 6', () => {
+test('boss + bossOrder round-trip; schema is 7', () => {
   const run = newRun({ config, dictionary: dict, seed: 5 });
   const data = serializeRun(run);
-  assert.equal(data.version, 6);
+  assert.equal(data.version, 7);
   assert.deepEqual(data.bossOrder, run.bossOrder);
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.deepEqual(restored.bossOrder, run.bossOrder);
   assert.equal(restored.boss, run.boss);
 });
 
-test('nodeEventId round-trips through serialize/deserialize; version is 6', () => {
+test('nodeEventId round-trips through serialize/deserialize; version is 7', () => {
   resetTileIds();
   const run = newRun({ config, dictionary: dict, seed: 3 });
   run.nodeEventId = 'bonusTiles';
   const data = serializeRun(run);
-  assert.equal(data.version, 6);
+  assert.equal(data.version, 7);
   assert.equal(data.nodeEventId, 'bonusTiles');
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.equal(restored.nodeEventId, 'bonusTiles');
@@ -200,7 +200,7 @@ test('nodeResolved true round-trips through serialize/deserialize', () => {
   const run = newRun({ config, dictionary: dict, seed: 4 });
   run.nodeResolved = true;
   const data = serializeRun(run);
-  assert.equal(data.version, 6);
+  assert.equal(data.version, 7);
   assert.equal(data.nodeResolved, true);
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.equal(restored.nodeResolved, true);

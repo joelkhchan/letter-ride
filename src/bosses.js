@@ -8,10 +8,12 @@
 const VOWELS = ['A', 'E', 'I', 'O', 'U'];
 
 export const BOSSES = {
-  mute:    { id: 'mute',    name: 'The Mute',    desc: 'Vowels score 0',                   warp: { verb: 'disable', letters: 'vowels' } },
-  toll:    { id: 'toll',    name: 'The Toll',    desc: 'Each word scores 10 less',         warp: { verb: 'tax',     points: 10 } },
-  vise:    { id: 'vise',    name: 'The Vise',    desc: 'Only 1 discard this round',        warp: { verb: 'lock',    lock: 'discard', keep: 1 } },
-  margin:  { id: 'margin',  name: 'The Margin',  desc: 'Hold 2 fewer tiles this round',     warp: { verb: 'lock',    lock: 'hand',    delta: -2 } },
+  mute:     { id: 'mute',     name: 'The Mute',      desc: 'Vowels score 0',                       warp: { verb: 'disable', letters: 'vowels' } },
+  censor:   { id: 'censor',   name: 'The Censor',    desc: 'A random letter scores 0',             warp: { verb: 'disable', letters: 'random' } },
+  toll:     { id: 'toll',     name: 'The Toll',      desc: 'Each word scores 10 less',             warp: { verb: 'tax',     points: 10 } },
+  vise:     { id: 'vise',     name: 'The Vise',      desc: 'No discards this round',               warp: { verb: 'lock',    lock: 'discard', keep: 0 } },
+  margin:   { id: 'margin',   name: 'The Margin',    desc: 'Hold 2 fewer tiles this round',         warp: { verb: 'lock',    lock: 'hand',    delta: -2 } },
+  oneLiner: { id: 'oneLiner', name: 'The One-Liner', desc: 'One play only, but the target is lower', warp: { verb: 'limit', plays: 1, targetMult: 0.6 } },
 };
 
 export const ALL_BOSS_IDS = Object.keys(BOSSES);
@@ -24,11 +26,11 @@ export function bossHandDelta(boss) {
 
 // disable: return a tileValues copy with the disabled letters zeroed. Injected into scoreWord (pure DI).
 // Returns the SAME reference when there is nothing to disable (so callers can cheaply detect no-op).
-export function bossTileValues(tileValues, boss) {
+export function bossTileValues(tileValues, boss, censorLetter = null) {
   if (!boss || boss.warp.verb !== 'disable') return tileValues;
-  const out = { ...tileValues };
-  if (boss.warp.letters === 'vowels') for (const v of VOWELS) out[v] = 0;
-  return out;
+  if (boss.warp.letters === 'vowels') { const out = { ...tileValues }; for (const v of VOWELS) out[v] = 0; return out; }
+  if (boss.warp.letters === 'random' && censorLetter) return { ...tileValues, [censorLetter]: 0 };   // The Censor: one chosen letter
+  return tileValues;   // nothing to disable (e.g. Censor before a letter is chosen) → same ref
 }
 
 // cap + tax: adjust a scoreWord result. Pure; returns a NEW {points,mult,score}.

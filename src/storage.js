@@ -8,7 +8,7 @@ const KEY = 'letterRide.run';
 
 export function serializeRun(run) {
   return {
-    version: 6,                                          // bump when the schema changes
+    version: 7,                                          // bump when the schema changes
     seed: run.seed,
     rngState: run.rng.getState(),
     targets: run.targets,
@@ -39,6 +39,8 @@ export function serializeRun(run) {
     relicState: run.relicState || {},
     boss: run.boss ?? null,
     bossOrder: run.bossOrder || [],
+    censorLetter: run.censorLetter ?? null,             // The Censor's chosen zeroed letter (persist mid-round)
+    upgradeCounts: run.upgradeCounts || {},             // per-letter upgrade tally (escalating cost)
     nodeEventId: run.nodeEventId ?? null,
     nodeResolved: run.nodeResolved ?? false,
     chainLength: run.chainLength ?? 0,
@@ -84,6 +86,8 @@ export function deserializeRun(data, { config, dictionary }) {
     relicState: data.relicState || {},
     boss: data.boss ?? null,
     bossOrder: data.bossOrder || [],
+    censorLetter: data.censorLetter ?? null,
+    upgradeCounts: data.upgradeCounts || {},
     nodeEventId: data.nodeEventId ?? null,
     nodeResolved: data.nodeResolved ?? false,
     chainLength: data.chainLength ?? 0,
@@ -100,7 +104,7 @@ export function loadRun(storage, deps) {
   if (!raw) return null;
   try {
     const data = JSON.parse(raw);
-    if (data.version !== 6) return null;     // schema changed → treat as no save (graceful drop)
+    if (data.version !== 7) return null;     // schema changed → treat as no save (graceful drop)
     return deserializeRun(data, deps);
   } catch {
     return null;                             // corrupt save → start fresh, never brick the page

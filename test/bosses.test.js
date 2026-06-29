@@ -2,8 +2,24 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { BOSSES, ALL_BOSS_IDS, bossTileValues, applyBossToScore, bossHandDelta } from '../src/bosses.js';
 
-test('roster has the four bosses (The Ceiling removed)', () => {
-  assert.deepEqual(ALL_BOSS_IDS.sort(), ['margin', 'mute', 'toll', 'vise']);
+test('roster: Ceiling removed, Censor + One-Liner added', () => {
+  assert.deepEqual(ALL_BOSS_IDS.sort(), ['censor', 'margin', 'mute', 'oneLiner', 'toll', 'vise']);
+});
+
+test('The Censor zeroes one chosen letter (and no-op without a chosen letter)', () => {
+  const tv = { A: 1, E: 1, R: 1, Z: 10 };
+  const censored = bossTileValues(tv, BOSSES.censor, 'R');
+  assert.equal(censored.R, 0); assert.equal(censored.A, 1); assert.equal(censored.Z, 10);
+  assert.equal(bossTileValues(tv, BOSSES.censor, null), tv);   // no chosen letter yet → same ref
+});
+
+test('The Vise now allows 0 discards; The One-Liner is a limit warp (no score change)', () => {
+  assert.equal(BOSSES.vise.warp.keep, 0);
+  assert.equal(BOSSES.oneLiner.warp.plays, 1);
+  assert.ok(BOSSES.oneLiner.warp.targetMult < 1);
+  // limit is applied at encounter setup (run.js), so it does NOT alter a score directly:
+  const scored = { points: 20, mult: 3, score: 60 };
+  assert.equal(applyBossToScore(scored, BOSSES.oneLiner), scored);
 });
 
 test('bossHandDelta: The Margin shrinks the hand, other bosses are 0', () => {

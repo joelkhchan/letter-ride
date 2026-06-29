@@ -18,11 +18,26 @@ export function isBossRound(roundIndex) { return roundIndex % 3 === 2; }
 // any setup-time warp (lock). Called at newRun and on each nextRound. The boss OBJECT is BOSSES[run.boss].
 function applyEncounterBoss(run) {
   run.boss = null;
+  run.censorLetter = null;                                              // cleared each round; set only on a Censor round
   if (!isBossRound(run.roundIndex)) return;
   const passageIdx = passageOf(run.roundIndex) - 1;                     // 0-based passage
   run.boss = (run.bossOrder && run.bossOrder[passageIdx % run.bossOrder.length]) || null;
   const boss = run.boss ? BOSSES[run.boss] : null;
-  if (boss && boss.warp.verb === 'lock' && boss.warp.lock === 'discard') run.discardsLeft = Math.min(run.discardsLeft, boss.warp.keep ?? 0);
+  if (!boss) return;
+  if (boss.warp.verb === 'lock' && boss.warp.lock === 'discard') run.discardsLeft = Math.min(run.discardsLeft, boss.warp.keep ?? 0);
+  // The One-Liner: cap plays this round and lower the target (a single big word, not a grind).
+  if (boss.warp.verb === 'limit') {
+    if (boss.warp.plays != null) run.playsLeft = Math.min(run.playsLeft, boss.warp.plays);
+    if (boss.warp.targetMult != null) run.target = Math.max(1, Math.round(run.target * boss.warp.targetMult));
+  }
+  // The Censor: pick one letter from the bag (seeded) to score 0 this round.
+  if (boss.warp.verb === 'disable' && boss.warp.letters === 'random') run.censorLetter = pickCensorLetter(run);
+}
+
+// Pick a distinct, non-wild letter from the bag for The Censor (deterministic via the run RNG).
+function pickCensorLetter(run) {
+  const letters = [...new Set((run.bag?.tiles || []).map(t => t.letter).filter(l => l && l !== '*'))];
+  return letters.length ? letters[Math.floor(run.rng() * letters.length)] : null;
 }
 
 const sumExtraPlays = (relics = []) => relics.reduce((n, r) => n + (r.extraPlays || 0), 0);
@@ -169,7 +184,7 @@ export function playWord(run, selection) {
   const boss = run.boss ? BOSSES[run.boss] : null;
   const allMods = [...run.relics, ...honeModifiers(run.honeLevels)];
   const scored0 = scoreWord(selection, {
-    tileValues: bossTileValues(run.tileValues, boss),        // disable: vowels zeroed (else same ref)
+    tileValues: bossTileValues(run.tileValues, boss, run.censorLetter),   // disable: vowels (Mute) or one letter (Censor) zeroed
     lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
     relics: allMods,
     context: { wordsPlayedThisRound: run.wordsPlayedThisRound, enablers, relicState: run.relicState, chainLength },
