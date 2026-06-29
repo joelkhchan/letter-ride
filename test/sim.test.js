@@ -196,7 +196,10 @@ test('buildPurchasePolicy spends toward the target on a real run (buys and/or re
 const configBeatable = {
   STARTING_BAG: ['C','A','T','C','A','T','C','A','T','C','A','T','C','A','T','C','A','T'], // 6×CAT
   TILE_VALUES: { C:3, A:1, T:1 },
-  RACK_SIZE: 9, PLAYS_PER_ROUND: 2, DISCARDS_PER_ROUND: 0, MIN_WORD_LEN: 3,
+  // DISCARDS_PER_ROUND: 2 so an unlucky single-letter-starved rack (e.g. 6C+3A, no T) can be dug out.
+  // Shop and draw share the seeded RNG stream, so any shop-cost change shifts draws; discards keep
+  // this fixture robust (a dead rack with 0 discards was bricking the run after the cost changes).
+  RACK_SIZE: 9, PLAYS_PER_ROUND: 2, DISCARDS_PER_ROUND: 2, MIN_WORD_LEN: 3,
   LENGTH_BONUS_PER_LETTER: 0,
   ROUND_TARGETS: [4, 12, 12],
   // Generous clear bonus so policy can afford buyRelic (cost 8) after clearing round 1.
@@ -222,12 +225,12 @@ const dictB = dictCat;
 const wordsB = wordsCat;
 
 test('simulateRun with a purchase policy acquires the target relic and out-progresses no-shop', () => {
-  // seed=3: rack always holds C,A,T (CAT playable every draw); boss at Sentence=Ceiling (caps mult at 4,
-  // harmless since shortAndSweet is ×3 → still 15 pts; no-score warp like Toll avoided).
+  // seed=3: rack always holds C,A,T (CAT playable every draw). forceBoss:'none' pins out the Sentence
+  // boss so the test's scoring math is independent of which boss the pool draws.
   // pool restricted to shortAndSweet so generateShop always includes it; policy buys it after round 1.
-  const noShopRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 3 });
+  const noShopRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 3, forceBoss: 'none' });
   const policy = buildPurchasePolicy({ targetRelicIds: ['shortAndSweet'], maxRerolls: 5, pool: { relicIds: ['shortAndSweet'] } });
-  const buyRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 3, policy });
+  const buyRes = simulateRun({ config: configBeatable, dictionary: dictCat, words: wordsCat, seed: 3, policy, forceBoss: 'none' });
   // Without relic: 5+5=10 < 12, loses at round 2 → roundReached=2. With relic: 15≥12, wins all → roundReached=3.
   assert.ok(buyRes.roundReached > noShopRes.roundReached, 'shopping out-progresses no-shop (strict)');
   assert.equal(buyRes.won, true, 'buy persona wins the run');

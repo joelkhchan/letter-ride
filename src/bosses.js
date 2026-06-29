@@ -2,11 +2,13 @@
 // Verbs (from the systems bible): disable (zero some tile values) · cap (clamp mult) ·
 // tax (subtract points) · lock (encounter-setup, handled in run.js: discards or hand size).
 // scoring.js is never touched.
+// NOTE (2026-06-29): the hard mult-cap boss "The Ceiling" was REMOVED — a ×3 cap hard-counters the
+// uncapped ×Mult engine fantasy in late rounds (anti-fun). The `cap` verb is kept as a primitive in
+// case a future boss wants a SOFT cap (high ceiling that only trims degenerate spikes).
 const VOWELS = ['A', 'E', 'I', 'O', 'U'];
 
 export const BOSSES = {
   mute:    { id: 'mute',    name: 'The Mute',    desc: 'Vowels score 0',                   warp: { verb: 'disable', letters: 'vowels' } },
-  ceiling: { id: 'ceiling', name: 'The Ceiling', desc: 'Mult is capped at x3',             warp: { verb: 'cap',     maxMult: 3 } },
   toll:    { id: 'toll',    name: 'The Toll',    desc: 'Each word scores 10 less',         warp: { verb: 'tax',     points: 10 } },
   vise:    { id: 'vise',    name: 'The Vise',    desc: 'Only 1 discard this round',        warp: { verb: 'lock',    lock: 'discard', keep: 1 } },
   margin:  { id: 'margin',  name: 'The Margin',  desc: 'Hold 2 fewer tiles this round',     warp: { verb: 'lock',    lock: 'hand',    delta: -2 } },

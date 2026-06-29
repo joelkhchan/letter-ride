@@ -274,8 +274,8 @@ test('Refine (hone) cost escalates with the archetype level (base x (level+1))',
   const offers = generateShop(run, run.rng).offers.filter(o => o.type === 'hone');
   const sw = offers.find(o => o.archetypeId === 'shortWord');
   const other = offers.find(o => o.archetypeId !== 'shortWord');
-  assert.equal(sw.cost, 6 * 3, 'shortWord at level 2 costs base*3');
-  assert.equal(other.cost, 6 * 1, 'an un-refined archetype costs base*1');
+  assert.equal(sw.cost, 6 + 3 * 2, 'shortWord at level 2 = base 6 + 3*2 = 12 (gentle ramp)');
+  assert.equal(other.cost, 6, 'an un-refined archetype costs base');
 });
 
 test('upgradeLetter cost escalates per letter; purchase tracks the count', () => {
@@ -286,9 +286,9 @@ test('upgradeLetter cost escalates per letter; purchase tracks the count', () =>
   assert.equal(eOffer.cost, 5);
   purchase(run, eOffer, {});
   assert.equal(run.upgradeCounts.E, 1);
-  // Next E upgrade now costs base*2.
+  // Next E upgrade ramps gently: base 5 + ceil(5/2)*1 = 5 + 3 = 8.
   eOffer = generateShop(run, run.rng).offers.find(o => o.type === 'upgradeLetter' && o.letter === 'E');
-  assert.equal(eOffer.cost, 10);
+  assert.equal(eOffer.cost, 8);
 });
 
 test('stackable relic cost rises per copy owned; one-time relics stay at base', () => {
@@ -297,7 +297,7 @@ test('stackable relic cost rises per copy owned; one-time relics stay at base', 
   run.relics = [RELICS.tightLeading];                         // own 1 copy of a stackable relic
   const offers = generateShop(run, run.rng).offers.filter(o => o.type === 'buyRelic');
   const tl = offers.find(o => o.relicId === 'tightLeading');
-  if (tl) assert.equal(tl.cost, 8 * 2, 'second copy of a stackable relic costs base*2');
+  if (tl) assert.equal(tl.cost, 8 + 4, 'second copy of a stackable relic = base 8 + ceil(8/2)*1 = 12');
   const oneTime = offers.find(o => RELICS[o.relicId] && !RELICS[o.relicId].stackable);
   if (oneTime) assert.equal(oneTime.cost, 8, 'a one-time relic stays at base');
 });

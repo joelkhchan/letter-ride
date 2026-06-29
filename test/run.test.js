@@ -358,14 +358,14 @@ test('bossOrder is seeded + deterministic + one of each boss', () => {
   const a = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
   const b = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
   assert.deepEqual(a.bossOrder, b.bossOrder);
-  assert.deepEqual([...a.bossOrder].sort(), ['ceiling','margin','mute','toll','vise']);
+  assert.deepEqual([...a.bossOrder].sort(), ['margin','mute','toll','vise']);
   assert.equal(a.boss, null);                 // encounter 0 is a Word, no boss
 });
 
 test('The Vise limits discards to 1 on its boss encounter', () => {
   // Force a run whose first Sentence boss is vise: spin nextRound to a Sentence and set bossOrder.
   const run = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
-  run.bossOrder = ['vise','mute','toll','ceiling'];        // passage 1's boss = vise
+  run.bossOrder = ['vise','mute','toll','margin'];         // passage 1's boss = vise
   nextRoundB(run); nextRoundB(run);                        // advance to roundIndex 2 (Passage 1 Sentence)
   assert.equal(run.boss, 'vise');
   assert.equal(run.discardsLeft, 1);                       // keep:1 applied at encounter setup (not a dead-hand instakill)
@@ -373,7 +373,7 @@ test('The Vise limits discards to 1 on its boss encounter', () => {
 
 test('The Toll taxes the played word on its boss encounter', () => {
   const run = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
-  run.bossOrder = ['toll','mute','vise','ceiling'];
+  run.bossOrder = ['toll','mute','vise','margin'];
   nextRoundB(run); nextRoundB(run);                        // Passage 1 Sentence, boss = toll
   assert.equal(run.boss, 'toll');
   run.rack = ['R','A','T'].map((l,i) => ({ id:'z'+i, letter:l, mods:[] }));

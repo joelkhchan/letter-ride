@@ -8,6 +8,10 @@ import { handSizeFor, handFloor } from './run.js';
 const RARE_LETTERS = new Set(['J', 'Q', 'X', 'Z']);
 const COUNT_MODS = new Set(['resonator']);  // value needs 2+ of the tile's OWN letter
 
+// Gentle escalating cost for a repeated upgrade: +50% of base per prior purchase (n = count already
+// owned/done). So base, 1.5x, 2x, 2.5x... — a rising investment, NOT a steep base, 2x, 3x doubling.
+const rampCost = (base, n) => base + Math.ceil(base / 2) * n;
+
 // Build the candidate offer list, then sample offersPerShop of them deterministically.
 export function generateShop(run, rng, pool = {}) {
   const cfg = run.config.SHOP;
@@ -32,7 +36,7 @@ export function generateShop(run, rng, pool = {}) {
   // upgradeLetter cost escalates per letter: each successive upgrade of the SAME letter costs more.
   for (const letter of cfg.buyableLetters) {
     const ups = (run.upgradeCounts && run.upgradeCounts[letter]) || 0;
-    candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: cfg.cost.upgradeLetter * (ups + 1) });
+    candidates.push({ type: 'upgradeLetter', letter, plus: cfg.upgradePlus, cost: rampCost(cfg.cost.upgradeLetter, ups) });
   }
   candidates.push({ type: 'thinLetter', cost: cfg.cost.thinLetter });
   candidates.push({ type: 'recastTile', cost: cfg.cost.recastTile });
@@ -44,13 +48,13 @@ export function generateShop(run, rng, pool = {}) {
     if (relic?.handDelta < 0 && handSizeFor(run.relics, run.config) <= handFloor(run.config)) continue;
     // Stackable relics cost more per copy already owned (a rising investment); one-time relics: base.
     const copies = run.relics.filter(r => r.id === relicId).length;
-    candidates.push({ type: 'buyRelic', relicId, cost: cfg.cost.buyRelic * (copies + 1) });
+    candidates.push({ type: 'buyRelic', relicId, cost: rampCost(cfg.cost.buyRelic, copies) });
   }
-  // Refine (hone) cost escalates with the archetype's current level: each level deeper costs more
-  // (base x (level+1)), so repeatedly deepening one build is a rising investment, not a flat tax.
+  // Refine (hone) cost escalates gently with the archetype's current level (rampCost: +50% of base
+  // per level), so repeatedly deepening one build is a rising investment, not a flat tax.
   for (const archetypeId of ALL_ARCHETYPE_IDS) {
     const lvl = (run.honeLevels && run.honeLevels[archetypeId]) || 0;
-    candidates.push({ type: 'hone', archetypeId, cost: run.config.HONE.cost * (lvl + 1) });
+    candidates.push({ type: 'hone', archetypeId, cost: rampCost(run.config.HONE.cost, lvl) });
   }
 
   const offers = shuffle(candidates, rng).slice(0, Math.min(cfg.offersPerShop, candidates.length));
