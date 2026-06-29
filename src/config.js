@@ -1,10 +1,7 @@
 export const CONFIG = {
-  STARTING_BAG: [                                          // richer ~54-tile bag (2026-06-28): more draw variety; scarcity stays in the 9-tile hand
-    'A','A','A','A','A','E','E','E','E','E','I','I','I','O','O','O','U','U','U',  // 19 vowels (~35%)
-    'R','R','R','S','S','S','T','T','T','N','N','N',        // 12 high-frequency consonants
-    'L','L','D','D','G','G','C','C','M','M','H','H',        // 12 common consonants
-    'B','P','F','Y','K','V','W',                            // 7 mid / high-value (V, W, K are new spice)
-    'J','Q','X','Z'                                         // 4 rares: sparse spice (verify formability via analyze:corpus)
+  STARTING_BAG: [                                          // 26-tile scarcity model (2026-06-29): shrunk back from 54 - a small focused bag = engine consistency (the variety enlargement diluted synergies). No rares in Standard (rares live in Rare Cache).
+    'A','A','A','E','E','E','I','I','O','O','U',            // 11 vowels (~42%)
+    'R','S','T','L','N','D','C','M','B','P','G','H','F','Y','K'  // 15 consonants (common + mid K/F/Y; NO J/Q/X/Z)
   ],
   TILE_VALUES: {                                           // base points per letter; WILD '*' = 0
     A:1,E:1,I:1,O:1,U:1,L:1,N:1,S:1,T:1,R:1,
@@ -64,30 +61,29 @@ export const CONFIG = {
     names: ['Novice', 'Apprentice', 'Journeyman', 'Expert', 'Artisan'],   // TUNE names (branding owns final)
     thresholds: [0, 4000, 12000, 28000, 60000],                           // TUNE: cumulative lifetime Score per tier (raised from 3k/9k/20k/40k per analyze:meta; ~Apprentice 3 / Journeyman 9 / Expert 21 / Artisan 46 runs for a competent line)
   },
-  // Each tile bag is a distinct identity. Most are ~52 tiles (2026-06-28) so racks stay varied and
-  // the chosen archetype is supported; Lean stays intentionally SMALL (its identity IS scarcity).
+  // Each tile bag is a small, focused ~26-tile identity (2026-06-29 scarcity model: a small bag =
+  // engine CONSISTENCY; enlarging to 52 diluted count-synergies + clunked racks, so we shrank back).
+  // Rares (J/Q/X/Z) live ONLY in Rare Cache. Lean stays smallest (its identity IS scarcity).
   // Player-facing copy says "bag", not "deck". Verify each bag's dead-rack% via analyze:corpus.
   DECKS: {
-    standard:   { id: 'standard',   name: 'Standard',    desc: 'Balanced starter bag. Good for learning.',         startingBag: null },  // null => CONFIG.STARTING_BAG (~54, balanced + sparse rares)
-    classic:    { id: 'classic',    name: 'Classic',     desc: 'Common letters only, no rares. Clean and predictable.', startingBag: [   // 26 tiles, rare-free, easy to read
+    standard:   { id: 'standard',   name: 'Standard',    desc: 'Balanced starter bag. Good for learning.',         startingBag: null },  // null => CONFIG.STARTING_BAG (26, balanced, no rares)
+    classic:    { id: 'classic',    name: 'Classic',     desc: 'Common letters only, fewer types. Clean and predictable.', startingBag: [   // 26 tiles, rare-free, repeats commons (most consistent)
       'A','A','A','E','E','E','I','I','O','O','U',                              // 11 vowels
-      'R','R','S','S','T','T','N','L','D','G','C','M','B','P','H' ] },           // 15 common consonants
-    vowelHeavy: { id: 'vowelHeavy', name: 'Vowel Heavy', desc: 'Vowel-rich bag. Racks stay playable.',             startingBag: [        // 52 tiles, vowel-leaning
-      'A','A','A','A','A','A','E','E','E','E','E','E','I','I','I','I','I','O','O','O','O','U','U','U',  // 24 vowels (~46%)
-      'R','R','R','S','S','S','T','T','T','N','N','N','L','L','D','D','G','G','C','C','M','M','B','P','H','F','Y','K' ] },  // 28 consonants
-    wildcard:   { id: 'wildcard',   name: 'Wildcard',    desc: 'Packed with wild tiles that play as any letter.',  startingBag: [        // 52 tiles, wild-rich
-      '*','*','*','*',                                                          // 4 wilds
-      'A','A','A','A','E','E','E','E','I','I','I','O','O','O','U','U','U',       // 17 vowels
-      'R','R','R','R','S','S','S','T','T','T','N','N','N','L','L','D','D','G','G','C','C','M','M','B','P','H','F','Y','K','W','V' ] },  // 31 consonants
-    rareRich:   { id: 'rareRich',   name: 'Rare Cache',  desc: 'Rares and wilds aplenty. Vowels can run dry.',     startingBag: [        // 52 tiles, rare-leaning
-      'J','J','Q','Q','X','X','Z','Z','K','K',                                  // 10 rares
-      '*','*','*',                                                              // 3 wilds
-      'A','A','A','A','E','E','E','E','I','I','I','O','O','U','U',              // 15 vowels (thin on purpose)
-      'R','R','R','S','S','S','T','T','N','N','L','L','D','D','G','G','C','C','M','B','P','H','F','W' ] },  // 24 consonants
-    doubled:    { id: 'doubled',    name: 'Echo Bag',    desc: 'Duplicate-heavy bag. Doubled letters come up often.', startingBag: [     // 52 tiles, everything paired+
-      'A','A','A','A','E','E','E','E','I','I','O','O','O','O','U','U','U','U',  // 18 vowels (paired)
-      'S','S','S','S','T','T','T','T','R','R','R','R','L','L','L','L','N','N','D','D','C','C','M','M','P','P','B','B','G','G','H','H','Y','Y' ] },  // 34 consonants (paired)
-    lean:       { id: 'lean',       name: 'Lean Bag',    desc: 'Few, high-value tiles. Vowels can run dry.',       startingBag: ['A','E','I','O','U','R','S','T','N','L','D','C','M','B','P','K','F','H','Y','G'] },  // intentionally SMALL (20)
+      'R','R','S','S','T','T','N','L','D','G','C','M','B','P','H' ] },           // 15 common consonants (doubled R/S/T = predictable)
+    vowelHeavy: { id: 'vowelHeavy', name: 'Vowel Heavy', desc: 'Vowel-rich bag. Racks stay playable.',             startingBag: [        // 26 tiles, vowel-leaning
+      'A','A','A','A','E','E','E','E','I','I','O','O','U','U',                  // 14 vowels (~54%)
+      'R','S','T','L','N','D','C','M','B','P','G','H' ] },                       // 12 consonants
+    wildcard:   { id: 'wildcard',   name: 'Wildcard',    desc: 'Has wild tiles that play as any letter.',          startingBag: [        // 26 tiles, 2 wilds
+      'A','A','A','E','E','E','I','I','O','O','U',                              // 11 vowels
+      'R','S','T','L','N','D','C','M','B','P','G','H','F','*','*' ] },           // 13 consonants + 2 wilds
+    rareRich:   { id: 'rareRich',   name: 'Rare Cache',  desc: 'Rares and wilds, but vowels can run dry.',         startingBag: [        // 26 tiles, the ONLY bag with rares
+      'A','A','E','E','I','O','U',                                              // 7 vowels (thin on purpose)
+      'R','S','T','L','N','D','C','M','B','P','G','H',                          // 12 consonants
+      'J','Q','X','Z','K','*','*' ] },                                          // 5 rares + 2 wilds
+    doubled:    { id: 'doubled',    name: 'Echo Bag',    desc: 'Duplicate-heavy bag. Doubled letters recur.',      startingBag: [        // 26 tiles, paired letters
+      'A','A','E','E','E','I','I','O','O',                                      // 9 vowels
+      'S','S','T','T','L','L','N','N','R','R','D','D','C','M','B','P','G' ] },   // 17 consonants (many paired)
+    lean:       { id: 'lean',       name: 'Lean Bag',    desc: 'Few, high-value tiles. Vowels can run dry.',       startingBag: ['A','E','I','O','U','R','S','T','N','L','D','C','M','B','P','K','F','H','Y','G'] },  // intentionally SMALLEST (20)
   },
   STAKES: [
     { id: 0, name: 'Stake 0', targetMult: 1.0,  playsDelta: 0,  discardsDelta: 0 },
