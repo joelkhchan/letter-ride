@@ -29,7 +29,7 @@ export const CONFIG = {
   INTEREST: { enabled: true, per: 5, rate: 1, cap: 12 },            // $1 per $5 held, max $12 (raised 2026-06-29: rewards saving toward a keystone relic; soft ceiling now at $60 held)
   SHOP: {
     offersPerShop: 4,
-    rerollCost: 0,                                   // free reroll (author 2026-06-29): the shop never DENIES you a piece - reroll until it appears; the constraint is whether you can afford it (money, not RNG). This is our acquisition-reliability lever (in place of a pick-1-of-3 node).
+    rerollCost: 2,                                   // reroll keeps a cost (author reverted free reroll 2026-06-29: free reroll removed shop tension). Acquisition reliability to be revisited (pity may return) if playtest shows it's too luck-gated.
     cost: { buyLetter: 3, buyEnchantedTile: 7, enchantTile: 6, enchantMulti: 10, upgradeLetter: 5, thinLetter: 3, buyRelic: 8, recastTile: 5, transferMods: 5 },
     upgradePlus: 3,                                  // +points per upgradeLetter purchase (was 1; +1 was dead weight vs xMult). TUNE.
     imprintCount: 2,                                 // "imprint" = spread one mod onto this many chosen tiles at once (enchantMulti). TUNE (2 vs 3).
