@@ -68,10 +68,22 @@ Stale, do-NOT-design-against: vowel-floor (reversed in the empirical doc), "shor
 (contradicted), any fixed archetype % (stale the moment config changes), 26-tile corpus numbers
 (re-run on the 54-tile bag before trusting).
 
-Current empirical snapshot (for context, not a target): per-play spread Escalation 2191% / Long-word
-1181% dominate, Short-word 471% / Vowel-heavy 508% floor (~4.6×). Skilled-bot win rate 0-2.5%, walls
-round ~5/12 — but the bot plays greedy single words and never builds an engine, so it measures the
-*no-engine* line, not a committed build. Recalibrating that instrument is Phase A.
+Empirical snapshot (2026-06-29, AFTER Phase-A instrument fixes — context, not a target):
+- **Eval personas had drifted** (never bought content added in later sessions). Refreshing them
+  (archetype mods compact/stretch/lode/twin/bloom, Pithy for short, Overtime generic, right bags)
+  flipped the per-play picture: **Short-word 471% → 1014%** — it was never weak, the persona just
+  wasn't equipped. Per-play spread compressed ~4.6× → ~3.8× (Escalation 2058% ceiling, Vowel-heavy
+  543% floor). Much of the "build-diversity problem" was a harness artifact. LESSON: re-validate the
+  harness after content changes.
+- **Full-run win rate stayed 0-4.5% (walls ~round 5)** even with corrected personas + keystone
+  banking. The per-play(1014%)-vs-full-run(0%) divergence for Short-word ISOLATES the bottleneck:
+  builds are strong WHEN online, but the economy can't get the kit (relics + hone L3 ≈ 30-40+ coins)
+  online before the curve walls the run. **The bottleneck is acquisition speed / economy, NOT build
+  design.** This is the Phase B thesis, now confirmed with a corrected instrument.
+- Remaining instrument limit (pre-existing, not drift): full-run play policy is greedy-best-word
+  (auto-adapts to relics via scoring, but no multi-word/chain optimization, wilds treated as dead) —
+  so absolute %s are a FLOOR. Fine for gating economy work; an archetype-aware play policy is an
+  optional later refinement.
 
 ## Research-confirmed patterns (deep-research run, 2026-06-29; 18 claims survived 3-vote verification)
 
