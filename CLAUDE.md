@@ -18,9 +18,9 @@ Remaining roadmap work: **Tier 3, ship as an Android APK (Capacitor)**, gated on
 
 Orientation docs:
 1. `docs/2026-06-20-letter-ride-design.md`: the design spec (the *what* and *why*).
-2. `docs/2026-06-20-letter-ride-plan.md`: the 4-tier **roadmap** (overview + 🛑 gates).
-3. `docs/2026-06-21-letter-ride-tier0-plan.md`: the executable Tier 0 plan (historical; Tier 0 done).
-4. `docs/2026-06-24-letter-ride-brand-identity.md`: the **visual identity**, deep navy + antique
+2. `docs/2026-06-28-letter-ride-roadmap.md`: the **current roadmap** (supersedes the old 4-tier plan +
+   the 06-22 roadmap; holds the acquisition-funnel diagnosis + the forward phases A-E).
+3. `docs/2026-06-24-letter-ride-brand-identity.md`: the **visual identity**, deep navy + antique
    gold + **Zilla Slab**, letterpress/print-craft (palette revised 2026-06-25 from warm cream). The
    next visual layer is an **engraved icon set** (game-icons.net, CC-BY, gold-tinted + framed), NOT
    pixel art. See the `visual-assets-decided` memory.
