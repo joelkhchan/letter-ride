@@ -49,8 +49,14 @@ export const RELICS = {
     evaluate: (ctx) => ({ addMult: isVowel(ctx.letters[0]) ? 2 : 0 }),
   },
   comboCounter: {
-    id: 'comboCounter', name: 'Combo Counter', desc: '+1 Mult per word already played this round',
-    evaluate: (ctx) => ({ addMult: ctx.wordsPlayedThisRound || 0 }),
+    id: 'comboCounter', name: 'Combo Counter',
+    desc: '+1 Mult per word this round, and ×1.1 Mult for each (compounds with your engines)',
+    // The ×Mult kicker is escalation's wincon: it stacks multiplicatively with ×Mult engines
+    // (Echo Chamber, Refine kickers) instead of falling behind them late-round. Magnitude tunable.
+    evaluate: (ctx) => {
+      const n = ctx.wordsPlayedThisRound || 0;
+      return n ? { addMult: n, timesMult: Math.pow(1.1, n) } : {};
+    },
   },
   recycler: {
     id: 'recycler', name: 'Recycler', desc: '+$2 per unused play at round end',

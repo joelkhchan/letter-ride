@@ -35,9 +35,9 @@ export const ARCHETYPES = {
   },
   longWord: {
     id: 'longWord', name: 'Long-word',
-    desc: 'Words 6+ letters: +Points per level (plus ×Mult from Lv 3).',
+    desc: 'Words 6+ letters: +Mult per level (plus ×Mult from Lv 3).',
     matches: (ctx) => ctx.letters.length >= longThreshold(ctx),
-    honeBonus: (ctx, lvl) => ctx.letters.length >= longThreshold(ctx) ? { addPoints: 5 * lvl, timesMult: honeXMult(lvl) } : {},
+    honeBonus: (ctx, lvl) => ctx.letters.length >= longThreshold(ctx) ? { addMult: 0.5 * lvl, timesMult: honeXMult(lvl) } : {},
   },
   rareLetter: {
     id: 'rareLetter', name: 'Rare-letter',
@@ -65,7 +65,14 @@ export const ARCHETYPES = {
     // folds in the chain mechanic (chainReaction / throughLine): a chained word counts as escalation,
     // so chain play benefits from the escalation Hone/identity instead of being an orphan mechanic.
     matches: (ctx) => (ctx.wordsPlayedThisRound || 0) >= 1 || (ctx.chainLength || 0) >= 1,
-    honeBonus: (ctx, lvl) => { const m = 0.5 * lvl * (ctx.wordsPlayedThisRound || 0); return (m || lvl >= 3) ? { addMult: m, timesMult: honeXMult(lvl) } : {}; },
+    // Lv3+ ×Mult kicker scales with the combo (words played), not just level — escalation's wincon
+    // is multiplicative so it keeps pace with ×Mult engines. Magnitude tunable.
+    honeBonus: (ctx, lvl) => {
+      const n = ctx.wordsPlayedThisRound || 0;
+      const m = 0.5 * lvl * n;
+      const x = lvl >= 3 ? 1 + 0.1 * (lvl - 2) * n : 1;
+      return (m || x !== 1) ? { addMult: m, timesMult: x } : {};
+    },
   },
 };
 
@@ -88,11 +95,14 @@ export function honeDescription(id, lvl) {
   const kicker = lvl >= 3 ? ` and ×${honeXMult(lvl)} Mult to the word` : '';
   switch (id) {
     case 'shortWord':  return `+${lvl} Mult on words of 3 letters or fewer${kicker}`;
-    case 'longWord':   return `+${5 * lvl} Points on words of 6+ letters${kicker}`;
+    case 'longWord':   return `+${0.5 * lvl} Mult on words of 6+ letters${kicker}`;
     case 'rareLetter': return `+${15 * lvl} Points on words using J, Q, X, or Z${kicker}`;
     case 'doubled':    return `+${12 * lvl} Points on words with a doubled letter${kicker}`;
     case 'vowelHeavy': return `+${2 * lvl} Points per vowel on words with 3+ vowels${kicker}`;
-    case 'escalation': return `+${0.5 * lvl} Mult for each word already played this round${kicker}`;
+    case 'escalation': {
+      const xk = lvl >= 3 ? `, and a ×Mult kicker that grows +${(0.1 * (lvl - 2)).toFixed(2)} per word played` : '';
+      return `+${0.5 * lvl} Mult for each word already played this round${xk}`;
+    }
     default:           return ARCHETYPES[id]?.desc || '';
   }
 }

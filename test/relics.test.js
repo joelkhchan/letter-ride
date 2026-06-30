@@ -44,10 +44,12 @@ test('freshStart: +2 Mult if first letter is a vowel', () => {
   assert.equal(base('ICE', { relics: [RELICS.freshStart] }).mult, 1 + 2);
   assert.equal(base('CAT', { relics: [RELICS.freshStart] }).mult, 1);
 });
-test('comboCounter: +1 Mult per word already played this round', () => {
+test('comboCounter: +1 Mult per word this round plus a ×1.1/word kicker', () => {
   resetTileIds();
   const r = scoreWord(sel('CAT'), { tileValues: tv, lengthBonusPerLetter: 0, relics: [RELICS.comboCounter], context: { wordsPlayedThisRound: 2 } });
-  assert.equal(r.mult, 1 + 2);
+  assert.equal(r.mult, (1 + 2) * Math.pow(1.1, 2));   // additive (1+2) × geometric kicker 1.1^2
+  const first = scoreWord(sel('CAT'), { tileValues: tv, lengthBonusPerLetter: 0, relics: [RELICS.comboCounter], context: { wordsPlayedThisRound: 0 } });
+  assert.equal(first.mult, 1);                         // first word of the round: no escalation yet
 });
 test('recycler is an economy relic: no evaluate, has coinsOnRoundClear', () => {
   assert.equal(typeof RELICS.recycler.evaluate, 'undefined');

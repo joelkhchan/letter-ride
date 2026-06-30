@@ -25,6 +25,8 @@ test('shortWord hone adds Mult per level on <=3 letters only', () => {
 });
 test('escalation hone scales Mult with words played this round', () => {
   assert.deepEqual(ARCHETYPES.escalation.honeBonus(ctx('CAT', { wordsPlayedThisRound: 4 }), 1), { addMult: 2, timesMult: 1 }); // 0.5*1*4, no kicker below L3
+  assert.deepEqual(ARCHETYPES.escalation.honeBonus(ctx('CAT', { wordsPlayedThisRound: 4 }), 3), { addMult: 6, timesMult: 1.4 }); // L3 ×Mult kicker scales with words: 1 + 0.1*1*4
+  assert.deepEqual(ARCHETYPES.longWord.honeBonus(ctx('CLAMBERS'), 2), { addMult: 1, timesMult: 1 }); // long-word Refine is now Mult: 0.5*2
 });
 test('escalation matches only once momentum has started (2nd+ word or a chained word), not the first', () => {
   assert.equal(ARCHETYPES.escalation.matches(ctx('CAT', { wordsPlayedThisRound: 0 })), false);  // first word of the round
@@ -61,7 +63,7 @@ test('Hone ×Mult only applies when the archetype condition matches', () => {
 });
 
 test('honeDescription states the actual per-level effect, with the ×Mult kicker only at L3+', () => {
-  assert.equal(honeDescription('longWord', 2), '+10 Points on words of 6+ letters');           // 5*2, no kicker
+  assert.equal(honeDescription('longWord', 2), '+1 Mult on words of 6+ letters');               // 0.5*2, no kicker
   assert.equal(honeDescription('rareLetter', 1), '+15 Points on words using J, Q, X, or Z');   // 15*1
   assert.equal(honeDescription('vowelHeavy', 2), '+4 Points per vowel on words with 3+ vowels'); // 2*2
   assert.match(honeDescription('shortWord', 3), /×1\.25 Mult/);                                  // L3 kicker present
