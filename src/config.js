@@ -101,9 +101,9 @@ export const CONFIG = {
     { id: 2, name: 'Third Edition',  targetMult: 1.5,  playsDelta: -1, discardsDelta: 0 },
   ],
   LOADOUT: {
-    extraDiscards: { name: '+1 Discard / round', max: 2, cost: 10, desc: 'More discards each round to dig for better letters' },
-    freeReroll:    { name: '+1 free reroll per shop', max: 2, cost: 8, desc: 'Reroll the shop once per visit at no cost' },
-    round1Play:    { name: '+1 Play on round 1', max: 1, cost: 8, desc: 'An extra play to open the run strong' },
+    extraDiscards: { name: '+1 Discard / round', max: 1, cost: 10, desc: 'Dig for better letters' },
+    freeReroll:    { name: '+1 free reroll per shop', max: 2, cost: 8, desc: 'One free shop reroll each visit' },
+    round1Play:    { name: '+1 Play on round 1', max: 1, cost: 8, desc: 'Open the run with an extra play' },
   },
   HONE: { cost: 6 },
   PROFANITY_FILTER: true,

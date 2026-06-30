@@ -50,7 +50,7 @@ export const RELICS = {
   },
   comboCounter: {
     id: 'comboCounter', name: 'Combo Counter',
-    desc: '+1 Mult per word this round, and ×1.1 Mult for each (compounds with your engines)',
+    desc: '+1 Mult and ×1.1 Mult per word played this round',
     // The ×Mult kicker is escalation's wincon: it stacks multiplicatively with ×Mult engines
     // (Echo Chamber, Refine kickers) instead of falling behind them late-round. Magnitude tunable.
     evaluate: (ctx) => {
@@ -91,7 +91,7 @@ export const RELICS = {
     evaluate: (ctx) => isDoubledCtx(ctx) ? { timesMult: 2 } : {},
   },
   looseDoubles: {
-    id: 'looseDoubles', name: 'Loose Doubles', desc: '+1 Mult per distinct repeated letter (e.g. BOOKKEEPER = +3)',
+    id: 'looseDoubles', name: 'Loose Doubles', desc: '+1 Mult per repeated letter (BOOKKEEPER = +3)',
     evaluate: (ctx) => {
       const c = {};
       for (const l of ctx.letters) c[l] = (c[l] || 0) + 1;
@@ -113,29 +113,29 @@ export const RELICS = {
   // ── Task 1: Snowball relics ───────────────────────────────────────────────
   rareAvalanche: snowball({
     id: 'rareAvalanche', name: 'Avalanche',
-    desc: 'Grows +0.2 Mult every time you play a rare letter (this run)',
+    desc: 'Grows +0.2 Mult per rare letter played (this run)',
     perStack: 0.2, condition: (ctx) => hasRareCtx(ctx),
   }),
 
   // ── Task 2: Five more snowball relics ──────────────────────────────────────
   flywheel: snowball({
     id: 'flywheel', name: 'Flywheel',
-    desc: 'Grows +0.3 Mult every time you play a word of 3 letters or fewer (this run)',
+    desc: 'Grows +0.3 Mult per word of 3 letters or fewer (this run)',
     perStack: 0.3, condition: (ctx) => ctx.letters.length <= 3,
   }),
   juggernaut: snowball({
     id: 'juggernaut', name: 'Juggernaut',
-    desc: 'Grows +0.2 Mult every time you play a word of 6+ letters (this run)',
+    desc: 'Grows +0.2 Mult per word of 6+ letters (this run)',
     perStack: 0.2, condition: (ctx) => ctx.letters.length >= 6,
   }),
   resonanceEngine: snowball({
     id: 'resonanceEngine', name: 'Resonance',
-    desc: 'Grows +0.2 Mult every time you play a word with a doubled letter (this run)',
+    desc: 'Grows +0.2 Mult per doubled-letter word (this run)',
     perStack: 0.2, condition: (ctx) => isDoubledCtx(ctx),
   }),
   risingTide: snowball({
     id: 'risingTide', name: 'Rising Tide',
-    desc: 'Grows +0.1 Mult every time you play a word with 3+ vowels (this run)',
+    desc: 'Grows +0.1 Mult per word with 3+ vowels (this run)',
     perStack: 0.1, condition: (ctx) => ctx.letters.filter(isVowel).length >= 3,
   }),
   perpetualEngine: snowball({
@@ -159,7 +159,7 @@ export const RELICS = {
   // ── Phase 3 SP3: Chaining relics (read ctx.chainLength, the letter-chain length this round) ──
   chainReaction: {
     id: 'chainReaction', name: 'Chain Reaction',
-    desc: 'Mult grows with your Word Chain: x(1 + 0.5 per chained word after the first)',
+    desc: '×Mult grows +0.5 per chained word',
     evaluate: (ctx) => ({ timesMult: 1 + 0.5 * Math.max(0, (ctx.chainLength || 1) - 1) }),
   },
   throughLine: {
@@ -170,7 +170,7 @@ export const RELICS = {
 
   // ── Hand-size relics (handDelta is read by handSizeFor in run.js; the floor/clamp lives there) ──
   wideMargins: {
-    id: 'wideMargins', name: 'Wide Margins', desc: 'Hold 1 more tile in hand (more options, longer words)',
+    id: 'wideMargins', name: 'Wide Margins', desc: 'Hold 1 more tile in hand',
     handDelta: 1, evaluate: () => ({}),
   },
   tightLeading: {

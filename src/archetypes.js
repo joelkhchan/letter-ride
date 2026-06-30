@@ -100,8 +100,8 @@ export function honeDescription(id, lvl) {
     case 'doubled':    return `+${12 * lvl} Points on words with a doubled letter${kicker}`;
     case 'vowelHeavy': return `+${2 * lvl} Points per vowel on words with 3+ vowels${kicker}`;
     case 'escalation': {
-      const xk = lvl >= 3 ? `, and a ×Mult kicker that grows +${(0.1 * (lvl - 2)).toFixed(2)} per word played` : '';
-      return `+${0.5 * lvl} Mult for each word already played this round${xk}`;
+      const xk = lvl >= 3 ? `, plus ×Mult +${(0.1 * (lvl - 2)).toFixed(2)}/word` : '';
+      return `+${0.5 * lvl} Mult per word played this round${xk}`;
     }
     default:           return ARCHETYPES[id]?.desc || '';
   }
