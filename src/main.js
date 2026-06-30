@@ -21,7 +21,7 @@ import { initUpdater } from './updater.js';
 try {
   initUpdater();   // OTA self-update check on launch (Android only; a no-op on the web)
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
-  const dictionary = await loadFromFiles(['assets/enable1.txt', 'assets/modern-words.txt'], blocklist);
+  const dictionary = await loadFromFiles(['assets/enable1.txt', 'assets/modern-words.txt', 'assets/two-letter-words.txt'], blocklist);
   const meta = loadMeta(window.localStorage, CONFIG);
   let telemetry = loadTelemetry(window.localStorage);
   const profile = loadProfile(window.localStorage);
@@ -222,10 +222,9 @@ try {
       saveAll(); render();
     },
     onPressBank() {
-      run._pressLastPot = run.press?.pot || 0;
       pressBank(run);
       sfx('cash');
-      run.nodeResolved = true;
+      advanceRound();   // banking ends the event -> straight to the next round (the pot was on-screen)
       saveAll(); render();
     },
     onContinue() { advanceRound(); saveAll(); render(); },

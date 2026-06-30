@@ -97,3 +97,7 @@ MIT does not require visible attribution; listed for provenance. Recolored via C
   SCOWL mis-tags as abbreviations were restored (email, app, admin, hazmat, nimby, vocab) and a few
   moderns it lacked were added (zen, wifi, wiki, vlog). No proper nouns or acronyms/abbreviations.
   SCOWL copyright: "Copyright 2000-2019 by Kevin Atkinson"; see the SCOWL readme for the full notice.
+- **`two-letter-words.txt`** — the 107 NWL2023 (NASPA Word List) Scrabble-legal two-letter words, so
+  that with `MIN_WORD_LEN: 2` every playable 2-letter word is valid. The word list itself is factual
+  (not copyrightable); sourced 2026-06-30 from the published NWL2023 two-letter set. ENABLE already
+  held 96 of them; this file is the authoritative full set (the merge dedupes).

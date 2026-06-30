@@ -11,7 +11,7 @@ export const CONFIG = {
   HAND_FLOOR: 6,        // effective hand size never drops below this - the -hand stack cap (tunable)
   PLAYS_PER_ROUND: 4,
   DISCARDS_PER_ROUND: 2,
-  MIN_WORD_LEN: 3,
+  MIN_WORD_LEN: 2,                                        // 2-letter words allowed (2026-06-30); the dictionary's 2-letter set = the NWL2023 Scrabble-legal 107 (assets/two-letter-words.txt), so every 2-letter play is valid
   LENGTH_BONUS_PER_LETTER: 5,                              // +5 × (len - 3), min 0
   TIER0_TARGETS: [20, 35, 55, 80, 110, 145, 185, 230],     // beatable from base bag, no shop
   PASSAGES: 4,                                             // run = PASSAGES x (Word, Phrase, Sentence)
