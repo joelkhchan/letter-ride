@@ -29,6 +29,9 @@ export const CONFIG = {
   // escalating factor f_n = startFactor + factorStep·(n−1)·n/2 → 1.25, 1.5, 2, 2.75, 3.75… rounded
   // to roundTo. Author-set 2026-06-30. TUNE for how fast the wall arrives.
   ENDLESS: { startFactor: 1.25, factorStep: 0.25, roundTo: 10 },
+  // "The Proof" — Wordle-style event. Guess a hidden common word; reward $ (scales with speed) OR a
+  // relic on solve. coins = coinsBase + coinsPerGuessSaved × (maxGuesses − guessesUsed). TUNE.
+  WORDLE: { length: 5, maxGuesses: 6, coinsBase: 3, coinsPerGuessSaved: 3 },
   COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 }, // Tier 1
   INTEREST: { enabled: true, per: 5, rate: 1, cap: 12 },            // $1 per $5 held, max $12 (raised 2026-06-29: rewards saving toward a keystone relic; soft ceiling now at $60 held)
   SHOP: {

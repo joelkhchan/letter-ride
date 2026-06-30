@@ -2,7 +2,8 @@
 // One-shot events resolve on pick; The Press (Task 2) is interactive. Seeded mutators (draw from run.rng).
 import { makeTile, WILD } from './tiles.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
-import { shuffle } from './rng.js';
+import { shuffle, makeRng } from './rng.js';
+import { scoreGuess, isSolved, wordleCoins, pickTarget } from './wordle.js';
 
 // helper: pick N distinct random tiles from the bag via run.rng
 function pickRandomTiles(run, n) {
@@ -62,6 +63,11 @@ export const EVENTS = {
     desc: 'Draw letters for $. Bank to keep the pot or Press your luck; bust on a repeat and lose it all.',
     canOffer: () => true,
   },
+  theProof: {
+    id: 'theProof', name: 'The Proof', interactive: true,
+    desc: 'Guess the hidden 5-letter word in 6 tries. Solve it to claim $ (more for fewer guesses) or a relic.',
+    canOffer: () => true,
+  },
 };
 
 export const ALL_EVENT_IDS = Object.keys(EVENTS);
@@ -104,4 +110,55 @@ export function pressBank(run) {
   run.coins += st.pot;
   run.press = null;
   return run;
+}
+
+// --- The Proof: a Wordle-style guess-the-word event ---
+
+// Begin the event: pick a target from the supplied common-word pool via a SEPARATE seeded stream
+// (constant 0x7f4a7c15, distinct from bossOrder/event-pick), so it never desyncs run.rng.
+export function wordleStart(run, answers) {
+  const cfg = run.config.WORDLE;
+  const stream = makeRng((run.seed ^ 0x7f4a7c15 ^ run.roundIndex) >>> 0);
+  run.wordle = {
+    target: pickTarget(answers, stream),
+    guesses: [],                 // [{ word, statuses }]
+    maxGuesses: cfg.maxGuesses,
+    length: cfg.length,
+    status: 'playing',           // 'playing' | 'solved' | 'failed'
+  };
+  return run.wordle;
+}
+
+export function wordleGuess(run, word) {
+  const st = run.wordle;
+  if (!st || st.status !== 'playing') return { ok: false, reason: 'done' };
+  const g = String(word || '').toLowerCase();
+  if (g.length !== st.length) return { ok: false, reason: 'length' };
+  if (!run.dictionary.isValid(g)) return { ok: false, reason: 'invalid' };
+  const statuses = scoreGuess(g, st.target);
+  st.guesses.push({ word: g, statuses });
+  if (isSolved(statuses)) st.status = 'solved';
+  else if (st.guesses.length >= st.maxGuesses) st.status = 'failed';
+  return { ok: true, statuses, status: st.status };
+}
+
+// Claim the solve reward: 'coins' (scales with speed) or 'relic' (a random unowned relic).
+export function wordleClaim(run, choice) {
+  const st = run.wordle;
+  if (!st || st.status !== 'solved' || st.claimed) return { ok: false, reason: 'not-claimable' };
+  const cfg = run.config.WORDLE;
+  let granted = { type: 'coins', amount: 0 };
+  const owned = new Set(run.relics.map(r => r.id));
+  const pool = ALL_RELIC_IDS.filter(id => !owned.has(id));
+  if (choice === 'relic' && pool.length) {
+    const pick = shuffle(pool, run.rng)[0];
+    run.relics.push(RELICS[pick]);
+    granted = { type: 'relic', id: pick };
+  } else {
+    const amount = wordleCoins(st.guesses.length, cfg);   // fall back to coins if 'relic' but all owned
+    run.coins += amount;
+    granted = { type: 'coins', amount };
+  }
+  st.claimed = true;
+  return { ok: true, granted };
 }

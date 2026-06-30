@@ -363,6 +363,25 @@ button { font-family: var(--font-body); color: var(--ink); }
 #event-ui .event-desc { font-size: 0.93em; color: var(--ink-soft); margin-bottom: 12px; }
 .event-option-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; margin: 5px 0; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--night-sunk); color: var(--ink); font-size: 0.95rem; cursor: pointer; transition: border-color 0.1s, background 0.1s; }
 .event-option-btn:hover:not([disabled]) { border-color: var(--gold); background: var(--gold-wash); }
+/* The Proof (Wordle event) board */
+.wd-board { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 14px 0; }
+.wd-row { display: flex; gap: 6px; }
+.wd-cell { width: 2.4rem; height: 2.4rem; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; border-radius: var(--radius-sm); border: 1px solid var(--line); color: var(--ink); background: var(--night-sunk); text-transform: uppercase; }
+.wd-cell.empty { opacity: 0.5; }
+.wd-cell.hit { background: linear-gradient(#3a7d44, #2c5f34); border-color: #4d9a59; color: #fff; }
+.wd-cell.present { background: linear-gradient(var(--gold), var(--gold-deep)); border-color: var(--gold); color: var(--night-sunk); }
+.wd-cell.miss { background: var(--night); border-color: var(--line); color: var(--ink-soft); opacity: 0.7; }
+.wd-key { font-weight: 700; padding: 0 4px; border-radius: 3px; }
+.wd-key.hit { background: #3a7d44; color: #fff; }
+.wd-key.present { background: var(--gold); color: var(--night-sunk); }
+.wd-input { display: flex; gap: 8px; justify-content: center; align-items: center; }
+#wd-guess { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; letter-spacing: 3px; text-transform: uppercase; text-align: center; width: 9rem; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--gold-deep); background: var(--tile-a, #f3e6c8); color: var(--ink); }
+.wd-msg { min-height: 1.2rem; color: #c0392b; font-size: 0.9rem; text-align: center; margin-top: 6px; }
+.wd-hint { text-align: center; font-size: 0.85rem; color: var(--ink-soft); }
+.wd-result { text-align: center; font-weight: 700; margin: 10px 0; }
+.wd-result.win { color: #27ae60; }
+.wd-result.loss { color: var(--ink-soft); }
+.wd-claim { display: flex; gap: 8px; justify-content: center; }
 .arch-choice .arch-lvl { color: var(--gold); font-size: 0.85em; }
 .arch-choice .arch-desc { display: block; color: var(--ink-soft); font-size: 0.82em; margin-top: 3px; }
 

@@ -11,7 +11,7 @@ import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildL
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordDiscard, recordRunEnd, summarize } from './telemetry.js';
 import { loadProfile, saveProfile, recordPlay as profileRecordPlay, recordRunEnd as profileRecordRunEnd } from './profile.js';
 import { ACHIEVEMENTS, checkAchievements, grantBounties, collectAchievement, collectBounty, pendingCount } from './achievements.js';
-import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
+import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank, wordleStart, wordleGuess, wordleClaim } from './events.js';
 import { renderRun, renderSetup, renderMetaShop, renderMenu, renderSettings, renderAchievements, renderStats, renderTelemetry, achievementToast, bindControls, flashInvalid, handleRunKey, isPulling, animatePull, showConfirm } from './ui.js';
 import { play as sfx, resumeAudio } from './audio.js';
 import { logEvent } from './playlog.js';
@@ -22,6 +22,8 @@ try {
   initUpdater();   // OTA self-update check on launch (Android only; a no-op on the web)
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
   const dictionary = await loadFromFiles(['assets/enable1.txt', 'assets/modern-words.txt', 'assets/two-letter-words.txt'], blocklist);
+  // Common-word answer pool for The Proof (Wordle event). Resilient: an empty pool just disables the event's target.
+  const wordleAnswers = await fetch('assets/wordle-answers.txt').then(r => r.ok ? r.text() : '').then(t => t.split(/\r?\n/).filter(Boolean)).catch(() => []);
   const meta = loadMeta(window.localStorage, CONFIG);
   let telemetry = loadTelemetry(window.localStorage);
   const profile = loadProfile(window.localStorage);
@@ -203,7 +205,8 @@ try {
       run._nodePick = 'event';
       logEvent('node_pick', { pick: 'event', event: run.nodeEventId });
       if (ev.interactive) {
-        pressStart(run);
+        if (ev.id === 'theProof') wordleStart(run, wordleAnswers);
+        else pressStart(run);
       } else if (ev.autoResolve) {
         // Single-option, no-input events (Ink Merchant, The Blank) resolve on pick - no confirm click.
         const r = applyEventOption(run, run.nodeEventId, 0, {});
@@ -227,6 +230,20 @@ try {
       advanceRound();   // banking ends the event -> straight to the next round (the pot was on-screen)
       saveAll(); render();
     },
+    // The Proof (Wordle event): submit a guess; the board re-renders with feedback.
+    onWordleGuess(word) {
+      const r = wordleGuess(run, word);
+      if (r.ok) sfx(r.status === 'solved' ? 'flourish' : 'tap');
+      saveAll(); render(); return r;
+    },
+    // Claim the solve reward ('coins' or 'relic'), then advance to the next round.
+    onWordleClaim(choice) {
+      const r = wordleClaim(run, choice);
+      if (r.ok) { sfx('cash'); advanceRound(); saveAll(); render(); }
+      return r;
+    },
+    // Out of guesses (failed) -> just move on.
+    onWordleGiveUp() { advanceRound(); saveAll(); render(); },
     onContinue() { advanceRound(); saveAll(); render(); },
     // Shuffle: cosmetically reorder the rack using Math.random (not run.rng).
     // Rack order has no effect on scoring or future draws, so this is purely visual.
@@ -279,7 +296,11 @@ try {
       } });
     },
   });
-  window.addEventListener('keydown', (e) => { if (view === 'run') handleRunKey(e); });
+  window.addEventListener('keydown', (e) => {
+    // Don't hijack typing in a text field (e.g. The Proof's guess input).
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (view === 'run') handleRunKey(e);
+  });
   // First user gesture unlocks the audio context for SFX (browser autoplay policy).
   window.addEventListener('pointerdown', () => { resumeAudio(); }, { once: true });
 

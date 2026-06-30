@@ -620,6 +620,7 @@ export function renderRun(run, profile) {
       // If the event was already resolved (persisted nodeResolved=true), skip re-offering it.
       if (run.nodeResolved) { renderEventDone(run, EVENTS[run.nodeEventId] || { name: '', desc: '' }); return; }
       const ev = EVENTS[run.nodeEventId];
+      if (ev?.id === 'theProof') { renderWordle(run); return; }
       if (ev?.interactive) { renderPress(run); return; }
       renderEventOneShot(run); return;
     }
@@ -963,6 +964,84 @@ function renderEventDone(run, ev) {
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('continue-btn', () => { selection = []; handlers.onContinue?.(); });
+  wireDescPopovers(document.getElementById('relics-mods-panel'));
+}
+
+// The Proof — the Wordle-style event. Board of maxGuesses rows; type a valid word, get green/gold
+// feedback; solve to claim $ (scales with speed) or a relic.
+function renderWordle(run) {
+  const st = run.wordle || {};
+  const cfg = run.config.WORDLE;
+  const len = st.length || cfg.length;
+  const max = st.maxGuesses || cfg.maxGuesses;
+  const guesses = st.guesses || [];
+  const status = st.status || 'playing';
+  const used = guesses.length;
+  const coins = cfg.coinsBase + cfg.coinsPerGuessSaved * Math.max(0, max - used);
+
+  let rows = '';
+  for (let r = 0; r < max; r++) {
+    const g = guesses[r];
+    let cells = '';
+    for (let c = 0; c < len; c++) {
+      cells += g
+        ? `<span class="wd-cell ${g.statuses[c]}">${(g.word[c] || '').toUpperCase()}</span>`
+        : `<span class="wd-cell empty"></span>`;
+    }
+    rows += `<div class="wd-row">${cells}</div>`;
+  }
+
+  let footer = '';
+  if (status === 'playing') {
+    footer = `
+      <div class="wd-input">
+        <input id="wd-guess" type="text" maxlength="${len}" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="${len}-letter word" />
+        <button id="wd-submit" class="menu-btn primary">Guess</button>
+      </div>
+      <div id="wd-msg" class="wd-msg"></div>
+      <div class="wd-hint">${used}/${max} guesses</div>`;
+  } else if (status === 'solved') {
+    footer = `
+      <div class="wd-result win">Solved in ${used}!</div>
+      <div class="wd-claim">
+        <button id="wd-coins" class="menu-btn primary">Take $${coins}</button>
+        <button id="wd-relic" class="menu-btn">Take a relic</button>
+      </div>`;
+  } else {
+    footer = `
+      <div class="wd-result loss">Out of guesses. The word was <b>${(st.target || '').toUpperCase()}</b>.</div>
+      <button id="wd-continue" class="menu-btn primary">Continue</button>`;
+  }
+
+  app().innerHTML = `
+    <div id="hud">
+      <div>Passage ${passageOf(run.roundIndex)}/${run.config.PASSAGES} &middot; ${tierOf(run.roundIndex)} &middot; Event</div>
+      <div id="coins">$${run.coins || 0}</div>
+    </div>
+    ${relicsModsPanelHtml(run)}
+    <div id="event-ui">
+      <h3>The Proof</h3>
+      <div class="event-desc">Guess the hidden ${len}-letter word &middot; <span class="wd-key hit">green</span> = right spot, <span class="wd-key present">gold</span> = wrong spot.</div>
+      <div class="wd-board">${rows}</div>
+      ${footer}
+    </div>`;
+
+  const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  const submit = () => {
+    const inp = document.getElementById('wd-guess');
+    if (!inp) return;
+    const r = handlers.onWordleGuess?.(inp.value.trim().toLowerCase());
+    if (r && !r.ok) {
+      const msg = document.getElementById('wd-msg');
+      if (msg) msg.textContent = r.reason === 'length' ? `Enter a ${len}-letter word.` : r.reason === 'invalid' ? 'Not a valid word.' : '';
+    }
+  };
+  on('wd-submit', submit);
+  const inp = document.getElementById('wd-guess');
+  if (inp) { inp.focus(); inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } }; }
+  on('wd-coins', () => handlers.onWordleClaim?.('coins'));
+  on('wd-relic', () => handlers.onWordleClaim?.('relic'));
+  on('wd-continue', () => handlers.onWordleGiveUp?.());
   wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
