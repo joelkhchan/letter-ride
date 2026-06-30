@@ -76,24 +76,24 @@ export const CONFIG = {
   // Rares (J/Q/X/Z) live ONLY in Rare Cache. Lean stays smallest (its identity IS scarcity).
   // Player-facing copy says "bag", not "deck". Verify each bag's dead-rack% via analyze:corpus.
   DECKS: {
-    standard:   { id: 'standard',   name: 'Standard',    desc: 'Balanced starter bag. Good for learning.',         startingBag: null },  // null => CONFIG.STARTING_BAG (26, balanced, no rares)
-    classic:    { id: 'classic',    name: 'Classic',     desc: 'Common letters only, fewer types. Clean and predictable.', startingBag: [   // 26 tiles, rare-free, repeats commons (most consistent)
+    standard:   { id: 'standard',   name: 'Standard',    desc: 'Balanced all-rounder. Best for learning any build.',  startingBag: null },  // null => CONFIG.STARTING_BAG (26, balanced, no rares)
+    classic:    { id: 'classic',    name: 'Classic',     desc: 'Common letters, no surprises. The most consistent racks.', startingBag: [   // 26 tiles, rare-free, repeats commons (most consistent)
       'A','A','A','E','E','E','I','I','O','O','U',                              // 11 vowels
       'R','R','S','S','T','T','N','L','D','G','C','M','B','P','H' ] },           // 15 common consonants (doubled R/S/T = predictable)
-    vowelHeavy: { id: 'vowelHeavy', name: 'Vowel Heavy', desc: 'Vowel-rich bag. Racks stay playable.',             startingBag: [        // 26 tiles, vowel-leaning
+    vowelHeavy: { id: 'vowelHeavy', name: 'Vowel Heavy', desc: 'Vowel-rich. Few dead racks; favors vowel builds.',  startingBag: [        // 26 tiles, vowel-leaning
       'A','A','A','A','E','E','E','E','I','I','O','O','U','U',                  // 14 vowels (~54%)
       'R','S','T','L','N','D','C','M','B','P','G','H' ] },                       // 12 consonants
-    wildcard:   { id: 'wildcard',   name: 'Wildcard',    desc: 'Has wild tiles that play as any letter.',          startingBag: [        // 26 tiles, 2 wilds
+    wildcard:   { id: 'wildcard',   name: 'Wildcard',    desc: 'Two wilds play as any letter. Flexible, big words.',  startingBag: [        // 26 tiles, 2 wilds
       'A','A','A','E','E','E','I','I','O','O','U',                              // 11 vowels
       'R','S','T','L','N','D','C','M','B','P','G','H','F','*','*' ] },           // 13 consonants + 2 wilds
-    rareRich:   { id: 'rareRich',   name: 'Rare Cache',  desc: 'Rares and wilds, but vowels can run dry.',         startingBag: [        // 26 tiles, the ONLY bag with rares
+    rareRich:   { id: 'rareRich',   name: 'Rare Cache',  desc: 'Rares + wilds for J/Q/X/Z builds. Vowels run thin.',  startingBag: [        // 26 tiles, the ONLY bag with rares
       'A','A','E','E','I','O','U',                                              // 7 vowels (thin on purpose)
       'R','S','T','L','N','D','C','M','B','P','G','H',                          // 12 consonants
       'J','Q','X','Z','K','*','*' ] },                                          // 5 rares + 2 wilds
-    doubled:    { id: 'doubled',    name: 'Echo Bag',    desc: 'Duplicate-heavy bag. Doubled letters recur.',      startingBag: [        // 26 tiles, paired letters
+    doubled:    { id: 'doubled',    name: 'Echo Bag',    desc: 'Paired letters recur. Feeds doubled-letter builds.', startingBag: [        // 26 tiles, paired letters
       'A','A','E','E','E','I','I','O','O',                                      // 9 vowels
       'S','S','T','T','L','L','N','N','R','R','D','D','C','M','B','P','G' ] },   // 17 consonants (many paired)
-    lean:       { id: 'lean',       name: 'Lean Bag',    desc: 'Few, high-value tiles. Vowels can run dry.',       startingBag: ['A','E','I','O','U','R','S','T','N','L','D','C','M','B','P','K','F','H','Y','G'] },  // intentionally SMALLEST (20)
+    lean:       { id: 'lean',       name: 'Lean Bag',    desc: 'Small, high-value bag. Thins fast; vowels run thin.', startingBag: ['A','E','I','O','U','R','S','T','N','L','D','C','M','B','P','K','F','H','Y','G'] },  // intentionally SMALLEST (20)
   },
   STAKES: [
     { id: 0, name: 'First Edition',  targetMult: 1.0,  playsDelta: 0,  discardsDelta: 0 },
