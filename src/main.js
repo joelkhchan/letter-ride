@@ -283,6 +283,31 @@ try {
   window.addEventListener('keydown', (e) => { if (view === 'run') handleRunKey(e); });
   // First user gesture unlocks the audio context for SFX (browser autoplay policy).
   window.addEventListener('pointerdown', () => { resumeAudio(); }, { once: true });
+
+  // Hardware/browser back = go back ONE screen, not exit the app (Android WebView routes the
+  // device back button through history.back -> popstate). Close the topmost overlay first, else
+  // step the view toward the menu; only at the menu do we let the platform exit.
+  function goBackOneScreen() {
+    const overlays = [...document.querySelectorAll('.lr-overlay, [id$="-overlay"]')];
+    if (overlays.length) { overlays[overlays.length - 1].remove(); return true; }   // close topmost modal
+    if (view !== 'menu') {
+      view = (view === 'settings' && settingsReturn === 'run') ? 'run' : 'menu';      // run stays saved
+      render();
+      return true;
+    }
+    return false;   // already at the root menu
+  }
+  window.addEventListener('popstate', () => {
+    if (goBackOneScreen()) {
+      history.pushState({ lr: true }, '');   // re-arm so the next back is captured too
+    } else {
+      const App = window.Capacitor?.Plugins?.App;
+      if (App?.exitApp) App.exitApp();        // at the menu on Android: exit the app
+      else history.pushState({ lr: true }, '');   // browser: can't close a tab, so stay put
+    }
+  });
+  history.pushState({ lr: true }, '');   // seed a buffer state so the first back is intercepted
+
   applyDisplayPrefs();
   render();
 } catch (err) {
