@@ -666,12 +666,16 @@ export function renderRun(run, profile) {
       <div class="rt-label"><b>Round ${run.roundIndex + 1}/${totalRounds}</b> &middot; ${tierOf(run.roundIndex)}${isBossRound(run.roundIndex) ? ' &middot; Boss' : ''}</div>`}
     </div>
     <div id="hud">
-      <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft} · <button id="bag-btn" class="hud-link" title="Tiles left in the bag">Bag ${run.bag.tiles.length}</button></div>
-      ${coinsHtml}
-      <button id="help-btn" title="How it works" style="font-size:0.85em;padding:2px 7px;border-radius:50%;cursor:pointer;">?</button>
-      <button id="mute-btn" class="${isMuted() ? 'muted' : ''}" title="${isMuted() ? 'Sound off (tap for on)' : 'Sound on (tap for off)'}" style="font-size:0.95em;padding:2px 8px;border-radius:50%;cursor:pointer;">&#9834;</button>
-      <button id="settings-btn" title="Settings" style="font-size:0.95em;padding:2px 8px;border-radius:50%;cursor:pointer;">&#9881;</button>
-      <button id="exit-btn" title="Main menu (your run is saved)" style="font-size:0.72em;padding:3px 10px;border-radius:10px;cursor:pointer;">Menu</button>
+      <div class="hud-stats">Plays <b>${run.playsLeft}</b> &middot; Discards <b>${run.discardsLeft}</b> &middot; <button id="bag-btn" class="hud-link" title="Tiles left in the bag">Bag ${run.bag.tiles.length}</button></div>
+      <div class="hud-right">
+        ${coinsHtml}
+        <div class="hud-tools">
+          <button id="help-btn" class="hud-btn" title="How it works" aria-label="How it works">?</button>
+          <button id="mute-btn" class="hud-btn ${isMuted() ? 'muted' : ''}" title="${isMuted() ? 'Sound off (tap for on)' : 'Sound on (tap for off)'}" aria-label="Toggle sound">&#9834;</button>
+          <button id="settings-btn" class="hud-btn" title="Settings" aria-label="Settings">${lineIconHtml('settings')}</button>
+          <button id="exit-btn" class="hud-btn hud-btn--text" title="Main menu (your run is saved)">Menu</button>
+        </div>
+      </div>
     </div>
     <div id="score-bar">
       <div class="score-nums"><span id="score-total">${run.roundTotal}</span><span class="score-slash">/</span>${run.target}</div>

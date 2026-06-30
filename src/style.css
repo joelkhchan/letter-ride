@@ -66,10 +66,17 @@ h1 { color: var(--gold); }
   box-shadow: 0 2px 7px rgba(0,0,0,0.5);
 }
 #score-total { font-family: var(--font-display); font-weight: 700; font-size: 1.5em; color: var(--gold); }
+.hud-stats b { color: var(--ink); font-weight: 700; }
+.hud-right { display: flex; align-items: center; gap: 10px; }
+.hud-tools { display: flex; align-items: center; gap: 5px; }
 #coins { font-weight: 700; color: var(--gold); }
 #coins::before { content: ''; display: inline-block; width: 0.92em; height: 0.92em; margin-right: 5px; vertical-align: -0.12em; background: currentColor; -webkit-mask: url('../assets/icons/ui/coins.svg') center / contain no-repeat; mask: url('../assets/icons/ui/coins.svg') center / contain no-repeat; }
-#mute-btn { color: var(--gold); border: 1px solid var(--line); background: var(--night-2); line-height: 1; }
-#mute-btn.muted { text-decoration: line-through; opacity: 0.5; color: var(--ink-soft); }
+/* Unified branded HUD tool buttons (replace the old ad-hoc inline-styled emoji buttons). */
+.hud-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--line); background: var(--night-2); color: var(--ink-soft); border-radius: var(--radius-sm); cursor: pointer; font-size: 0.95rem; line-height: 1; transition: border-color 0.12s, color 0.12s; }
+.hud-btn:hover { border-color: var(--gold); color: var(--gold); }
+.hud-btn--text { width: auto; padding: 0 11px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+.hud-btn .lr-line { width: 1.05em; height: 1.05em; }
+#mute-btn.muted { color: var(--ink-soft); opacity: 0.5; text-decoration: line-through; }
 
 /* ================================================================ Tiles (sorts) */
 /* Play screen: centred, max-width column so it isn't top-heavy + edge-to-edge */
@@ -548,5 +555,3 @@ html.text-large { font-size: 112.5%; }
 #meta-screen.shop-screen { max-width: 960px; }   /* wider so the offer grid fits three cards across */
 #meta-screen > button { font-size: 1rem; font-weight: 700; padding: 11px 18px; margin: 3px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: linear-gradient(var(--night-2), var(--night)); color: var(--ink); cursor: pointer; transition: border-color 0.1s; }
 #meta-screen > button:hover { border-color: var(--gold); }
-#exit-btn { border: 1px solid var(--line); background: var(--night-2); color: var(--ink-soft); }
-#exit-btn:hover { border-color: var(--gold); color: var(--ink); }
