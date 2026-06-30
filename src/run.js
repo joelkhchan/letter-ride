@@ -116,6 +116,7 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     targets: [...targets],   // own copy — endless mode pushes onto this; never mutate CONFIG.ROUND_TARGETS
     endless: false,          // flips true when the player continues past the win into escalating rounds
     endlessRound: 0,         // count of endless rounds entered (drives the escalating factor + display)
+    wonBase: false,          // true once the base 12-round run is cleared (so an endless loss still records a WIN)
     roundIndex: 0,
     target: targets[0],
     roundTotal: 0,
@@ -248,7 +249,7 @@ function endlessTarget(run) {
 export function nextRound(run) {
   const next = run.roundIndex + 1;
   if (next >= run.targets.length) {
-    if (!run.endless) { run.status = 'won'; return run; }
+    if (!run.endless) { run.status = 'won'; run.wonBase = true; return run; }
     run.targets.push(endlessTarget(run));   // endless: extend with the next escalating target
   }
   run.roundIndex = next;

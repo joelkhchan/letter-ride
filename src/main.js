@@ -1,7 +1,7 @@
 // src/main.js
 import { CONFIG } from './config.js';
 import { loadFromFiles } from './dictionary.js';
-import { newRun, playWord, discard, nextRound, offerNode, isBossRound } from './run.js';
+import { newRun, playWord, discard, nextRound, startEndless, offerNode, isBossRound } from './run.js';
 import { ALL_BOSS_IDS } from './bosses.js';
 import { saveRun, loadRun } from './storage.js';
 import { generateShop, purchase } from './shop.js';
@@ -72,9 +72,11 @@ try {
     const earned = metaEarned(run, CONFIG);                 // stake metaMult removed; bounties replace it
     const relicIds = run.relics.map(r => r.id);
     const modIds = [...new Set(run.bag.tiles.flatMap(t => t.mods.map(m => m.id)))];
-    recordRunEnd(telemetry, { won: run.status === 'won', ownedIds: [...relicIds, ...modIds] });
-    const won = run.status === 'won';
-    const roundsCleared = won ? run.targets.length : run.roundIndex;
+    // A run that won the base game counts as a WIN even if it later dies in endless mode.
+    const won = run.status === 'won' || run.wonBase === true;
+    const roundsCleared = won ? (run.endless ? run.roundIndex : run.targets.length) : run.roundIndex;
+    profile.stats.bestEndlessRound = Math.max(profile.stats.bestEndlessRound || 0, run.endlessRound || 0);
+    recordRunEnd(telemetry, { won, ownedIds: [...relicIds, ...modIds] });
     // Update lifetime sets FIRST so completeness predicates (curator/enchanter) see this run's ids.
     profileRecordRunEnd(profile, { won, roundsCleared, runScore: run.roundTotal, relicIds, modIds, archetypeTally: run.archetypeTally });
     if (won) grantBounties(profile, run.stake?.id ?? 0, run.deck?.id ?? null);   // mark earned; collected later
@@ -241,6 +243,13 @@ try {
     },
     // run-end transitions to the meta screen:
     onRunEnd() { endRun(); },
+    // Continue past the win into endless mode (the base win is already banked via run.wonBase).
+    onContinueEndless() {
+      startEndless(run);
+      if (isBossRound(run.roundIndex)) sfx('boss');
+      logEvent('endless_start', { round: run.roundIndex, endlessRound: run.endlessRound, target: run.target, ...snap() });
+      saveAll(); render();
+    },
     // meta screen actions:
     onMetaBuy(offer) { const r = purchaseMeta(meta, offer, CONFIG); saveAll(); render(); return r; },
     onStartRun(deckId, stakeId) { startRun(deckId, stakeId); },

@@ -14,6 +14,7 @@ export function serializeRun(run) {
     targets: run.targets,
     endless: run.endless ?? false,                       // endless-mode flag + round counter (persist mid-endless)
     endlessRound: run.endlessRound || 0,
+    wonBase: run.wonBase ?? false,                       // base run cleared (an endless loss still records a win)
     roundIndex: run.roundIndex,
     target: run.target,
     roundTotal: run.roundTotal,
@@ -64,6 +65,7 @@ export function deserializeRun(data, { config, dictionary }) {
     targets: data.targets,
     endless: data.endless ?? false,
     endlessRound: data.endlessRound || 0,
+    wonBase: data.wonBase ?? false,
     roundIndex: data.roundIndex,
     target: data.target,
     roundTotal: data.roundTotal,

@@ -660,8 +660,10 @@ export function renderRun(run, profile) {
   app().innerHTML = `
     <div class="run-view">
     <div id="run-track">
-      <div class="rt-nodes">${trackNodes}</div>
-      <div class="rt-label"><b>Round ${run.roundIndex + 1}/${totalRounds}</b> &middot; ${tierOf(run.roundIndex)}${isBossRound(run.roundIndex) ? ' &middot; Boss' : ''}</div>
+      ${run.endless
+        ? `<div class="rt-label rt-endless"><b>&#8734; Endless &middot; Round ${run.endlessRound}</b>${isBossRound(run.roundIndex) ? ' &middot; Boss' : ''}</div>`
+        : `<div class="rt-nodes">${trackNodes}</div>
+      <div class="rt-label"><b>Round ${run.roundIndex + 1}/${totalRounds}</b> &middot; ${tierOf(run.roundIndex)}${isBossRound(run.roundIndex) ? ' &middot; Boss' : ''}</div>`}
     </div>
     <div id="hud">
       <div>Plays ${run.playsLeft} · Discards ${run.discardsLeft} · <button id="bag-btn" class="hud-link" title="Tiles left in the bag">Bag ${run.bag.tiles.length}</button></div>
@@ -800,6 +802,7 @@ function renderBroadside(run, profile) {
       <div class="runend-stats">
         ${stat('Rank', s.rank)}
         ${stat('Rounds cleared', `${roundsCleared} / ${totalRounds}`)}
+        ${run.endlessRound > 0 ? stat('Endless rounds', run.endlessRound) : ''}
         ${stat('Words played', words)}
         ${stat('Best word', best ? `${(best.word || '').toUpperCase()} &middot; ${best.score}` : '&mdash;')}
         ${metaEarned ? stat('Meta earned', `+${metaEarned}`) : ''}
@@ -807,7 +810,8 @@ function renderBroadside(run, profile) {
       <canvas id="broadside-canvas" width="680" height="800" style="display:none;" aria-hidden="true"></canvas>
       <div id="runend-actions">
         <button id="save-broadside" class="menu-btn">Save trophy card</button>
-        <button id="new" class="menu-btn primary">Continue</button>
+        ${won ? '<button id="continue-endless" class="menu-btn primary">Continue &middot; Endless</button>' : ''}
+        <button id="new" class="menu-btn${won ? '' : ' primary'}">Back to menu</button>
       </div>
     </div>`;
   const canvas = document.getElementById('broadside-canvas');     // hidden; drawn only for the Save button
@@ -818,6 +822,8 @@ function renderBroadside(run, profile) {
   if (save) save.onclick = () => shareBroadside(canvas);
   const back = document.getElementById('new');
   if (back) back.onclick = () => { selection = []; lastShownScore = null; handlers.onRunEnd?.(); };
+  const endless = document.getElementById('continue-endless');
+  if (endless) endless.onclick = () => { selection = []; lastShownScore = null; handlers.onContinueEndless?.(); };
 }
 
 function renderNodeChoice(run) {

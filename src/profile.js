@@ -17,6 +17,7 @@ export function makeProfile() {
       relicsEverUsed: [], modsEverApplied: [],
       bossesBeaten: [],         // distinct boss ids cleared across runs (for Critic's Pick)
       maxCoinsHeld: 0,          // peak $ ever held in one run (for Tidy Sum)
+      bestEndlessRound: 0,      // furthest endless round reached across runs
     },
     completed: [],            // achievement ids whose predicate fired (Meta uncollected by default)
     claimedAchievements: [],  // achievement ids whose Meta has been collected

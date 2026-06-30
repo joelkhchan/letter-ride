@@ -95,6 +95,8 @@ h1 { color: var(--gold); }
 .rt-node.group-start { margin-left: 13px; }
 .rt-label { font-size: 0.8rem; color: var(--ink-soft); }
 .rt-label b { color: var(--gold); }
+.rt-endless { font-size: 0.95rem; letter-spacing: 0.5px; padding: 4px 0; }
+.rt-endless b { color: var(--gold); }
 #rack { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0; }
 #peek { display: flex; align-items: center; justify-content: center; gap: 6px; margin: -4px 0 8px; font-family: var(--font-ui); }
 #peek .peek-label { font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-soft); }
