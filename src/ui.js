@@ -1405,9 +1405,8 @@ function showExportOverlay() {
   overlay.querySelector('#export-download').onclick = async () => {
     const btn = overlay.querySelector('#export-download');
     const fname = `letter-ride-${new Date().toISOString().slice(0, 10)}.json`;
-    // On Android (Capacitor WebView) a blob/<a download> click is silently ignored, so prefer the
-    // native Share sheet (email/Drive/messages) when it can share a file. Desktop falls back to a
-    // real download; if both fail, select the textarea so Copy always works.
+    const flash = (txt) => { btn.textContent = txt; setTimeout(() => { btn.textContent = 'Download / Share'; }, 2400); };
+    // 1) Native Share sheet (best on phone) when it can share a file — return if it fires.
     try {
       const file = new File([json], fname, { type: 'application/json' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -1416,19 +1415,24 @@ function showExportOverlay() {
       }
     } catch (e) {
       if (e && e.name === 'AbortError') return;   // user dismissed the share sheet — done
-      // otherwise fall through to the download path
     }
+    // 2) Real file download — works on desktop; a no-op in the Android WebView (it doesn't throw,
+    //    which is exactly why the old fallback never ran and the button "did nothing").
     try {
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = fname;
+      a.href = url; a.download = fname; a.rel = 'noopener';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {}
+    // 3) Guaranteed, verifiable action so the button is NEVER silent: copy to clipboard + confirm.
+    try {
+      await navigator.clipboard.writeText(json);
+      flash('Copied to clipboard ✓');
     } catch {
-      ta.focus(); ta.select(); btn.textContent = 'Use Copy instead';
-      setTimeout(() => { btn.textContent = 'Download / Share'; }, 2000);
+      ta.focus(); ta.select();
+      flash('Selected — press copy');
     }
   };
   overlay.querySelector('#export-close').onclick = () => overlay.remove();
