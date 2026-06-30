@@ -419,8 +419,8 @@ function scorePreviewHtml(sel, result, bossNote = '') {
 
   let multStr = `×${result.mult % 1 === 0 ? result.mult : result.mult.toFixed(2)}`;
   const multParts = [];
-  if (bd.addMultParts.length) multParts.push(bd.addMultParts.map(p => `+${p.amount} ${p.label}`).join(', '));
-  if (bd.timesMultParts.length) multParts.push(bd.timesMultParts.map(p => `×${p.amount} ${p.label}`).join(', '));
+  if (bd.addMultParts.length) multParts.push(bd.addMultParts.map(p => `+${fmtMult(p.amount)} ${p.label}`).join(', '));
+  if (bd.timesMultParts.length) multParts.push(bd.timesMultParts.map(p => `×${fmtMult(p.amount)} ${p.label}`).join(', '));
 
   const pointsPart = parts.join(' ');
   const multDetail = multParts.length ? ` (${multParts.join('; ')})` : '';
@@ -513,13 +513,15 @@ function _pullTween(el, from, to, ms, fmt) {
   _pullRaf = requestAnimationFrame(step);
 }
 const _multStr = m => `×${m % 1 === 0 ? m : (Math.round(m * 100) / 100).toFixed(2)}`;
+// Mult amounts in breakdown captions print raw otherwise — round to 2 decimals (no float noise like 0.000002).
+const fmtMult = n => String(Math.round(n * 100) / 100);
 function _pullDetail(bd) {
   const parts = [`Base ${bd.base || 0}`];
   if (bd.lengthBonus > 0) parts.push(`+${bd.lengthBonus} length`);
   for (const p of (bd.pointParts || [])) parts.push(`+${p.amount} ${p.label}`);
   const mp = [];
-  if ((bd.addMultParts || []).length) mp.push(bd.addMultParts.map(p => `+${p.amount} ${p.label}`).join(', '));
-  if ((bd.timesMultParts || []).length) mp.push(bd.timesMultParts.map(p => `×${p.amount} ${p.label}`).join(', '));
+  if ((bd.addMultParts || []).length) mp.push(bd.addMultParts.map(p => `+${fmtMult(p.amount)} ${p.label}`).join(', '));
+  if ((bd.timesMultParts || []).length) mp.push(bd.timesMultParts.map(p => `×${fmtMult(p.amount)} ${p.label}`).join(', '));
   return parts.join(' ') + (mp.length ? ` · ${mp.join('; ')}` : '');
 }
 
@@ -596,8 +598,8 @@ export function animatePull(sel, scored, onDone) {
   if (bd.lengthBonus > 0) { _pullAfter(t, () => { runPts += bd.lengthBonus; setPts(); setStep(`+${intFmt(bd.lengthBonus)} length bonus`, 'sa-step-pt'); sfx('tap'); }); t += STEP; }
   for (const p of (bd.pointParts || [])) { _pullAfter(t, () => { runPts += p.amount; setPts(); setStep(`+${intFmt(p.amount)} ${p.label}`, 'sa-step-pt'); sfx('tap'); }); t += STEP; }
   // 4) the Mult climbs: +Mult then xMult (caption names each)
-  for (const p of (bd.addMultParts || [])) { _pullAfter(t, () => { runMult += p.amount; setMult(); setStep(`+${p.amount} Mult ${p.label}`, 'sa-step-mult'); sfx('tap'); }); t += STEP; }
-  for (const p of (bd.timesMultParts || [])) { _pullAfter(t, () => { runMult *= p.amount; setMult(); setStep(`×${p.amount} Mult ${p.label}`, 'sa-step-mult'); sfx('tap'); }); t += STEP; }
+  for (const p of (bd.addMultParts || [])) { _pullAfter(t, () => { runMult += p.amount; setMult(); setStep(`+${fmtMult(p.amount)} Mult ${p.label}`, 'sa-step-mult'); sfx('tap'); }); t += STEP; }
+  for (const p of (bd.timesMultParts || [])) { _pullAfter(t, () => { runMult *= p.amount; setMult(); setStep(`×${fmtMult(p.amount)} Mult ${p.label}`, 'sa-step-mult'); sfx('tap'); }); t += STEP; }
   // 5) Score reveal (snap Points/Mult to the exact final, then tween the Score)
   _pullAfter(t + 90, () => { if (ptEl) ptEl.textContent = intFmt(scored.points); if (multEl) multEl.textContent = _multStr(scored.mult); sfx('flourish'); _pullTween(scoreEl, 0, scored.score, 520, intFmt); });
   t += 90 + 520;
