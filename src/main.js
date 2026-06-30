@@ -5,7 +5,7 @@ import { newRun, playWord, discard, nextRound, startEndless, offerNode, isBossRo
 import { ALL_BOSS_IDS } from './bosses.js';
 import { saveRun, loadRun } from './storage.js';
 import { generateShop, purchase } from './shop.js';
-import { RELICS, ALL_RELIC_IDS } from './relics.js';
+import { ALL_RELIC_IDS } from './relics.js';
 import { ALL_MOD_IDS } from './tiles.js';
 import { saveMeta, loadMeta, metaEarned, poolFromMeta, applyStakeTargets, buildLoadout, metaShopOffers, purchaseMeta } from './meta.js';
 import { loadTelemetry, saveTelemetry, recordOffers, recordPurchase, recordPlay, recordDiscard, recordRunEnd, summarize } from './telemetry.js';
@@ -61,11 +61,11 @@ try {
   };
   const pool = () => poolFromMeta(meta);
 
-  function startRun(deckId, stakeId) {
+  function startRun(deckId, stakeId, activeLoadout = []) {
     const deck = CONFIG.DECKS[deckId] || CONFIG.DECKS.standard;
     const stake = CONFIG.STAKES.find(s => s.id === stakeId) || CONFIG.STAKES[0];
     const targets = applyStakeTargets(CONFIG.ROUND_TARGETS, stake);
-    const loadout = buildLoadout(meta, CONFIG, RELICS);
+    const loadout = buildLoadout(meta, CONFIG, activeLoadout);   // only the perks opted into this run
     run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets, deck: { id: deck.id, startingBag: deck.startingBag }, stake, loadout });
     logEvent('run_start', { deck: deckId, stake: stakeId, targets: run.targets, relics: run.relics.map(r => r.id), bagSize: run.bag.tiles.length });
     view = 'run'; saveAll(); render();
@@ -268,7 +268,7 @@ try {
     },
     // meta screen actions:
     onMetaBuy(offer) { const r = purchaseMeta(meta, offer, CONFIG); saveAll(); render(); return r; },
-    onStartRun(deckId, stakeId) { startRun(deckId, stakeId); },
+    onStartRun(deckId, stakeId, activeLoadout) { startRun(deckId, stakeId, activeLoadout); },
     // Menu navigation:
     onResume() { if (run) { view = 'run'; render(); } },
     onNewRun() {

@@ -45,9 +45,12 @@ export function loadMeta(storage, config) {
 }
 
 export function metaEarned(run, config) {
-  const cleared = run.status === 'won' ? run.targets.length : run.roundIndex;
+  // A base win counts even if the run later dies in endless mode (run.wonBase).
+  const won = run.status === 'won' || run.wonBase === true;
+  const cleared = won ? (run.endless ? run.roundIndex : run.targets.length) : run.roundIndex;
   const e = config.META.earn;
-  return cleared * e.perRoundCleared + (run.status === 'won' ? e.winBonus : 0);
+  const base = cleared * e.perRoundCleared + (won ? e.winBonus : 0);
+  return Math.max(0, base - (run.loadoutMetaPenalty || 0));   // active loadout perks reduce the payout
 }
 
 export function poolFromMeta(metaState) {
@@ -59,13 +62,20 @@ export function applyStakeTargets(baseTargets, stake) {
   return baseTargets.map(t => Math.ceil(t * mult));
 }
 
-export function buildLoadout(metaState, config, RELICS) {
+// Build the per-run loadout from the perks the player ACTIVATED this run (activeKeys). Perks not in
+// the active set contribute nothing. metaPenalty = Σ over active perks of (metaPenalty × owned level).
+export function buildLoadout(metaState, config, activeKeys = []) {
   const lo = metaState.loadout || {};
+  const active = new Set(activeKeys);
+  const lvl = (key) => active.has(key) ? (lo[key] || 0) : 0;
+  let metaPenalty = 0;
+  for (const key of active) metaPenalty += (config.LOADOUT[key]?.metaPenalty || 0) * (lo[key] || 0);
   return {
-    extraDiscards: lo.extraDiscards || 0,
-    freeRerolls: lo.freeReroll || 0,
-    round1ExtraPlay: lo.round1Play || 0,
+    extraDiscards: lvl('extraDiscards'),
+    freeRerolls: lvl('freeReroll'),
+    round1ExtraPlay: lvl('round1Play'),
     startRelics: [],
+    metaPenalty,
   };
 }
 

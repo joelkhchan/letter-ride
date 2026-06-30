@@ -292,6 +292,9 @@ button { font-family: var(--font-body); color: var(--ink); }
 .pick-card.active { border-color: var(--gold); border-top-color: var(--gold); background: linear-gradient(180deg, var(--gold-wash), var(--night-sunk)); }
 .pick-card.active::after { content: '✓'; position: absolute; top: 8px; right: 9px; width: 19px; height: 19px; border-radius: 50%; background: var(--gold); color: var(--night); font-size: 13px; font-weight: 700; display: grid; place-items: center; }
 .pick-name { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--ink); }
+.loadout-pick { display: inline-block; max-width: 260px; vertical-align: top; }
+.lo-penalty { color: var(--coral); font-weight: 700; }
+.lo-sub { font-family: var(--font-ui); font-weight: 400; font-size: 0.78rem; color: var(--ink-soft); text-transform: none; letter-spacing: 0; }
 .pick-card.danger, .pick-card.danger:hover { border-top-color: var(--coral); }
 .pick-card.danger.active { border-color: var(--coral); }
 .pick-card.danger.active::after { background: var(--coral); color: #2a0f08; }

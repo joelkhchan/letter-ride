@@ -21,6 +21,7 @@ let selection = [];      // [{ tile, letter }]
 let lastRun = null;
 let selectedDeckId = 'standard';
 let selectedStakeId = null;  // will be set to config.STAKES[0].id on first render
+let selectedLoadout = new Set();   // loadout perks opted into for the next run (default none = opt-in)
 let lastShownScore = null;   // for score count-up animation
 let _scoreRafId = null;      // active rAF handle (cancel on skip)
 let _pulling = false;        // SP2 "the pull" reveal in progress
@@ -1789,6 +1790,22 @@ export function renderSetup(meta, config, profile) {
     if (s.discardsDelta) parts.push(`${s.discardsDelta > 0 ? '+' : ''}${s.discardsDelta} discard/round`);
     return parts.join(' · ');
   };
+  // Loadout: perks the player has UNLOCKED become per-run opt-in toggles, each costing Meta when active.
+  const ownedLoadout = Object.keys(config.LOADOUT).filter(k => (meta.loadout?.[k] || 0) > 0);
+  for (const k of [...selectedLoadout]) if (!ownedLoadout.includes(k)) selectedLoadout.delete(k);   // prune un-owned
+  const loadoutPenalty = [...selectedLoadout].reduce((s, k) => s + (config.LOADOUT[k]?.metaPenalty || 0) * (meta.loadout?.[k] || 0), 0);
+  const loadoutButtonsHtml = ownedLoadout.map(key => {
+    const L = config.LOADOUT[key];
+    const owned = meta.loadout[key];
+    const pen = L.metaPenalty * owned;
+    const active = selectedLoadout.has(key) ? ' active' : '';
+    const label = owned > 1 ? `${L.name} ×${owned}` : L.name;
+    return `<button class="pick-card loadout-pick${active}" data-loadout="${key}"><b class="pick-name">${label}</b><div class="stake-desc">${L.desc} &middot; <span class="lo-penalty">&minus;${pen} Meta</span></div></button>`;
+  }).join('');
+  const loadoutSection = ownedLoadout.length
+    ? `<h3 class="settings-h">Loadout <span class="lo-sub">optional &middot; ${loadoutPenalty ? `&minus;${loadoutPenalty} Meta this run` : 'no penalty'}</span></h3><div id="loadout-buttons">${loadoutButtonsHtml}</div>`
+    : '';
+
   const totalStakes = config.STAKES.length;
   const stakeButtonsHtml = meta.unlockedStakes.map(id => {
     const s = config.STAKES.find(x => x.id === id) || { id, name: `Edition ${(Number(id) || 0) + 1}` };
@@ -1820,6 +1837,7 @@ export function renderSetup(meta, config, profile) {
           <div id="deck-buttons">${deckButtonsHtml}</div>
           <h3 class="settings-h">Stake</h3>
           <div id="stake-buttons">${stakeButtonsHtml}</div>
+          ${loadoutSection}
         </div>
         <aside class="setup-aside">
           <h3 class="settings-h">Your run</h3>
@@ -1835,12 +1853,16 @@ export function renderSetup(meta, config, profile) {
   app().querySelectorAll('.stake-pick').forEach(btn => {
     btn.onclick = () => { selectedStakeId = Number(btn.dataset.stake); renderSetup(meta, config, profile); };
   });
+  app().querySelectorAll('.loadout-pick').forEach(btn => {
+    btn.onclick = () => { const k = btn.dataset.loadout; selectedLoadout.has(k) ? selectedLoadout.delete(k) : selectedLoadout.add(k); renderSetup(meta, config, profile); };
+  });
   const startBtn = document.getElementById('start-run');
   if (startBtn) startBtn.onclick = () => {
-    const deck = selectedDeckId, stake = selectedStakeId;
+    const deck = selectedDeckId, stake = selectedStakeId, loadout = [...selectedLoadout];
     selectedDeckId = meta.unlockedDecks[0] ?? 'standard';
     selectedStakeId = null;
-    handlers.onStartRun?.(deck, stake);
+    selectedLoadout = new Set();   // reset opt-in for the next visit
+    handlers.onStartRun?.(deck, stake, loadout);
   };
   const help = document.getElementById('setup-help-btn');
   if (help) help.onclick = () => showHelpOverlay();

@@ -37,6 +37,21 @@ test('metaEarned: win pays all rounds + bonus; loss pays rounds cleared', () => 
   const lost = { status: 'lost', roundIndex: 3, targets: config.ROUND_TARGETS };
   assert.equal(metaEarned(lost, config), 3 * 2);        // cleared 3 -> 6
 });
+test('buildLoadout: only opted-in perks apply; metaPenalty = penalty × owned level', () => {
+  const cfg = { LOADOUT: { extraDiscards: { max: 1, metaPenalty: 6 }, freeReroll: { max: 2, metaPenalty: 4 } } };
+  const m = { loadout: { extraDiscards: 1, freeReroll: 2 } };
+  let lo = buildLoadout(m, cfg, []);                       // none active
+  assert.equal(lo.extraDiscards, 0); assert.equal(lo.freeRerolls, 0); assert.equal(lo.metaPenalty, 0);
+  lo = buildLoadout(m, cfg, ['extraDiscards', 'freeReroll']);   // both active
+  assert.equal(lo.extraDiscards, 1); assert.equal(lo.freeRerolls, 2);
+  assert.equal(lo.metaPenalty, 6 * 1 + 4 * 2);             // 14
+});
+test('metaEarned subtracts the run loadout penalty, floored at 0', () => {
+  const won = { status: 'won', roundIndex: 7, targets: config.ROUND_TARGETS, loadoutMetaPenalty: 10 };
+  assert.equal(metaEarned(won, config), 8 * 2 + 10 - 10);   // 26 - 10 = 16
+  const lost = { status: 'lost', roundIndex: 1, targets: config.ROUND_TARGETS, loadoutMetaPenalty: 100 };
+  assert.equal(metaEarned(lost, config), 0);                // floored at 0
+});
 test('poolFromMeta exposes the unlocked relic/mod ids', () => {
   const m = makeMetaState(config); m.unlockedRelics.push('lengthy');
   assert.deepEqual(poolFromMeta(m), { relicIds: ['vowelBonus','lengthy'], modIds: ['polished'] });
@@ -121,11 +136,11 @@ test('config drops the removed economy perks but keeps the modest loadout perks'
   assert.ok(CONFIG.LEVELS && Array.isArray(CONFIG.LEVELS.thresholds));
 });
 
-test('buildLoadout surfaces extraDiscards, freeRerolls, and round1ExtraPlay', () => {
+test('buildLoadout surfaces extraDiscards, freeRerolls, and round1ExtraPlay for opted-in perks', () => {
   const m = makeMetaState(CONFIG);
-  m.loadout.extraDiscards = 2; m.loadout.freeReroll = 1; m.loadout.round1Play = 1;
-  const lo = buildLoadout(m, CONFIG, {});
-  assert.equal(lo.extraDiscards, 2);
+  m.loadout.extraDiscards = 1; m.loadout.freeReroll = 1; m.loadout.round1Play = 1;
+  const lo = buildLoadout(m, CONFIG, ['extraDiscards', 'freeReroll', 'round1Play']);   // all opted in
+  assert.equal(lo.extraDiscards, 1);
   assert.equal(lo.freeRerolls, 1);
   assert.equal(lo.round1ExtraPlay, 1);
   assert.deepEqual(lo.startRelics, []);

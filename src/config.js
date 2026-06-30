@@ -100,10 +100,12 @@ export const CONFIG = {
     { id: 1, name: 'Second Edition', targetMult: 1.25, playsDelta: 0,  discardsDelta: 0 },
     { id: 2, name: 'Third Edition',  targetMult: 1.5,  playsDelta: -1, discardsDelta: 0 },
   ],
+  // Loadout perks are UNLOCKED with Meta here, then OPTED INTO per run (New Run toggles, default off).
+  // Activating one cuts that run's Meta payout by metaPenalty × owned-level (flat). TUNE the penalties.
   LOADOUT: {
-    extraDiscards: { name: '+1 Discard / round', max: 1, cost: 10, desc: 'Dig for better letters' },
-    freeReroll:    { name: '+1 free reroll per shop', max: 2, cost: 8, desc: 'One free shop reroll each visit' },
-    round1Play:    { name: '+1 Play on round 1', max: 1, cost: 8, desc: 'Open the run with an extra play' },
+    extraDiscards: { name: '+1 Discard / round', max: 1, cost: 10, metaPenalty: 6, desc: 'Dig for better letters' },
+    freeReroll:    { name: '+1 free reroll per shop', max: 2, cost: 8, metaPenalty: 4, desc: 'One free shop reroll each visit' },
+    round1Play:    { name: '+1 Play on round 1', max: 1, cost: 8, metaPenalty: 4, desc: 'Open the run with an extra play' },
   },
   HONE: { cost: 6 },
   PROFANITY_FILTER: true,

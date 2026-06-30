@@ -129,6 +129,7 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
     relics: startRelics,
     coins: loadout.startCoins || 0,
     loadoutFreeRerolls: loadout.freeRerolls || 0,   // free shop rerolls granted each shop (loadout)
+    loadoutMetaPenalty: loadout.metaPenalty || 0,   // Meta deducted at run end for the perks opted into
     freeRerollsLeft: loadout.freeRerolls || 0,
     rack: [],
     drawPile: [],
