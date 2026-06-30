@@ -34,9 +34,19 @@ export function makeDictionary(words, blocklist = []) {
   };
 }
 
+// Load one or more word-list files and merge them into a single dictionary. The base list
+// (ENABLE) is supplemented by assets/modern-words.txt (SCOWL-derived modern words ENABLE lacks);
+// see assets/icons/CREDITS.md for provenance.
+export async function loadFromFiles(paths, blocklist = []) {
+  const texts = await Promise.all(paths.map(async (path) => {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error(`Dictionary load failed: ${res.status} ${path}`);
+    return res.text();
+  }));
+  const words = texts.flatMap(t => t.split(/\r?\n/)).filter(Boolean);
+  return makeDictionary(words, blocklist);
+}
+
 export async function loadFromFile(path, blocklist = []) {
-  const res = await fetch(path);
-  if (!res.ok) throw new Error(`Dictionary load failed: ${res.status} ${path}`);
-  const text = await res.text();
-  return makeDictionary(text.split(/\r?\n/).filter(Boolean), blocklist);
+  return loadFromFiles([path], blocklist);
 }

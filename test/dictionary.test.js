@@ -1,7 +1,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { makeDictionary } from '../src/dictionary.js';
+import { makeDictionary, loadFromFiles } from '../src/dictionary.js';
 import { CONFIG } from '../src/config.js';
+
+test('loadFromFiles merges a base list + supplement into one dictionary', async () => {
+  const orig = globalThis.fetch;
+  const files = { 'base.txt': 'cat\ndog\n', 'modern.txt': 'email\nselfie\n' };
+  globalThis.fetch = async (p) => ({ ok: true, status: 200, text: async () => files[p] });
+  try {
+    const dict = await loadFromFiles(['base.txt', 'modern.txt']);
+    assert.equal(dict.isValid('cat'), true);     // from base
+    assert.equal(dict.isValid('email'), true);   // from the modern supplement
+    assert.equal(dict.isValid('selfie'), true);
+    assert.equal(dict.isValid('zzz'), false);
+  } finally {
+    globalThis.fetch = orig;
+  }
+});
 
 test('CONFIG.PROFANITY_BLOCKLIST is populated, all-lowercase, and actually blocks plays', () => {
   const list = CONFIG.PROFANITY_BLOCKLIST;

@@ -83,3 +83,17 @@ MIT does not require visible attribution; listed for provenance. Recolored via C
 > The wider exploration set (other elements, Tabler line candidates) lives in the uncommitted
 > `candidates/` scratch folder used to build the comparison galleries; only the shipped relic
 > glyphs above are committed and require attribution.
+
+## Word lists (`assets/enable1.txt` + `assets/modern-words.txt`)
+
+- **`enable1.txt`** — the **ENABLE** word list (Enhanced North American Benchmark LExicon), compiled
+  by Alan Beale & M. Cooper. **Public domain** (no restriction; crediting requested). ~172.8k words,
+  frozen ~2000. https://github.com/dolph/dictionary
+- **`modern-words.txt`** — a 2026-06-30 supplement of ~13k modern/common words ENABLE lacks
+  (email, selfie, emoji, blog, podcast, hashtag, bitcoin, vape, etc.). Derived from **SCOWL** (Spell
+  Checker Oriented Word Lists) by Kevin Atkinson — a permissive list requiring only this copyright
+  notice. http://wordlist.aspell.net/ . Generated as: `(SCOWL size-70 US, lowercase-only, length ≥ 3,
+  must contain a vowel) − ENABLE − SCOWL's own abbreviation/contraction lists`, then a few real words
+  SCOWL mis-tags as abbreviations were restored (email, app, admin, hazmat, nimby, vocab) and a few
+  moderns it lacked were added (zen, wifi, wiki, vlog). No proper nouns or acronyms/abbreviations.
+  SCOWL copyright: "Copyright 2000-2019 by Kevin Atkinson"; see the SCOWL readme for the full notice.

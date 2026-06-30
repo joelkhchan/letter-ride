@@ -1,6 +1,6 @@
 // src/main.js
 import { CONFIG } from './config.js';
-import { loadFromFile } from './dictionary.js';
+import { loadFromFiles } from './dictionary.js';
 import { newRun, playWord, discard, nextRound, offerNode, isBossRound } from './run.js';
 import { ALL_BOSS_IDS } from './bosses.js';
 import { saveRun, loadRun } from './storage.js';
@@ -21,7 +21,7 @@ import { initUpdater } from './updater.js';
 try {
   initUpdater();   // OTA self-update check on launch (Android only; a no-op on the web)
   const blocklist = CONFIG.PROFANITY_FILTER ? CONFIG.PROFANITY_BLOCKLIST : [];
-  const dictionary = await loadFromFile('assets/enable1.txt', blocklist);
+  const dictionary = await loadFromFiles(['assets/enable1.txt', 'assets/modern-words.txt'], blocklist);
   const meta = loadMeta(window.localStorage, CONFIG);
   let telemetry = loadTelemetry(window.localStorage);
   const profile = loadProfile(window.localStorage);
