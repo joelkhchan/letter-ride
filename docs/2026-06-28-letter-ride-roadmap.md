@@ -13,6 +13,49 @@ week's work fixed the active legibility problems (itemized score readout, concre
 wording, first-run onboarding) and added variety (multi-tile imprint, per-bag identities, a Classic
 bag). **The skeleton is done. The open problem is depth.**
 
+## Session update — 2026-06-30 (shipped + revised priority)
+
+A large content/UX/fix batch shipped (all on the OTA build, pushed; 353 tests green). **Nothing
+below is playtested yet — these are first-pass magnitudes; the author's playtest is the next gate.**
+
+**Shipped this session:**
+- **Balance/scoring (UNPLAYTESTED magnitudes):** doubled = *any* repeated letter (was adjacent-only;
+  deliberately buffs Double Trouble / Echo Chamber / Resonance / doubled Refine); Loose Doubles
+  repurposed → +1 Mult per repeated letter; **escalation ×Mult kicker** (Combo Counter +1 Mult & ×1.1
+  per word; Refine Lv3+ kicker scales with the combo); **long-word Refine → +0.5 Mult** (was Points).
+- **Dictionary (DECIDED — see `dictionary-state` memory):** kept ENABLE, added a ~13k-word **SCOWL
+  modern supplement** (`assets/modern-words.txt`; accepts email/selfie/emoji/blog/etc., no abbrevs/
+  acronyms/proper-nouns); **2-letter words enabled** (`MIN_WORD_LEN: 2` + the 107 NWL2023 Scrabble-
+  legal twos in `assets/two-letter-words.txt`). YAWL/CSW/NWL rejected (frozen / copyrighted).
+- **Endless mode:** continue past the win into a compounding escalating curve (`CONFIG.ENDLESS`),
+  `wonBase` banks the win, `bestEndlessRound` tracked.
+- **The Proof:** Wordle-style event (guess a 5-letter common word in 6 tries; solve for $ scaling
+  with speed, or a relic). Logic in `wordle.js`, answer pool `assets/wordle-answers.txt`.
+- **Loadout opt-in + penalty (was D-optional):** perks unlock in the meta-shop, then opt-in per run
+  via New Run toggles (default off); each active perk cuts the run's Meta by metaPenalty × level.
+- **UX/fixes:** un-press staged tiles; export never-silent (clipboard fallback); cut the pre-win
+  shop + the event/Press confirm screens; Mult display 2-dp clamp; **HUD mobile cleanup** (C3,
+  branded tool buttons); **Android hardware-back = back one screen** (History API); **bag
+  descriptions** sharpened to signal each build; **curated engraved icons** for the 6 placeholder
+  relics/bosses (game-icons, CC-BY).
+
+**Decisions locked this session:**
+- **Shop coherence (C1) PARKED** — it erodes the $/reroll pillar (helps acquisition = less spend);
+  the goal folds into hidden-pity instead.
+- **Hidden pity — author said NO for now** (revisit only if playtest shows acquisition is luck-gated).
+- **OTA auto-update is CORS-broken on-device** (browser `fetch()` of GitHub release assets is blocked
+  from the WebView; repo is public, not a privacy issue). Fix = native HTTP (CapacitorHttp) — bundle
+  it with the **Phase E (Tier 3)** packaging pass. Until then: re-sideload the APK (stable link).
+
+**Revised forward priority (supersedes the phase order below for sequencing):**
+1. **Author playtest + balance tuning** — THE gate. Calibrate the unplayed magnitudes above + verify
+   the new UI on device (HUD, Wordle board, loadout toggles, engraved icons).
+2. **Tune** from the playtest (config/relics/archetypes numbers).
+3. Then, by feel: **C2 synergy-cluster legibility**, **bag-modifiers + hone-vs-snowball review**
+   (author wants to review), **more meta content** — OR jump to **Phase E** if it plays well.
+4. Larger/scope-first: **D1 position lever** (deferred), **scoring v2**, **run-path visualization**
+   (needs UX scoping — author flagged).
+
 ## Core diagnosis (from the harness + real player data, 2026-06-28)
 
 The author DECIDED to keep the **×Mult engine fantasy** — the fun is watching ×Mult × ×Mult compound
@@ -178,7 +221,8 @@ an engine by ~round 5 through choices, not luck.
 - **C2. Synergy-cluster legibility:** at purchase and in the relic strip, show which owned/offered
   pieces combine into an engine (distinct from score-reveal juice, which is done).
 - **C3. Onboarding-into-a-build** (extend the first-run help to suggest leaning into a bag's
-  identity) + **HUD mobile cleanup** (the top bar's mixed button sizes/shapes read messy on phone).
+  identity) + **HUD mobile cleanup** — *HUD cleanup SHIPPED 2026-06-30 (branded tool buttons);
+  onboarding-into-a-build still open.*
 
 ### Phase D — Depth levers (only after the funnel works)
 - **D1. Position / sequencing lever** (author likes it; the ceiling-raiser). Prototype *contained*
@@ -189,12 +233,17 @@ an engine by ~round 5 through choices, not luck.
   family); a peek / swap-one-tile draw lever. **SKIP letter-mastery** (a letter that grows with play)
   — it is the deferred Tier-4 "leveled alphabet / letter XP"; do not pull forward without explicit
   sign-off.
-- **D-optional.** Loadout opt-in + penalty (convert auto-applied loadout into a pre-run risk/reward
-  choice); Wordle-style event. Polish, not depth.
+- **D-optional. BOTH SHIPPED 2026-06-30:** Loadout opt-in + Meta penalty (per-run toggles, default
+  off); Wordle-style event ("The Proof"). Polish, not depth — now in for playtest.
 
 ### Phase E — Ship (Tier 3, the last roadmap tier)
 Android APK via Capacitor is the final tier. Already shipping via the debug APK + reinstall flow;
 proper packaging is gated on Phases B/C landing and an author playtest. See `tier3-plan`.
+**Includes the OTA fix:** on-device auto-update currently fails because the updater does a browser
+`fetch()` of GitHub release assets, which the WebView blocks (CORS) — verified the repo is public and
+the assets are reachable over curl, so it's not a visibility issue. Fix = fetch the manifest over
+native HTTP (enable `CapacitorHttp` to patch `fetch`, or use `CapacitorHttp.get`); the bundle download
+already goes through the native capgo plugin. Until shipped, updates require re-sideloading the APK.
 
 ## Open decisions
 All three framing decisions are now locked — see "Decisions locked (author, 2026-06-28)" above:
