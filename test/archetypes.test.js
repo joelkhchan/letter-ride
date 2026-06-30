@@ -31,9 +31,10 @@ test('escalation matches only once momentum has started (2nd+ word or a chained 
   assert.equal(ARCHETYPES.escalation.matches(ctx('CAT', { wordsPlayedThisRound: 1 })), true);   // 2nd+ word
   assert.equal(ARCHETYPES.escalation.matches(ctx('CAT', { chainLength: 1 })), true);            // chained word (folded chain)
 });
-test('looseDoubled enabler counts a non-adjacent repeat as doubled', () => {
-  assert.equal(ARCHETYPES.doubled.matches(ctx('TOT')), false);                                  // T-O-T: repeat but no adjacent double
-  assert.equal(ARCHETYPES.doubled.matches({ ...ctx('TOT'), enablers: ['looseDoubled'] }), true);
+test('doubled counts any repeated letter (relaxed from adjacent-only 2026-06-30)', () => {
+  assert.equal(ARCHETYPES.doubled.matches(ctx('TOT')), true);    // T-O-T: non-adjacent repeat now counts
+  assert.equal(ARCHETYPES.doubled.matches(ctx('NEED')), true);   // adjacent double still counts
+  assert.equal(ARCHETYPES.doubled.matches(ctx('CAT')), false);   // no repeat
 });
 test('longReach enabler lowers the long-word threshold by one', () => {
   assert.equal(ARCHETYPES.longWord.matches(ctx('HOUSE')), false);                                 // 5 letters, default threshold 6

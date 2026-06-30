@@ -149,8 +149,11 @@ test('longReach: enabler field is set correctly', () => {
   assert.equal(RELICS.longReach.enabler, 'longReach');
 });
 
-test('looseDoubles: enabler field is set correctly', () => {
-  assert.equal(RELICS.looseDoubles.enabler, 'looseDoubled');
+test('looseDoubles: +1 Mult per distinct repeated letter', () => {
+  assert.equal(RELICS.looseDoubles.enabler, undefined);                                  // enabler retired
+  assert.deepEqual(RELICS.looseDoubles.evaluate({ letters: [...'CAT'] }), {});            // no repeat
+  assert.deepEqual(RELICS.looseDoubles.evaluate({ letters: [...'ENCHASE'] }), { addMult: 1 });   // one repeated letter (E)
+  assert.deepEqual(RELICS.looseDoubles.evaluate({ letters: [...'BOOKKEEPER'] }), { addMult: 3 }); // O, K, E
 });
 
 // ── Task 1: Snowball infrastructure + Avalanche ──────────────────────────────

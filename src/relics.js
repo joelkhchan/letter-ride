@@ -85,8 +85,13 @@ export const RELICS = {
     evaluate: (ctx) => isDoubledCtx(ctx) ? { timesMult: 2 } : {},
   },
   looseDoubles: {
-    id: 'looseDoubles', name: 'Loose Doubles', desc: 'Any letter appearing 2+ times counts as doubled',
-    enabler: 'looseDoubled', evaluate: () => ({}),
+    id: 'looseDoubles', name: 'Loose Doubles', desc: '+1 Mult per distinct repeated letter (e.g. BOOKKEEPER = +3)',
+    evaluate: (ctx) => {
+      const c = {};
+      for (const l of ctx.letters) c[l] = (c[l] || 0) + 1;
+      const reps = Object.values(c).filter(n => n >= 2).length;
+      return reps ? { addMult: reps } : {};
+    },
   },
 
   // Escalation / combo

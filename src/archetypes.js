@@ -3,7 +3,6 @@
 const VOWELS = new Set(['A','E','I','O','U']);
 const RARE = new Set(['J','Q','X','Z']);
 const isVowel = (c) => VOWELS.has(c);
-const hasAdjacentDouble = (w) => { for (let i=1;i<w.length;i++) if (w[i]===w[i-1]) return true; return false; };
 const hasRepeat = (letters) => { const seen={}; for (const l of letters){ seen[l]=(seen[l]||0)+1; if (seen[l]>=2) return true; } return false; };
 
 // rare check honors the wildsAreRare enabler (a wild tile counts as rare).
@@ -13,10 +12,10 @@ export function hasRare(ctx) {
   if ((ctx.enablers || []).includes('wildsAreRare') && (ctx.selection || []).some(s => s.tile?.letter === '*')) return true;
   return false;
 }
-// doubled check honors the looseDoubled enabler (any letter repeated, not just adjacent).
+// doubled = any letter appearing 2+ times in the word. Relaxed 2026-06-30 from adjacent-only
+// (so ENCHASE's two separated E's now count); the old looseDoubled enabler is therefore retired.
 export function isDoubled(ctx) {
-  if (hasAdjacentDouble(ctx.word.toUpperCase())) return true;
-  if ((ctx.enablers || []).includes('looseDoubled') && hasRepeat(ctx.letters)) return true;
+  if (hasRepeat(ctx.letters)) return true;
   if ((ctx.selection || []).some(s => (s.tile?.mods || []).some(m => m.id === 'twin'))) return true;  // engineered double (Twin mod)
   return false;
 }
