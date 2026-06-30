@@ -97,6 +97,9 @@ try {
   }
 
   // resume safety: a finished run sitting in storage shouldn't strand the player
+  if (run && run.status === 'roundCleared' && run.roundIndex + 1 >= run.targets.length) {
+    nextRound(run);   // final round was cleared but not advanced — go straight to the win screen, no node
+  }
   if (run && (run.status === 'roundCleared') && !run.shop && !run.nodeEventId && run.nodeEventId !== null) {
     // nodeEventId not yet set — call offerNode to establish it
     offerNode(run);
@@ -142,11 +145,15 @@ try {
         maxHoneLevel: Math.max(0, ...Object.values(run.honeLevels || {})),
       }, CONFIG));
       if (run.status === 'roundCleared') {
-        offerNode(run);
-        if (run.nodeEventId === null) {
-          // no eligible event — go straight to shop
-          run.shop = generateShop(run, run.rng, pool());
-          recordOffers(telemetry, extractOfferIds(run.shop));
+        if (run.roundIndex + 1 >= run.targets.length) {
+          nextRound(run);   // final round cleared: win immediately — no shop/event node before the trophy
+        } else {
+          offerNode(run);
+          if (run.nodeEventId === null) {
+            // no eligible event — go straight to shop
+            run.shop = generateShop(run, run.rng, pool());
+            recordOffers(telemetry, extractOfferIds(run.shop));
+          }
         }
       }
       saveAll(); animatePull(sel, r.scored, render); return r; },
