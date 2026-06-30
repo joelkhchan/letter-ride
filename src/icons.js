@@ -9,7 +9,7 @@
 // Relics shown as a struck Zilla glyph seal (original marks, no third-party art). Ampersand IS a
 // ligature; $ = the money relic; the others are representative letters. (Curated engraved game-icons
 // art can replace these later — see assets/icons/CREDITS.md.)
-const LETTER_RELICS = { vowelBonus: 'A', ligature: '&', royaltyPress: '$', suffixPress: 'S', galleyProof: '»' };
+const LETTER_RELICS = { vowelBonus: 'A' };   // remaining struck-glyph seal; the rest now use engraved game-icons art
 
 // a mask-tinted glyph from an svg path
 function glyphMark(src) {
@@ -29,7 +29,7 @@ export function relicSealHtml(relicId, { size = 'sm' } = {}) {
 
 // Bosses without curated art yet: a struck glyph-seal (2026-06-29). Censor "■" = a redaction bar
 // (it blacks out a letter); One-Liner """ = a quoted single line. Replace with engraved art later.
-const BOSS_LETTERS = { censor: '■', oneLiner: '“' };
+const BOSS_LETTERS = {};   // all bosses now have engraved game-icons art (boss-<id>.svg)
 
 // A boss's seal (the Sentence-round threat).
 export function bossSealHtml(bossId, { size = 'md' } = {}) {

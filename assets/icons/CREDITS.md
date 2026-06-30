@@ -5,10 +5,10 @@ REQUIRES visible attribution** of each icon's author. This file is that attribut
 the app and is referenced from the in-game credits. Source SVGs were recolored (aged gold via CSS
 mask) and reframed as seals; CC BY permits this with attribution.
 
-Several relic marks are **original to Letter Ride** (no third-party attribution needed): Vowel Bonus
-is a struck Zilla Slab "A"; Wildcard Rares (`relic-wildcardRares.svg`) is a hand-drawn star; and the
-2026-06-29 content relics use struck Zilla glyph-seals — Ligature "&" (an ampersand IS a ligature),
-Royalty Press "$", Suffix Press "S", Galley Proof "»". (These can be replaced with curated engraved game-icons art later.)
+Two relic marks are **original to Letter Ride** (no third-party attribution needed): Vowel Bonus
+is a struck Zilla Slab "A", and Wildcard Rares (`relic-wildcardRares.svg`) is a hand-drawn star.
+(The 2026-06-29 content relics + bosses were placeholder struck glyph-seals; on 2026-06-30 they were
+replaced with curated engraved game-icons art, attributed in the tables below.)
 
 ## Relic glyphs — game-icons.net, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
 
@@ -39,18 +39,22 @@ Royalty Press "$", Suffix Press "S", Galley Proof "»". (These can be replaced w
 | `relic-recycler.svg` | recycle | Lorc |
 | `relic-pressLead.svg` | stamper | Delapouite |
 | `relic-pithy.svg` | anvil | Delapouite |
+| `relic-suffixPress.svg` | quill-ink | Lorc |
+| `relic-ligature.svg` | bowen-knot | Delapouite |
+| `relic-royaltyPress.svg` | jewel-crown | Delapouite |
+| `relic-galleyProof.svg` | spectacles | Lorc |
 
 All of the above are by their named authors, sourced from https://game-icons.net, licensed CC BY 3.0.
 
 ## Boss + Meta-currency glyphs — game-icons.net, CC BY 3.0
-
-The Censor "■" and The One-Liner """ are **original** struck glyph-seals (no third-party art).
 
 | File | Original glyph | Author |
 |---|---|---|
 | `bosses/boss-mute.svg` | silence | Lorc |
 | `bosses/boss-toll.svg` | gate | Delapouite |
 | `bosses/boss-vise.svg` | clamp | Delapouite |
+| `bosses/boss-censor.svg` | cancel | Sbed |
+| `bosses/boss-oneLiner.svg` | scroll-unfurled | Lorc |
 | `ui/meta.svg` | medal | Lorc |
 | `buckets/onboarding.svg` | sprout | Lorc |
 | `buckets/progression.svg` | ladder | Delapouite |
