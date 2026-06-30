@@ -152,7 +152,7 @@ test('relicState round-trips through serialize/deserialize', () => {
   const run = newRun({ config, dictionary: dict, seed: 7 });
   run.relicState = { rareAvalanche: { stacks: 4 } };
   const data = serializeRun(run);
-  assert.equal(data.version, 7);
+  assert.equal(data.version, 8);
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.deepEqual(restored.relicState, { rareAvalanche: { stacks: 4 } });
 });
@@ -168,22 +168,34 @@ test('a missing relicState deserializes to {}', () => {
 test('boss + bossOrder round-trip; schema is 7', () => {
   const run = newRun({ config, dictionary: dict, seed: 5 });
   const data = serializeRun(run);
-  assert.equal(data.version, 7);
+  assert.equal(data.version, 8);
   assert.deepEqual(data.bossOrder, run.bossOrder);
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.deepEqual(restored.bossOrder, run.bossOrder);
   assert.equal(restored.boss, run.boss);
 });
 
-test('nodeEventId round-trips through serialize/deserialize; version is 7', () => {
+test('nodeEventId round-trips through serialize/deserialize; version is 8', () => {
   resetTileIds();
   const run = newRun({ config, dictionary: dict, seed: 3 });
   run.nodeEventId = 'bonusTiles';
   const data = serializeRun(run);
-  assert.equal(data.version, 7);
+  assert.equal(data.version, 8);
   assert.equal(data.nodeEventId, 'bonusTiles');
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.equal(restored.nodeEventId, 'bonusTiles');
+});
+
+test('endless flag + round counter round-trip through serialize/deserialize', () => {
+  resetTileIds();
+  const run = newRun({ config, dictionary: dict, seed: 3 });
+  run.endless = true; run.endlessRound = 4;
+  const data = serializeRun(run);
+  assert.equal(data.endless, true);
+  assert.equal(data.endlessRound, 4);
+  const restored = deserializeRun(data, { config, dictionary: dict });
+  assert.equal(restored.endless, true);
+  assert.equal(restored.endlessRound, 4);
 });
 
 test('nodeEventId defaults to null when missing from save', () => {
@@ -200,7 +212,7 @@ test('nodeResolved true round-trips through serialize/deserialize', () => {
   const run = newRun({ config, dictionary: dict, seed: 4 });
   run.nodeResolved = true;
   const data = serializeRun(run);
-  assert.equal(data.version, 7);
+  assert.equal(data.version, 8);
   assert.equal(data.nodeResolved, true);
   const restored = deserializeRun(data, { config, dictionary: dict });
   assert.equal(restored.nodeResolved, true);

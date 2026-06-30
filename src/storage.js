@@ -8,10 +8,12 @@ const KEY = 'letterRide.run';
 
 export function serializeRun(run) {
   return {
-    version: 7,                                          // bump when the schema changes
+    version: 8,                                          // bump when the schema changes
     seed: run.seed,
     rngState: run.rng.getState(),
     targets: run.targets,
+    endless: run.endless ?? false,                       // endless-mode flag + round counter (persist mid-endless)
+    endlessRound: run.endlessRound || 0,
     roundIndex: run.roundIndex,
     target: run.target,
     roundTotal: run.roundTotal,
@@ -60,6 +62,8 @@ export function deserializeRun(data, { config, dictionary }) {
     config, dictionary,
     seed: data.seed, rng,
     targets: data.targets,
+    endless: data.endless ?? false,
+    endlessRound: data.endlessRound || 0,
     roundIndex: data.roundIndex,
     target: data.target,
     roundTotal: data.roundTotal,
@@ -106,7 +110,7 @@ export function loadRun(storage, deps) {
   if (!raw) return null;
   try {
     const data = JSON.parse(raw);
-    if (data.version !== 7) return null;     // schema changed → treat as no save (graceful drop)
+    if (data.version !== 8) return null;     // schema changed → treat as no save (graceful drop)
     return deserializeRun(data, deps);
   } catch {
     return null;                             // corrupt save → start fresh, never brick the page

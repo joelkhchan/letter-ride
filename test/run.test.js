@@ -1,7 +1,7 @@
 // test/run.test.js
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { newRun, playWord, discard, nextRound, awardCoins, handSizeFor, startRound } from '../src/run.js';
+import { newRun, playWord, discard, nextRound, startEndless, awardCoins, handSizeFor, startRound } from '../src/run.js';
 import { honeModifiers } from '../src/archetypes.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { makeTile, resetTileIds, getMod } from '../src/tiles.js';
@@ -68,6 +68,36 @@ test('clearing the last round wins', () => {
   const run = newRun({ config, dictionary: dict, seed: 1 });
   run.roundIndex = 1; run.status = 'roundCleared';
   assert.equal(nextRound(run).status, 'won');
+});
+
+test('endless mode extends targets on a compounding, escalating, rounded curve', () => {
+  resetTileIds();
+  const cfg = { ...config, ROUND_TARGETS: [5, 700], ENDLESS: { startFactor: 1.25, factorStep: 0.25, roundTo: 10 } };
+  const run = newRun({ config: cfg, dictionary: dict, seed: 1 });
+  run.roundIndex = run.targets.length - 1;          // on the final round
+  nextRound(run);
+  assert.equal(run.status, 'won');                  // not endless yet -> winning
+  assert.equal(run.targets.length, 2);              // targets untouched
+  startEndless(run);
+  assert.equal(run.endless, true);
+  assert.equal(run.status, 'playing');
+  assert.equal(run.endlessRound, 1);
+  assert.equal(run.targets[2], 880);                // round(700 * 1.25 / 10) * 10
+  nextRound(run);
+  assert.equal(run.targets[3], 1320);               // round(880 * 1.5)
+  nextRound(run);
+  assert.equal(run.targets[4], 2640);               // round(1320 * 2)
+  assert.equal(run.endlessRound, 3);
+});
+
+test('endless mode never mutates the shared CONFIG.ROUND_TARGETS array', () => {
+  resetTileIds();
+  const shared = [5, 700];
+  const cfg = { ...config, ROUND_TARGETS: shared, ENDLESS: { startFactor: 1.25, factorStep: 0.25, roundTo: 10 } };
+  const run = newRun({ config: cfg, dictionary: dict, seed: 1 });
+  run.roundIndex = run.targets.length - 1;
+  startEndless(run);
+  assert.equal(shared.length, 2);                   // config array unchanged (run has its own copy)
 });
 
 test('clearing a round awards coins: base + unused plays + unused discards', () => {

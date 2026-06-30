@@ -113,7 +113,9 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
   const run = {
     config, dictionary,
     seed, rng: makeRng(seed),
-    targets,
+    targets: [...targets],   // own copy — endless mode pushes onto this; never mutate CONFIG.ROUND_TARGETS
+    endless: false,          // flips true when the player continues past the win into escalating rounds
+    endlessRound: 0,         // count of endless rounds entered (drives the escalating factor + display)
     roundIndex: 0,
     target: targets[0],
     roundTotal: 0,
@@ -148,6 +150,13 @@ export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGET
   applyEncounterBoss(run);   // set the boss BEFORE dealing, so a -hand boss shrinks the dealt hand
   startRound(run);
   return run;
+}
+
+// Continue past the win into endless mode (called when the player taps Continue-Endless on the
+// trophy). Flips the flag, then advances — nextRound now extends the targets with an escalating one.
+export function startEndless(run) {
+  run.endless = true;
+  return nextRound(run);
 }
 
 // Pick which Event is offered alongside the Shop after a cleared encounter.
@@ -225,9 +234,23 @@ export function discard(run, selection = []) {
   return run;
 }
 
+// Endless mode: the n-th escalating target compounds off the previous one. Factors themselves
+// grow (1.25, 1.5, 2, 2.75, 3.75, …): f_n = startFactor + factorStep·(n−1)·n/2. Rounded to roundTo.
+function endlessTarget(run) {
+  run.endlessRound = (run.endlessRound || 0) + 1;
+  const n = run.endlessRound;
+  const { startFactor, factorStep, roundTo } = run.config.ENDLESS;
+  const factor = startFactor + factorStep * (n - 1) * n / 2;
+  const prev = run.targets[run.targets.length - 1];
+  return Math.round((prev * factor) / roundTo) * roundTo;
+}
+
 export function nextRound(run) {
   const next = run.roundIndex + 1;
-  if (next >= run.targets.length) { run.status = 'won'; return run; }
+  if (next >= run.targets.length) {
+    if (!run.endless) { run.status = 'won'; return run; }
+    run.targets.push(endlessTarget(run));   // endless: extend with the next escalating target
+  }
   run.roundIndex = next;
   run.target = run.targets[next];
   run.roundTotal = 0;
