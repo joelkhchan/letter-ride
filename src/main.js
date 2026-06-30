@@ -110,6 +110,15 @@ try {
     recordOffers(telemetry, extractOfferIds(run.shop));
   }
 
+  // Clear the node state and advance to the next round. Shared by onContinue (shop/Press) and
+  // onEventOption (so resolving a standard event jumps straight to the next round, no middle screen).
+  const advanceRound = () => {
+    run.nodeEventId = null; run._nodePick = null; run.press = null; run._pressLastPot = null; run.shop = null; run.nodeResolved = false;
+    nextRound(run);
+    if (isBossRound(run.roundIndex)) sfx('boss');
+    logEvent('round_advance', { round: run.roundIndex, boss: run.boss || null, ...snap() });
+  };
+
   bindControls({
     onSubmit(sel) { if (isPulling()) return;
       const r = playWord(run, sel);
@@ -202,7 +211,7 @@ try {
     },
     onEventOption(optionIndex, opts) {
       const r = applyEventOption(run, run.nodeEventId, optionIndex, opts);
-      if (r?.ok !== false) run.nodeResolved = true;
+      if (r?.ok !== false) advanceRound();   // resolved -> straight to the next round (no middle "Done/Continue" screen)
       saveAll(); render(); return r;
     },
     onPressDraw() {
@@ -217,7 +226,7 @@ try {
       run.nodeResolved = true;
       saveAll(); render();
     },
-    onContinue() { run.nodeEventId = null; run._nodePick = null; run.press = null; run._pressLastPot = null; run.shop = null; run.nodeResolved = false; nextRound(run); if (isBossRound(run.roundIndex)) sfx('boss'); logEvent('round_advance', { round: run.roundIndex, boss: run.boss || null, ...snap() }); saveAll(); render(); },
+    onContinue() { advanceRound(); saveAll(); render(); },
     // Shuffle: cosmetically reorder the rack using Math.random (not run.rng).
     // Rack order has no effect on scoring or future draws, so this is purely visual.
     // Using run.rng here would desync the seeded RNG stream and make a run's outcome

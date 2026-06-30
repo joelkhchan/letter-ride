@@ -903,9 +903,8 @@ function renderEventOneShot(run) {
         if (r && !r.ok) {
           const msg = document.getElementById('msg');
           if (msg) msg.textContent = r.reason === 'bad-count' ? 'Pick 1 or 2 tiles.' : 'Could not remove tiles.';
-        } else {
-          renderEventDone(run, ev);
         }
+        // success: onEventOption advances straight to the next round (no Done screen)
       });
     } else {
       // Simple confirm (theBlank, inkMerchant)
@@ -914,9 +913,8 @@ function renderEventOneShot(run) {
         if (r && !r.ok) {
           const msg = document.getElementById('msg');
           if (msg) msg.textContent = r.reason === 'broke' ? 'Not enough coins.' : r.reason === 'all-owned' ? 'You own all relics.' : 'Could not apply.';
-        } else {
-          renderEventDone(run, ev);
         }
+        // success: onEventOption advances straight to the next round (no Done screen)
       };
     }
   });
@@ -928,7 +926,7 @@ function renderEventOneShot(run) {
       btn.onclick = () => {
         const r = handlers.onEventOption?.(0, { archetypeId: btn.dataset.arch });
         if (r && !r.ok) { const msg = document.getElementById('msg'); if (msg) msg.textContent = 'Could not apply refine.'; }
-        else renderEventDone(run, ev);
+        // success: onEventOption advances straight to the next round (no Done screen)
       };
     });
   }
