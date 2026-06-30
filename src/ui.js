@@ -631,7 +631,6 @@ export function renderRun(run, profile) {
   if (!getPref('seenHowTo')) { setPref('seenHowTo', true); setTimeout(showHelpOverlay, 0); }
 
   const inRack = id => selection.some(s => s.tile.id === id);
-  const staged = selection.map(s => s.letter).join('');
   const done = run.status !== 'playing';
   // Rack tile values reflect the active boss warp (e.g. The Mute zeroes vowels) so the badge matches scoring.
   const rackTileValues = (run.boss && BOSSES[run.boss]) ? bossTileValues(run.tileValues, BOSSES[run.boss]) : (run.tileValues || {});
@@ -679,7 +678,9 @@ export function renderRun(run, profile) {
     </div>
     ${relicsModsPanelHtml(run)}
     ${lastPlayHtml}
-    <div id="staging">${staged || '<span class="staging-hint">Tap tiles to spell a word</span>'}</div>
+    <div id="staging">${selection.length
+      ? selection.map((s, i) => `<button class="staged-tile" data-sel="${i}" title="Tap to remove">${s.letter === '*' ? '★' : s.letter}</button>`).join('')
+      : '<span class="staging-hint">Tap tiles to spell a word</span>'}</div>
     ${run.boss && BOSSES[run.boss] ? `<div id="boss-banner">${bossSealHtml(run.boss, { size: 'md' })}<span><b>${BOSSES[run.boss].name}</b> &middot; ${run.boss === 'censor' && run.censorLetter ? `The letter ${run.censorLetter} scores 0 this round` : BOSSES[run.boss].desc}</span></div>` : ''}
     ${run.chainLength > 1 ? `<div id="chain-banner">Word Chain &times;${run.chainLength}${run.lastWord ? ` &middot; continue with ${run.lastWord.lastLetter}` : ''}</div>` : ''}
     <div id="rack">
@@ -727,6 +728,10 @@ export function renderRun(run, profile) {
   run.rack.forEach(t => {
     const btn = app().querySelector(`.tile[data-id="${t.id}"]`);
     if (btn && !inRack(t.id)) btn.onclick = () => tapTile(t);
+  });
+  // Tap a staged tile to un-press it (return it to the rack). Splice by selection index.
+  if (!done) app().querySelectorAll('.staged-tile').forEach(btn => {
+    btn.onclick = () => { const i = +btn.dataset.sel; if (i >= 0 && i < selection.length) { selection.splice(i, 1); sfx('tap'); renderRun(run); } };
   });
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('submit', () => { const s = selection; selection = []; const r = handlers.onSubmit?.(s); });
