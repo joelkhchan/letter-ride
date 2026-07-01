@@ -309,21 +309,24 @@ const configPersona = {
 
 // personaShortWord removed — was unused dead code.
 
-test('PERSONAS is an array of 6 archetype descriptors with required shape', () => {
+test('PERSONAS is an array of archetype descriptors with required shape', () => {
   assert.ok(Array.isArray(PERSONAS));
-  assert.equal(PERSONAS.length, 6);
+  assert.ok(PERSONAS.length >= 6, 'the six base archetype personas are still present');
   for (const p of PERSONAS) {
     assert.ok(typeof p.id === 'string', `persona ${p.id} missing id`);
     assert.ok(typeof p.name === 'string', `persona ${p.id} missing name`);
     assert.ok(typeof p.bagId === 'string', `persona ${p.id} missing bagId`);
     assert.ok(Array.isArray(p.targetRelicIds), `persona ${p.id} targetRelicIds must be array`);
-    assert.ok(typeof p.targetHoneId === 'string', `persona ${p.id} missing targetHoneId`);
+    assert.ok(typeof p.targetHoneId === 'string' || p.targetHoneId === null, `persona ${p.id} targetHoneId must be string or null`);
+    assert.ok(typeof p.archetype === 'string' || p.archetype === null, `persona ${p.id} archetype must be string or null`);
   }
 });
 
-test('PERSONAS contains the 6 expected archetype ids', () => {
-  const ids = PERSONAS.map(p => p.id).sort();
-  assert.deepEqual(ids, ['doubled', 'escalation', 'longWord', 'rareLetter', 'shortWord', 'vowelHeavy']);
+test('PERSONAS still contains the 6 base archetype ids (new bag/economy personas added on top)', () => {
+  const ids = new Set(PERSONAS.map(p => p.id));
+  for (const base of ['doubled', 'escalation', 'longWord', 'rareLetter', 'shortWord', 'vowelHeavy']) {
+    assert.ok(ids.has(base), `base persona ${base} should still exist`);
+  }
 });
 
 test('runPersona returns a summary with n === seeds.length, numeric winRate, and roundReached.p50', () => {
@@ -363,6 +366,22 @@ test('runPersona resolves a real non-standard deck (rareRich) and returns a vali
   assert.equal(summary.n, seeds.length, 'n equals number of seeds');
   // rareRich bag has only X/Q/Z — no word in wordsCat (["CAT"]) is formable → always loses
   assert.equal(summary.winRate, 0, 'rareRich bag cannot form CAT → all seeds lose');
+});
+
+test('runPersona resolves a dynamic (Mystery) deck without throwing and returns a valid summary', () => {
+  // A dynamic deck has startingBag null + dynamic flag; newRun builds its bag from MYSTERY (seeded).
+  const configMystery = {
+    ...configPersona,
+    DECKS: {
+      standard: { id: 'standard', name: 'Standard', startingBag: null },
+      myst:     { id: 'myst', name: 'Mystery', startingBag: null, dynamic: 'mystery' },
+    },
+    MYSTERY: { vowelsMin: 2, vowelsMax: 3, consMin: 3, consMax: 4, vowelWeights: { A: 1 }, consWeights: { C: 1, T: 1 } },
+  };
+  const persona = { id: 'm', name: 'Mystery', archetype: null, bagId: 'myst', targetRelicIds: [], targetHoneId: null };
+  const summary = runPersona({ config: configMystery, dictionary: dictCat, words: wordsCat, persona, seeds: [1, 2, 3] });
+  assert.equal(summary.n, 3, 'dynamic deck resolves (no throw) and runs every seed');
+  assert.ok(summary.winRate >= 0 && summary.winRate <= 1, 'winRate in [0,1]');
 });
 
 test('runPersona throws for an unknown non-standard bagId', () => {
@@ -465,10 +484,11 @@ const SNOWBALL_BY_ARCH = {
   doubled: 'resonanceEngine', vowelHeavy: 'risingTide', escalation: 'perpetualEngine',
 };
 
-test('each persona targets its archetype snowball relic', () => {
+test('each archetype persona targets its archetype snowball relic', () => {
   for (const p of PERSONAS) {
-    const want = SNOWBALL_BY_ARCH[p.id];
-    assert.ok(p.targetRelicIds.includes(want), `${p.name} (id=${p.id}) should target ${want}`);
+    const want = SNOWBALL_BY_ARCH[p.archetype];   // keyed by archetype (Economy has none → skipped)
+    if (!want) continue;
+    assert.ok(p.targetRelicIds.includes(want), `${p.name} (archetype=${p.archetype}) should target ${want}`);
   }
 });
 

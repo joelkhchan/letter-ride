@@ -277,13 +277,22 @@ export function percentile(values, p) {
 // targetRelicIds[0] is the keystone (banked toward). Each persona now buys its archetype-flavored mod
 // (compact/stretch/lode/twin/bloom, added 2026-06-26), its dedicated relics (e.g. Pithy for short),
 // and Overtime as the generic power pick a skilled build always takes (refreshed 2026-06-29).
+// `archetype` = the underlying build archetype (drives the snowball-relic guard + labeling); it can
+// differ from `id` when a persona runs the same archetype on a different bag (the 2026-07-01 bag additions).
+// `archetype` is null for a build with no ARCHETYPES entry (Economy, a pure coin engine with no hone).
 export const PERSONAS = [
-  { id: 'shortWord',   name: 'Short Word',   bagId: 'classic',  targetRelicIds: ['shortAndSweet', 'pithy', 'flywheel', 'pressLead', 'overtime'],        targetHoneId: 'shortWord',  targetModIds: ['compact', 'reprint']   },
-  { id: 'longWord',    name: 'Long Word',    bagId: 'standard', targetRelicIds: ['longHaul', 'lengthy', 'juggernaut', 'longReach', 'overtime'],         targetHoneId: 'longWord',   targetModIds: ['stretch', 'reprint']   },
-  { id: 'rareLetter',  name: 'Rare Letter',  bagId: 'rareRich', targetRelicIds: ['rareHoarder', 'rareSurge', 'rareAvalanche', 'rareReprint', 'wildcardRares', 'overtime'], targetHoneId: 'rareLetter', targetModIds: ['lode', 'polished'] },
-  { id: 'doubled',     name: 'Doubled',      bagId: 'doubled',  targetRelicIds: ['doubleTrouble', 'echoChamber', 'resonanceEngine', 'looseDoubles', 'overtime'], targetHoneId: 'doubled',    targetModIds: ['twin', 'resonator'] },
-  { id: 'vowelHeavy',  name: 'Vowel Heavy',  bagId: 'standard', targetRelicIds: ['vowelBonus', 'freshStart', 'risingTide', 'pressLead', 'overtime'],   targetHoneId: 'vowelHeavy', targetModIds: ['bloom', 'catalyst'] },
-  { id: 'escalation',  name: 'Escalation',   bagId: 'standard', targetRelicIds: ['comboCounter', 'momentum', 'perpetualEngine', 'chainReaction', 'throughLine', 'overtime'], targetHoneId: 'escalation', targetModIds: ['catalyst', 'polished'] },
+  { id: 'shortWord',   name: 'Short Word',   archetype: 'shortWord',  bagId: 'classic',  targetRelicIds: ['shortAndSweet', 'pithy', 'flywheel', 'pressLead', 'overtime'],        targetHoneId: 'shortWord',  targetModIds: ['compact', 'reprint']   },
+  { id: 'longWord',    name: 'Long Word',    archetype: 'longWord',   bagId: 'standard', targetRelicIds: ['longHaul', 'lengthy', 'juggernaut', 'longReach', 'overtime'],         targetHoneId: 'longWord',   targetModIds: ['stretch', 'reprint']   },
+  { id: 'rareLetter',  name: 'Rare Letter',  archetype: 'rareLetter', bagId: 'rareRich', targetRelicIds: ['rareHoarder', 'rareSurge', 'rareAvalanche', 'rareReprint', 'wildcardRares', 'overtime'], targetHoneId: 'rareLetter', targetModIds: ['lode', 'polished'] },
+  { id: 'doubled',     name: 'Doubled',      archetype: 'doubled',    bagId: 'doubled',  targetRelicIds: ['doubleTrouble', 'echoChamber', 'resonanceEngine', 'looseDoubles', 'overtime'], targetHoneId: 'doubled',    targetModIds: ['twin', 'resonator'] },
+  { id: 'vowelHeavy',  name: 'Vowel Heavy',  archetype: 'vowelHeavy', bagId: 'standard', targetRelicIds: ['vowelBonus', 'freshStart', 'risingTide', 'pressLead', 'overtime'],   targetHoneId: 'vowelHeavy', targetModIds: ['bloom', 'catalyst'] },
+  { id: 'escalation',  name: 'Escalation',   archetype: 'escalation', bagId: 'standard', targetRelicIds: ['comboCounter', 'momentum', 'perpetualEngine', 'chainReaction', 'throughLine', 'overtime'], targetHoneId: 'escalation', targetModIds: ['catalyst', 'polished'] },
+  // ── 2026-07-01 additions: the new bags on their intended archetype, + a pure Economy build ──
+  { id: 'shortWordStaccato', name: 'Short Word (Staccato)', archetype: 'shortWord', bagId: 'staccato', targetRelicIds: ['shortAndSweet', 'pithy', 'flywheel', 'pressLead', 'overtime'], targetHoneId: 'shortWord', targetModIds: ['compact', 'reprint'] },
+  { id: 'doubledMonolith',   name: 'Doubled (Monolith)',   archetype: 'doubled',   bagId: 'monolith', targetRelicIds: ['doubleTrouble', 'echoChamber', 'resonanceEngine', 'looseDoubles', 'overtime'], targetHoneId: 'doubled', targetModIds: ['twin', 'resonator'] },
+  { id: 'longWordSuffix',    name: 'Long Word (Suffix)',   archetype: 'longWord',  bagId: 'suffix',   targetRelicIds: ['longHaul', 'lengthy', 'juggernaut', 'longReach', 'overtime'], targetHoneId: 'longWord', targetModIds: ['stretch', 'reprint'] },
+  { id: 'mysteryGeneralist', name: 'Mystery (Generalist)', archetype: 'escalation', bagId: 'mystery', targetRelicIds: ['comboCounter', 'momentum', 'perpetualEngine', 'overtime'], targetHoneId: 'escalation', targetModIds: ['catalyst', 'polished'] },
+  { id: 'economy',           name: 'Economy',              archetype: null,        bagId: 'standard', targetRelicIds: ['royaltyPress', 'recycler', 'freshStart', 'overtime'], targetHoneId: null, targetModIds: ['gilded'] },
 ];
 
 // runPersona — for each seed, build the persona's deck + policy, simulateRun, then summarizePersona.
@@ -300,7 +309,9 @@ export function runPersona({ config, dictionary, words, persona, seeds, pool = {
     deck = { startingBag: config.STARTING_BAG };
   } else {
     const d = config.DECKS && config.DECKS[bagId];
-    if (!d || d.startingBag == null) throw new Error(`runPersona: unknown or empty deck '${bagId}'`);
+    // A dynamic deck (Mystery) has startingBag null + a `dynamic` flag; newRun builds its bag from a
+    // seeded stream, so it's a valid persona bag even though startingBag is null.
+    if (!d || (d.startingBag == null && !d.dynamic)) throw new Error(`runPersona: unknown or empty deck '${bagId}'`);
     deck = d;
   }
 
