@@ -562,6 +562,17 @@ test('runPersona accepts an agentFor and reports per-seed win flags', () => {
   assert.equal(callCount, 1, 'agentFor must be called exactly once per runPersona call (not per seed)');
 });
 
+// ── Harness v4 Stage 2: loadout plumbing (runPersona → simulateRun → newRun) ──
+
+test('simulateRun threads loadout to newRun (a huge starting relic never lowers the round reached)', () => {
+  const boost = { id: 'boost', name: 'Boost', evaluate: () => ({ addPoints: 1000 }) };   // unconditional +Points
+  // Default policy is noShop, so no shop is triggered even when the boosted run clears rounds.
+  const base = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 1 });
+  const boosted = simulateRun({ config: configB, dictionary: dictB, words: wordsB, seed: 1, loadout: { startRelics: [boost] } });
+  // If loadout reached newRun, the +1000-Points relic is in run.relics from turn 1 → it clears at least as far.
+  assert.ok(boosted.roundReached >= base.roundReached, 'loadout.startRelics must reach the run');
+});
+
 // ── Task 11: forcedBossOrder helper ──────────────────────────────────────────
 
 test('forcedBossOrder maps a boss id / none / undefined correctly', () => {

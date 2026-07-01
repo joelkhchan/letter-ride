@@ -203,7 +203,7 @@ export function randomPlay(run, wordList) {
 //     samples whether the new hand has any playable word.
 export function simulateRun({
   config, dictionary, words, seed, deck = null, cap = 1000,
-  policy = noShop, discardPolicy = smartDiscard, agent = null, forceBoss = undefined,
+  policy = noShop, discardPolicy = smartDiscard, agent = null, forceBoss = undefined, loadout = {},
 }) {
   // Backward-compatible default agent: greedy play + the legacy discard/shop params.
   const A = agent || {
@@ -211,7 +211,7 @@ export function simulateRun({
     chooseDiscard: (run) => discardPolicy(run),
     chooseShop: (run) => policy(run),
   };
-  const run = newRun({ config, dictionary, seed, deck });
+  const run = newRun({ config, dictionary, seed, deck, loadout });
   const fbOrder = forcedBossOrder(forceBoss);
   if (fbOrder !== undefined) run.bossOrder = fbOrder;
   run.purchaseLog = [];
@@ -300,7 +300,7 @@ export const PERSONAS = [
 //       otherwise                                                          → config.DECKS[bagId]
 // discardPolicy: optional discard function (default smartDiscard); pass dumpAllDiscard for BEFORE comparison.
 // Returns the summarizePersona summary over all seeds.
-export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard, agentFor = null, forceBoss = undefined, bankForKeystone = false }) {
+export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard, agentFor = null, forceBoss = undefined, bankForKeystone = false, loadout = {} }) {
   const { bagId, targetRelicIds, targetHoneId, targetModIds = [] } = persona;
   // Resolve deck: 'standard' explicitly uses config.STARTING_BAG.
   // Any other bagId must be a real DECKS entry with a non-null startingBag; throw if missing.
@@ -319,7 +319,7 @@ export function runPersona({ config, dictionary, words, persona, seeds, pool = {
   const agent = agentFor ? agentFor(policy) : null;
 
   const results = seeds.map(seed =>
-    simulateRun({ config, dictionary, words, seed, deck, policy, discardPolicy, agent, forceBoss })
+    simulateRun({ config, dictionary, words, seed, deck, policy, discardPolicy, agent, forceBoss, loadout })
   );
 
   return summarizePersona(results);
