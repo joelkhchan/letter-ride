@@ -24,7 +24,8 @@
 // No Math.random — randomness is the seeded RNG inside `run`.
 import { scoreWord } from './scoring.js';
 import { honeModifiers } from './archetypes.js';
-import { newRun, playWord, discard, nextRound } from './run.js';
+import { newRun, playWord, discard, nextRound, offerNode } from './run.js';
+import { chooseNode, resolveEventEV } from './sim-events.js';
 import { generateShop, purchase } from './shop.js';
 import { legalWords, selectionFor } from './enumerate.js';
 import { BOSSES, bossTileValues, applyBossToScore } from './bosses.js';
@@ -204,6 +205,7 @@ export function randomPlay(run, wordList) {
 export function simulateRun({
   config, dictionary, words, seed, deck = null, cap = 1000,
   policy = noShop, discardPolicy = smartDiscard, agent = null, forceBoss = undefined, loadout = {},
+  events = false, persona = null,
 }) {
   // Backward-compatible default agent: greedy play + the legacy discard/shop params.
   const A = agent || {
@@ -235,7 +237,15 @@ export function simulateRun({
     }
     if (run.status === 'roundCleared') {
       clearMargins.push(run.roundTotal - run.target);   // BEFORE nextRound resets target/roundTotal
-      A.chooseShop(run);
+      // Node choice (events flag): the game offers a Shop OR one Event. When events are modeled and the
+      // persona-aware policy takes the offered event, resolve it by EV and SKIP the shop this node.
+      if (events) {
+        offerNode(run);
+        if (chooseNode(run, persona)) resolveEventEV(run, persona);
+        else A.chooseShop(run);
+      } else {
+        A.chooseShop(run);
+      }
       nextRound(run);
     }
   }
@@ -300,7 +310,7 @@ export const PERSONAS = [
 //       otherwise                                                          → config.DECKS[bagId]
 // discardPolicy: optional discard function (default smartDiscard); pass dumpAllDiscard for BEFORE comparison.
 // Returns the summarizePersona summary over all seeds.
-export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard, agentFor = null, forceBoss = undefined, bankForKeystone = false, loadout = {} }) {
+export function runPersona({ config, dictionary, words, persona, seeds, pool = {}, reserve = 0, maxRerolls = 3, discardPolicy = smartDiscard, agentFor = null, forceBoss = undefined, bankForKeystone = false, loadout = {}, events = false }) {
   const { bagId, targetRelicIds, targetHoneId, targetModIds = [] } = persona;
   // Resolve deck: 'standard' explicitly uses config.STARTING_BAG.
   // Any other bagId must be a real DECKS entry with a non-null startingBag; throw if missing.
@@ -319,7 +329,7 @@ export function runPersona({ config, dictionary, words, persona, seeds, pool = {
   const agent = agentFor ? agentFor(policy) : null;
 
   const results = seeds.map(seed =>
-    simulateRun({ config, dictionary, words, seed, deck, policy, discardPolicy, agent, forceBoss, loadout })
+    simulateRun({ config, dictionary, words, seed, deck, policy, discardPolicy, agent, forceBoss, loadout, events, persona })
   );
 
   return summarizePersona(results);
