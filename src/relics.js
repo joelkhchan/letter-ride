@@ -25,7 +25,7 @@ export const RELICS = {
     evaluate: (ctx) => ({ addPoints: 2 * ctx.letters.filter(isVowel).length }),
   },
   rareHoarder: {
-    id: 'rareHoarder', name: 'Rare Hoarder', desc: '+40 Points if the word uses J, Q, X, or Z',
+    id: 'rareHoarder', name: 'Rare Hoarder', desc: '+40 Points if the word uses J/Q/X/Z',
     evaluate: (ctx) => ({ addPoints: ctx.letters.some(l => RARE.has(l.toUpperCase())) ? 40 : 0 }),
   },
   shortAndSweet: {
@@ -77,8 +77,8 @@ export const RELICS = {
 
   // Long-word
   longHaul: {
-    id: 'longHaul', name: 'Long Haul', desc: '×Mult grows with length: ×(1 + 0.25 per letter beyond 5)',
-    evaluate: (ctx) => ctx.letters.length > 5 ? { timesMult: 1 + 0.25 * (ctx.letters.length - 5) } : {},
+    id: 'longHaul', name: 'Long Haul', desc: '×Mult +1 per letter beyond 5',
+    evaluate: (ctx) => ctx.letters.length > 5 ? { timesMult: 1 + (ctx.letters.length - 5) } : {},
   },
   longReach: {
     id: 'longReach', name: 'Long Reach', desc: 'Long-word bonuses trigger one letter sooner',
@@ -91,7 +91,7 @@ export const RELICS = {
     evaluate: (ctx) => isDoubledCtx(ctx) ? { timesMult: 2 } : {},
   },
   looseDoubles: {
-    id: 'looseDoubles', name: 'Loose Doubles', desc: '+1 Mult per repeated letter (BOOKKEEPER = +3)',
+    id: 'looseDoubles', name: 'Loose Doubles', desc: '+1 Mult per repeated letter',
     evaluate: (ctx) => {
       const c = {};
       for (const l of ctx.letters) c[l] = (c[l] || 0) + 1;
@@ -146,12 +146,12 @@ export const RELICS = {
 
   // ── Phase 3 SP1: Retrigger relics ──────────────────────────────────────────
   pressLead: {
-    id: 'pressLead', name: 'Press Lead', desc: 'The first letter of the word prints one extra time',
+    id: 'pressLead', name: 'Press Lead', desc: 'First letter prints one extra time',
     evaluate: () => ({}),
     retriggerTile: (tile, ctx) => (ctx.selection[0]?.tile === tile ? 1 : 0),
   },
   rareReprint: {
-    id: 'rareReprint', name: 'Rare Reprint', desc: 'Each J, Q, X, or Z prints one extra time',
+    id: 'rareReprint', name: 'Rare Reprint', desc: 'Each J/Q/X/Z prints one extra time',
     evaluate: () => ({}),
     retriggerTile: (tile) => (RARE.has(String(tile.letter).toUpperCase()) ? 1 : 0),
   },
@@ -174,7 +174,7 @@ export const RELICS = {
     handDelta: 1, evaluate: () => ({}),
   },
   tightLeading: {
-    id: 'tightLeading', name: 'Tight Leading', desc: '+1 Mult per word, but hold 1 fewer tile in hand. Stacks.',
+    id: 'tightLeading', name: 'Tight Leading', desc: '+1 Mult per word, hold 1 fewer tile. Stacks.',
     handDelta: -1, stackable: true, evaluate: () => ({ addMult: 1 }),
   },
 
@@ -203,7 +203,7 @@ export const RELICS = {
 
   // ── Foresight relic (the Scrabble bag-tracking lever; `peek` is read by the UI, not scoring) ──
   galleyProof: {
-    id: 'galleyProof', name: 'Galley Proof', desc: 'See the next 2 tiles you will draw',
+    id: 'galleyProof', name: 'Galley Proof', desc: 'See your next 2 draws',
     peek: 2, evaluate: () => ({}),
   },
 };

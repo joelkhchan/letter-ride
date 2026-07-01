@@ -83,12 +83,12 @@ test('echoChamber: no bonus when no doubled letter (CAT)', () => {
   assert.equal(withRelic.mult, without.mult);
 });
 
-test('longHaul: ×(1 + 0.25*(len-5)) Mult for 6-letter word', () => {
+test('longHaul: ×(1 + (len-5)) Mult for 6-letter word', () => {
   resetTileIds();
-  // CASTLE = 6 letters → 1 + 0.25*(6-5) = 1.25
+  // CASTLE = 6 letters → 1 + (6-5) = ×2
   const withRelic = base2('CASTLE', { relics: [RELICS.longHaul] });
   const without   = base2('CASTLE');
-  assert.equal(withRelic.mult / without.mult, 1.25);
+  assert.equal(withRelic.mult / without.mult, 2);
 });
 
 test('longHaul: no bonus for 5-letter word', () => {
