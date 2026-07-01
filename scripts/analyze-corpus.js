@@ -13,6 +13,7 @@
 import { readFileSync } from 'node:fs';
 import { CONFIG } from '../src/config.js';
 import { makeRng, shuffle } from '../src/rng.js';
+import { buildMysteryBag } from '../src/bag.js';
 
 const RAW = readFileSync(new URL('../assets/enable1.txt', import.meta.url), 'utf8').split(/\r?\n/).filter(Boolean);
 const tv = CONFIG.TILE_VALUES;
@@ -177,7 +178,10 @@ function canFormWithWilds(word, counts, wilds) {
 console.log(`── 5b. Dead-rack rate per deck (${N} seeded ${RACK}-tile draws each, wild-aware) ──`);
 console.log(`deck        | size | vowels | wilds | dead-rack% | median formable | <2 vowels%`);
 for (const [id, deck] of Object.entries(CONFIG.DECKS)) {
-  const def = deck.startingBag || CONFIG.STARTING_BAG;
+  // Dynamic (Mystery) decks vary per run — sample ONE seeded roll so the row is honest (size varies).
+  const def = deck.dynamic === 'mystery'
+    ? buildMysteryBag(CONFIG.MYSTERY, makeRng(9000))
+    : (deck.startingBag || CONFIG.STARTING_BAG);
   const nWild = def.filter(l => l === '*').length;
   const nVowel = def.filter(l => VOWELS.has(l)).length;
   let deadN = 0, lowVN = 0;

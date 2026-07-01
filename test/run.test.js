@@ -435,6 +435,23 @@ test('The Toll taxes the played word on its boss encounter', () => {
   assert.equal(r.scored.score, 0);
 });
 
+test('The Censor disables one owned relic for scoring', () => {
+  const run = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
+  run.bossOrder = ['censor','mute','toll','margin'];
+  run.relics = [RELICS.vowelBonus];                        // +2 Points per vowel
+  nextRoundB(run); nextRoundB(run);                        // Passage 1 Sentence, boss = censor
+  assert.equal(run.boss, 'censor');
+  assert.equal(run.censoredRelic, 'vowelBonus');           // only owned relic → it is the one disabled
+  run.rack = ['R','A','T','E'].map((l,i) => ({ id:'z'+i, letter:l, mods:[] }));
+  const censored = playWordB(run, run.rack.map(t => ({ tile:t, letter:t.letter }))).scored.points;
+  // Same word, same relic, but no Censor round → vowelBonus adds its +4 Points (A, E).
+  const run2 = newRunB({ config: bossCfg, dictionary: dictBoss, seed: 5 });
+  run2.relics = [RELICS.vowelBonus];
+  run2.rack = ['R','A','T','E'].map((l,i) => ({ id:'y'+i, letter:l, mods:[] }));
+  const active = playWordB(run2, run2.rack.map(t => ({ tile:t, letter:t.letter }))).scored.points;
+  assert.equal(active - censored, 4);                      // censored vowelBonus contributes nothing
+});
+
 // ── Task 4: offerNode — seeded node-event offer ───────────────────────────────
 
 import { offerNode } from '../src/run.js';

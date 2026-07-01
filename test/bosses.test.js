@@ -6,11 +6,15 @@ test('roster: Ceiling removed, Censor + One-Liner added', () => {
   assert.deepEqual(ALL_BOSS_IDS.sort(), ['censor', 'margin', 'mute', 'oneLiner', 'toll', 'vise']);
 });
 
-test('The Censor zeroes one chosen letter (and no-op without a chosen letter)', () => {
+test('The Censor now disables a relic (verb=disable, target=relic), not a letter', () => {
+  assert.equal(BOSSES.censor.warp.verb, 'disable');
+  assert.equal(BOSSES.censor.warp.target, 'relic');
   const tv = { A: 1, E: 1, R: 1, Z: 10 };
-  const censored = bossTileValues(tv, BOSSES.censor, 'R');
-  assert.equal(censored.R, 0); assert.equal(censored.A, 1); assert.equal(censored.Z, 10);
-  assert.equal(bossTileValues(tv, BOSSES.censor, null), tv);   // no chosen letter yet → same ref
+  // No censorLetter is passed on a normal Censor round → tile values are untouched (the relic is disabled in run.js).
+  assert.equal(bossTileValues(tv, BOSSES.censor, null), tv);
+  // No-relic fallback: a chosen letter is still zeroed so the encounter bites.
+  const fallback = bossTileValues(tv, BOSSES.censor, 'R');
+  assert.equal(fallback.R, 0); assert.equal(fallback.A, 1); assert.equal(fallback.Z, 10);
 });
 
 test('The Vise now allows 0 discards; The One-Liner is a limit warp (no score change)', () => {

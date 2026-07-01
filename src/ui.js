@@ -1736,6 +1736,30 @@ function _drainToasts() {
 // every bag/stake pick. The first target mirrors meta.applyStakeTargets (Math.ceil(base * mult)).
 function runPreviewHtml(meta, config, deckId, stakeId) {
   const deck = config.DECKS[deckId];
+  const stakeR = config.STAKES.find(s => s.id === stakeId) || { targetMult: 1, playsDelta: 0, discardsDelta: 0 };
+  const playsR = config.PLAYS_PER_ROUND + (stakeR.playsDelta || 0);
+  const discardsR = config.DISCARDS_PER_ROUND + (stakeR.discardsDelta || 0) + (deck?.discardsDelta || 0) + (meta.loadout?.extraDiscards || 0);
+  const startCoinsR = meta.loadout?.startCoins || 0;
+  const baseR = config.ROUND_TARGETS[0];
+  const targetR = Math.ceil(baseR * (stakeR.targetMult ?? 1));
+  // Dynamic bag (Mystery): composition is rolled at run start, so show the size range + vowel floor
+  // instead of a fixed tray (which would misleadingly render the Standard fallback bag).
+  if (deck?.dynamic === 'mystery') {
+    const M = config.MYSTERY || {};
+    const minSize = (M.vowelsMin || 0) + (M.consMin || 0), maxSize = (M.vowelsMax || 0) + (M.consMax || 0);
+    return `
+      <div class="run-tray run-tray-mystery"><span class="run-tile mystery">?</span><span class="mystery-note">Composition is rolled when you start the run.</span></div>
+      <div class="run-legend">at least ${M.vowelsMin} vowels &middot; no rares</div>
+      <div class="run-stats">
+        <div class="run-stat"><span>Bag size</span><b>${minSize} to ${maxSize} tiles</b></div>
+        <div class="run-stat"><span>Rack</span><b>${config.RACK_SIZE}</b></div>
+        <div class="run-stat"><span>Plays / round</span><b>${playsR}</b></div>
+        <div class="run-stat"><span>Discards / round</span><b>${discardsR}</b></div>
+        <div class="run-stat"><span>Starting $</span><b>${startCoinsR}</b></div>
+        <div class="run-stat"><span>Difficulty</span><b>${stakeR.name || `Edition ${(Number(stakeId) || 0) + 1}`}</b></div>
+      </div>
+      <div class="run-target">First target: ${targetR !== baseR ? `<span class="base">${baseR}</span>` : ''}<b>${targetR}</b></div>`;
+  }
   const bag = (deck && deck.startingBag) || config.STARTING_BAG || [];
   const stake = config.STAKES.find(s => s.id === stakeId) || { targetMult: 1, playsDelta: 0, discardsDelta: 0 };
   const TV = config.TILE_VALUES || {};
@@ -1748,7 +1772,7 @@ function runPreviewHtml(meta, config, deckId, stakeId) {
   const v = bag.filter(isV).length, w = bag.filter(isW).length, r = bag.filter(isR).length, c = bag.length - v - w - r;
   const pct = (n) => (bag.length ? (n / bag.length * 100).toFixed(1) : 0) + '%';
   const plays = config.PLAYS_PER_ROUND + (stake.playsDelta || 0);
-  const discards = config.DISCARDS_PER_ROUND + (stake.discardsDelta || 0) + (meta.loadout?.extraDiscards || 0);
+  const discards = config.DISCARDS_PER_ROUND + (stake.discardsDelta || 0) + (deck?.discardsDelta || 0) + (meta.loadout?.extraDiscards || 0);
   const startCoins = meta.loadout?.startCoins || 0;
   const base = config.ROUND_TARGETS[0];
   const target = Math.ceil(base * (stake.targetMult ?? 1));

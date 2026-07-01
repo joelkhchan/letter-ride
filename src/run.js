@@ -1,4 +1,4 @@
-import { makeBag } from './bag.js';
+import { makeBag, buildMysteryBag } from './bag.js';
 import { makeTile } from './tiles.js';
 import { makeRng, shuffle } from './rng.js';
 import { validate, isLegalSelection } from './word.js';
@@ -18,7 +18,8 @@ export function isBossRound(roundIndex) { return roundIndex % 3 === 2; }
 // any setup-time warp (lock). Called at newRun and on each nextRound. The boss OBJECT is BOSSES[run.boss].
 function applyEncounterBoss(run) {
   run.boss = null;
-  run.censorLetter = null;                                              // cleared each round; set only on a Censor round
+  run.censorLetter = null;                                              // cleared each round; set only by the no-relic Censor fallback
+  run.censoredRelic = null;                                             // cleared each round; set only on a Censor round
   if (!isBossRound(run.roundIndex)) return;
   const passageIdx = passageOf(run.roundIndex) - 1;                     // 0-based passage
   run.boss = (run.bossOrder && run.bossOrder[passageIdx % run.bossOrder.length]) || null;
@@ -30,15 +31,30 @@ function applyEncounterBoss(run) {
     if (boss.warp.plays != null) run.playsLeft = Math.min(run.playsLeft, boss.warp.plays);
     if (boss.warp.targetMult != null) run.target = Math.max(1, Math.round(run.target * boss.warp.targetMult));
   }
-  // The Censor: pick one letter from the bag (seeded) to score 0 this round.
-  if (boss.warp.verb === 'disable' && boss.warp.letters === 'random') run.censorLetter = pickCensorLetter(run);
+  // The Censor: disable one of the player's relics this round (seeded). If they own none, fall back to
+  // zeroing a random bag letter so the encounter still bites.
+  if (boss.warp.verb === 'disable' && boss.warp.target === 'relic') {
+    run.censoredRelic = pickCensoredRelic(run);
+    if (!run.censoredRelic) { run.censorLetter = pickCensorLetter(run); return; }
+    const cr = run.relics.find(r => r.id === run.censoredRelic);
+    if (cr?.extraPlays) run.playsLeft = Math.max(1, run.playsLeft - cr.extraPlays);   // its bonus play is disabled too
+  }
 }
 
-// Pick a distinct, non-wild letter from the bag for The Censor (deterministic via the run RNG).
+// Pick a distinct, non-wild letter from the bag for the Censor's no-relic fallback (via the run RNG).
 function pickCensorLetter(run) {
   const letters = [...new Set((run.bag?.tiles || []).map(t => t.letter).filter(l => l && l !== '*'))];
   return letters.length ? letters[Math.floor(run.rng() * letters.length)] : null;
 }
+
+// Pick one owned relic id for The Censor to disable this round (deterministic via the run RNG).
+function pickCensoredRelic(run) {
+  const ids = [...new Set((run.relics || []).map(r => r.id))];
+  return ids.length ? ids[Math.floor(run.rng() * ids.length)] : null;
+}
+
+// Relics active for scoring this round — The Censor disables one of them (run.censoredRelic).
+const activeRelics = (run) => run.censoredRelic ? run.relics.filter(r => r.id !== run.censoredRelic) : run.relics;
 
 const sumExtraPlays = (relics = []) => relics.reduce((n, r) => n + (r.extraPlays || 0), 0);
 const sumHandDelta = (relics = []) => relics.reduce((n, r) => n + (r.handDelta || 0), 0);
@@ -57,7 +73,7 @@ export function handSizeFor(relics = [], config) {
 function refillHand(run) {
   // Effective size includes the active boss's hand-lock (e.g. The Margin), re-clamped to the floor.
   const boss = run.boss ? BOSSES[run.boss] : null;
-  const size = Math.max(handFloor(run.config), run.config.RACK_SIZE + sumHandDelta(run.relics) + bossHandDelta(boss));
+  const size = Math.max(handFloor(run.config), run.config.RACK_SIZE + sumHandDelta(activeRelics(run)) + bossHandDelta(boss));
   const need = size - run.rack.length;
   if (need > 0) run.rack.push(...run.drawPile.splice(0, need));
 }
@@ -94,7 +110,7 @@ export function awardCoins(run) {
   if (run.discardsLeft > 0) {
     items.push({ label: `${run.discardsLeft} unused discard${run.discardsLeft === 1 ? '' : 's'}`, amount: c.perUnusedDiscard * run.discardsLeft });
   }
-  for (const r of run.relics) {
+  for (const r of activeRelics(run)) {
     const amt = r.coinsOnRoundClear?.(run) ?? 0;
     if (amt > 0) items.push({ label: r.name, amount: amt });
   }
@@ -106,9 +122,14 @@ export function awardCoins(run) {
 }
 
 export function newRun({ config, dictionary, seed, targets = config.ROUND_TARGETS, deck = null, stake = null, loadout = {} }) {
-  const letters = (deck && deck.startingBag) || config.STARTING_BAG;
+  // A "dynamic" deck (Mystery) builds its bag from a SEEDED side-stream (constant 0x1d872b41, distinct
+  // from bossOrder/node streams) so it's deterministic per run without consuming run.rng (which would
+  // desync bag/shop draws). Otherwise use the deck's fixed startingBag, or the default STARTING_BAG.
+  const letters = deck?.dynamic === 'mystery'
+    ? buildMysteryBag(config.MYSTERY, makeRng((seed ^ 0x1d872b41) >>> 0))
+    : (deck && deck.startingBag) || config.STARTING_BAG;
   const playsPerRound = config.PLAYS_PER_ROUND + (stake?.playsDelta || 0);
-  const discardsPerRound = config.DISCARDS_PER_ROUND + (stake?.discardsDelta || 0) + (loadout.extraDiscards || 0);
+  const discardsPerRound = config.DISCARDS_PER_ROUND + (stake?.discardsDelta || 0) + (deck?.discardsDelta || 0) + (loadout.extraDiscards || 0);
   const startRelics = [...(loadout.startRelics || [])];
   const run = {
     config, dictionary,
@@ -176,12 +197,13 @@ export function playWord(run, selection) {
   if (!isLegalSelection(selection, run.rack)) return { ok: false, reason: 'illegal', run };
   const v = validate(selection, run.dictionary, run.config.MIN_WORD_LEN);
   if (!v.ok) return { ok: false, reason: v.reason, run };
-  const enablers = run.relics.filter(r => r.enabler).map(r => r.enabler);
+  const active = activeRelics(run);
+  const enablers = active.filter(r => r.enabler).map(r => r.enabler);
   // Snowball relics ratchet BEFORE scoring so a qualifying word benefits from the stack it just earned.
   run.relicState = run.relicState || {};
   const ratchetLetters = selection.map(s => s.letter.toUpperCase());
   const ratchetCtx = { word: ratchetLetters.join(''), letters: ratchetLetters, selection, wordsPlayedThisRound: run.wordsPlayedThisRound, enablers };
-  for (const r of run.relics) {
+  for (const r of active) {
     if (r.snowball && r.snowball.condition(ratchetCtx)) {
       const st = run.relicState[r.id] || (run.relicState[r.id] = { stacks: 0 });
       st.stacks += 1;
@@ -193,7 +215,7 @@ export function playWord(run, selection) {
   const chainLast = selection[selection.length - 1].letter.toUpperCase();
   const chainLength = (run.lastWord && run.lastWord.lastLetter === chainFirst) ? run.chainLength + 1 : 1;
   const boss = run.boss ? BOSSES[run.boss] : null;
-  const allMods = [...run.relics, ...honeModifiers(run.honeLevels)];
+  const allMods = [...active, ...honeModifiers(run.honeLevels)];
   const scored0 = scoreWord(selection, {
     tileValues: bossTileValues(run.tileValues, boss, run.censorLetter),   // disable: vowels (Mute) or one letter (Censor) zeroed
     lengthBonusPerLetter: run.config.LENGTH_BONUS_PER_LETTER,
@@ -206,7 +228,7 @@ export function playWord(run, selection) {
   run.totalWordsThisRun += 1;
   // Coins-on-play: economy relics (coinsPerWord) + Gilded tiles (coinsPerPlay) earn $ on each word.
   let coinsEarned = 0;
-  for (const r of run.relics) coinsEarned += r.coinsPerWord || 0;
+  for (const r of active) coinsEarned += r.coinsPerWord || 0;
   for (const s of selection) for (const m of (s.tile.mods || [])) coinsEarned += m.coinsPerPlay || 0;
   if (coinsEarned) run.coins += coinsEarned;
   for (const id of ALL_ARCHETYPE_IDS) {

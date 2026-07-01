@@ -66,7 +66,7 @@ try {
     const stake = CONFIG.STAKES.find(s => s.id === stakeId) || CONFIG.STAKES[0];
     const targets = applyStakeTargets(CONFIG.ROUND_TARGETS, stake);
     const loadout = buildLoadout(meta, CONFIG, activeLoadout);   // only the perks opted into this run
-    run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets, deck: { id: deck.id, startingBag: deck.startingBag }, stake, loadout });
+    run = newRun({ config: CONFIG, dictionary, seed: Date.now() >>> 0, targets, deck: { id: deck.id, startingBag: deck.startingBag, dynamic: deck.dynamic, discardsDelta: deck.discardsDelta }, stake, loadout });
     logEvent('run_start', { deck: deckId, stake: stakeId, targets: run.targets, relics: run.relics.map(r => r.id), bagSize: run.bag.tiles.length });
     view = 'run'; saveAll(); render();
   }

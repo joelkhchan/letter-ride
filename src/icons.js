@@ -68,6 +68,10 @@ const BAG_THEMES = {
   rareRich:   { g: 'linear-gradient(155deg,#b3a0ee,#6a55c0)', fx: 'glow spark', glow: '#8a7fd6' }, // violet + glow/sparkle
   doubled:    { g: 'linear-gradient(155deg,#79d8c0,#2c8a73)', fx: 'echo', glow: '#4fb89c' },      // teal + echo trail
   lean:       { g: 'linear-gradient(155deg,#aeb8ca,#586a86)' },                                  // steel
+  mystery:    { g: 'linear-gradient(155deg,#c98fd6,#5a3f8c)', fx: 'spark', glow: '#c98fd6' },    // amethyst + sparkle (the gamble bag)
+  staccato:   { g: 'linear-gradient(155deg,#e0937a,#b0442c)' },                                  // coral (punchy short words)
+  suffix:     { g: 'linear-gradient(155deg,#8fb0d6,#3f6a9c)' },                                  // steel-blue (ink/endings)
+  monolith:   { g: 'linear-gradient(155deg,#9a9ea6,#41454c)' },                                  // basalt (concentrated stone)
 };
 const BAG_FALLBACK = { g: 'linear-gradient(155deg,#b89058,#6e5230)' };
 

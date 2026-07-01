@@ -9,7 +9,7 @@ const VOWELS = ['A', 'E', 'I', 'O', 'U'];
 
 export const BOSSES = {
   mute:     { id: 'mute',     name: 'The Mute',      desc: 'Vowels score 0',                       warp: { verb: 'disable', letters: 'vowels' } },
-  censor:   { id: 'censor',   name: 'The Censor',    desc: 'A random letter scores 0',             warp: { verb: 'disable', letters: 'random' } },
+  censor:   { id: 'censor',   name: 'The Censor',    desc: 'One of your relics is disabled',        warp: { verb: 'disable', target: 'relic' } },
   toll:     { id: 'toll',     name: 'The Toll',      desc: 'Each word scores 10 less',             warp: { verb: 'tax',     points: 10 } },
   vise:     { id: 'vise',     name: 'The Vise',      desc: 'No discards this round',               warp: { verb: 'lock',    lock: 'discard', keep: 0 } },
   margin:   { id: 'margin',   name: 'The Margin',    desc: 'Hold 2 fewer tiles this round',         warp: { verb: 'lock',    lock: 'hand',    delta: -2 } },
@@ -29,8 +29,8 @@ export function bossHandDelta(boss) {
 export function bossTileValues(tileValues, boss, censorLetter = null) {
   if (!boss || boss.warp.verb !== 'disable') return tileValues;
   if (boss.warp.letters === 'vowels') { const out = { ...tileValues }; for (const v of VOWELS) out[v] = 0; return out; }
-  if (boss.warp.letters === 'random' && censorLetter) return { ...tileValues, [censorLetter]: 0 };   // The Censor: one chosen letter
-  return tileValues;   // nothing to disable (e.g. Censor before a letter is chosen) → same ref
+  if (censorLetter) return { ...tileValues, [censorLetter]: 0 };   // The Censor no-relic fallback: one chosen letter
+  return tileValues;   // The Censor disables a relic (handled in run.js), not a letter → same ref
 }
 
 // cap + tax: adjust a scoreWord result. Pure; returns a NEW {points,mult,score}.
