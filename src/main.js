@@ -233,8 +233,9 @@ try {
     // The Proof (Wordle event): submit a guess; the board re-renders with feedback.
     onWordleGuess(word) {
       const r = wordleGuess(run, word);
-      if (r.ok) sfx(r.status === 'solved' ? 'flourish' : 'tap');
-      saveAll(); render(); return r;
+      // Only re-render on a real (accepted) guess — an invalid entry leaves the typed buffer intact.
+      if (r.ok) { sfx(r.status === 'solved' ? 'flourish' : 'tap'); saveAll(); render(); }
+      return r;
     },
     // Claim the solve reward ('coins' or 'relic'), then advance to the next round.
     onWordleClaim(choice) {

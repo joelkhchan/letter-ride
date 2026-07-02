@@ -968,9 +968,15 @@ function renderEventDone(run, ev) {
   wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
-// The Proof — the Wordle-style event. Board of maxGuesses rows; type a valid word, get green/gold
-// feedback; solve to claim $ (scales with speed) or a relic.
+// The Proof — the Wordle-style event. Type a valid word into the active board row via the ON-SCREEN
+// keyboard (tap game-styled keys, not the device keyboard); keys + cells colour green/gold/grey. Solve
+// to claim $ (scales with speed) or a relic. The in-progress guess lives in the module-level wdBuffer.
+let wdBuffer = '';
+const WD_KEYROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+const WD_RANK = { hit: 3, present: 2, miss: 1 };
+
 function renderWordle(run) {
+  wdBuffer = '';                                   // reset the typed guess on every full render (i.e. after an accepted guess)
   const st = run.wordle || {};
   const cfg = run.config.WORDLE;
   const len = st.length || cfg.length;
@@ -980,26 +986,40 @@ function renderWordle(run) {
   const used = guesses.length;
   const coins = cfg.coinsBase + cfg.coinsPerGuessSaved * Math.max(0, max - used);
 
+  // Best-known status per letter (hit > present > miss), for the on-screen keyboard colouring.
+  const keyStatus = {};
+  for (const g of guesses) for (let c = 0; c < g.word.length; c++) {
+    const L = g.word[c].toUpperCase(), s = g.statuses[c];
+    if (!keyStatus[L] || WD_RANK[s] > WD_RANK[keyStatus[L]]) keyStatus[L] = s;
+  }
+
+  const activeRow = status === 'playing' ? used : -1;   // the row currently being typed into
   let rows = '';
   for (let r = 0; r < max; r++) {
     const g = guesses[r];
     let cells = '';
     for (let c = 0; c < len; c++) {
-      cells += g
-        ? `<span class="wd-cell ${g.statuses[c]}">${(g.word[c] || '').toUpperCase()}</span>`
-        : `<span class="wd-cell empty"></span>`;
+      if (g) cells += `<span class="wd-cell ${g.statuses[c]}">${(g.word[c] || '').toUpperCase()}</span>`;
+      else if (r === activeRow) cells += `<span class="wd-cell wd-active" data-c="${c}"></span>`;
+      else cells += `<span class="wd-cell empty"></span>`;
     }
     rows += `<div class="wd-row">${cells}</div>`;
   }
 
   let footer = '';
   if (status === 'playing') {
+    let kbd = '<div class="wd-kbd">';
+    WD_KEYROWS.forEach((row, i) => {
+      kbd += '<div class="wd-krow">';
+      if (i === 2) kbd += `<button class="wd-key-btn wide" data-act="enter">Enter</button>`;
+      for (const ch of row) kbd += `<button class="wd-key-btn ${keyStatus[ch] || ''}" data-k="${ch}">${ch}</button>`;
+      if (i === 2) kbd += `<button class="wd-key-btn wide" data-act="del">&#9003;</button>`;
+      kbd += '</div>';
+    });
+    kbd += '</div>';
     footer = `
-      <div class="wd-input">
-        <input id="wd-guess" type="text" maxlength="${len}" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="${len}-letter word" />
-        <button id="wd-submit" class="menu-btn primary">Guess</button>
-      </div>
       <div id="wd-msg" class="wd-msg"></div>
+      ${kbd}
       <div class="wd-hint">${used}/${max} guesses</div>`;
   } else if (status === 'solved') {
     footer = `
@@ -1028,18 +1048,30 @@ function renderWordle(run) {
     </div>`;
 
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  // Paint the active board row from the typed buffer (no full re-render on each keystroke).
+  const syncRow = () => {
+    const cells = document.querySelectorAll('.wd-active');
+    for (let i = 0; i < cells.length; i++) {
+      const ch = wdBuffer[i];
+      cells[i].textContent = ch ? ch.toUpperCase() : '';
+      cells[i].classList.toggle('filled', !!ch);
+    }
+  };
   const submit = () => {
-    const inp = document.getElementById('wd-guess');
-    if (!inp) return;
-    const r = handlers.onWordleGuess?.(inp.value.trim().toLowerCase());
+    const r = handlers.onWordleGuess?.(wdBuffer.trim().toLowerCase());   // re-renders on success (buffer resets)
     if (r && !r.ok) {
       const msg = document.getElementById('wd-msg');
       if (msg) msg.textContent = r.reason === 'length' ? `Enter a ${len}-letter word.` : r.reason === 'invalid' ? 'Not a valid word.' : '';
     }
   };
-  on('wd-submit', submit);
-  const inp = document.getElementById('wd-guess');
-  if (inp) { inp.focus(); inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } }; }
+  document.querySelectorAll('.wd-key-btn').forEach((btn) => {
+    btn.onclick = () => {
+      const { act, k } = btn.dataset;
+      if (act === 'enter') return submit();
+      if (act === 'del') { wdBuffer = wdBuffer.slice(0, -1); return syncRow(); }
+      if (k && wdBuffer.length < len) { wdBuffer += k.toLowerCase(); syncRow(); }
+    };
+  });
   on('wd-coins', () => handlers.onWordleClaim?.('coins'));
   on('wd-relic', () => handlers.onWordleClaim?.('relic'));
   on('wd-continue', () => handlers.onWordleGiveUp?.());

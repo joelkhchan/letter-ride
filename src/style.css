@@ -377,8 +377,18 @@ button { font-family: var(--font-body); color: var(--ink); }
 .wd-key { font-weight: 700; padding: 0 4px; border-radius: 3px; }
 .wd-key.hit { background: #3a7d44; color: #fff; }
 .wd-key.present { background: var(--gold); color: var(--night-sunk); }
-.wd-input { display: flex; gap: 8px; justify-content: center; align-items: center; }
-#wd-guess { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; letter-spacing: 3px; text-transform: uppercase; text-align: center; width: 9rem; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--gold-deep); background: var(--tile-a, #f3e6c8); color: var(--ink); }
+/* The active (currently-typed) board row: game-tile look (cream, dark ink) so it matches the main game's tiles. */
+.wd-cell.wd-active { background: linear-gradient(180deg, var(--tile-a, #f3e6c8), var(--tile-b, #e7d4ab)); border-color: var(--gold-deep); color: var(--tile-ink); }
+.wd-cell.wd-active.filled { box-shadow: 0 0 0 2px var(--gold) inset; }
+/* On-screen keyboard (tap game-styled keys; no device keyboard). Keys colour by best-known letter status. */
+.wd-kbd { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 12px; }
+.wd-krow { display: flex; gap: 4px; justify-content: center; }
+.wd-key-btn { min-width: 1.9rem; height: 3rem; padding: 0 6px; font-family: var(--font-display); font-weight: 700; font-size: 1rem; text-transform: uppercase; border-radius: 5px; border: 1px solid var(--line); background: var(--night); color: var(--ink); cursor: pointer; }
+.wd-key-btn.wide { min-width: 3.4rem; font-size: 0.8rem; }
+.wd-key-btn.hit { background: linear-gradient(#3a7d44, #2c5f34); border-color: #4d9a59; color: #fff; }
+.wd-key-btn.present { background: linear-gradient(var(--gold), var(--gold-deep)); border-color: var(--gold); color: var(--night-sunk); }
+.wd-key-btn.miss { background: var(--night-sunk); border-color: var(--line); color: var(--ink-soft); opacity: 0.55; }
+.wd-key-btn:active { transform: translateY(1px); }
 .wd-msg { min-height: 1.2rem; color: #c0392b; font-size: 0.9rem; text-align: center; margin-top: 6px; }
 .wd-hint { text-align: center; font-size: 0.85rem; color: var(--ink-soft); }
 .wd-result { text-align: center; font-weight: 700; margin: 10px 0; }
