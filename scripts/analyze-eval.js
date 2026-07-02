@@ -5,7 +5,11 @@
 // Run: npm run analyze:eval -- --n=200            (human tables)
 //      npm run analyze:eval -- --n=200 --json      (machine-readable, for baseline diffing)
 //      npm run analyze:eval -- --n=200 --k=3 --branch=5
+// Parallel by default (one worker per core-1; each runPersona is an independent, per-seed-deterministic
+// task, so output is byte-identical to serial). Pass --serial to run in-process (determinism cross-check).
 import { readFileSync } from 'node:fs';
+import os from 'node:os';
+import { Worker } from 'node:worker_threads';
 import { CONFIG } from '../src/config.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { PERSONAS, runPersona } from '../src/sim.js';
@@ -13,10 +17,6 @@ import { greedyAgent, randomAgent, lookaheadAgent } from '../src/agents.js';
 import { wilsonInterval, mcnemar } from '../src/stats.js';
 import { formatPct, toJSON } from '../src/report.js';
 import { buildLoadout } from '../src/meta.js';
-
-const raw = readFileSync(new URL('../assets/enable1.txt', import.meta.url), 'utf8').split(/\r?\n/).filter(Boolean);
-const dictionary = makeDictionary(raw);
-const words = raw.filter(w => w.length >= CONFIG.MIN_WORD_LEN && w.length <= CONFIG.RACK_SIZE).map(w => w.toUpperCase());
 
 const arg = (name, def) => { const a = process.argv.find(x => x.startsWith(`--${name}=`)); return a ? Number(a.slice(name.length + 3)) : def; };
 const json = process.argv.includes('--json');
@@ -33,28 +33,70 @@ const loadoutOn = buildLoadout(
   CONFIG, ['extraDiscards', 'freeReroll', 'round1Play'],
 );
 
-const LADDER = [
-  { id: 'random',          agentFor: (shop) => randomAgent(shop) },
-  { id: 'greedy',          agentFor: (shop) => greedyAgent(shop) },
-  { id: `lookahead${K}`,   agentFor: (shop) => lookaheadAgent(shop, { k: K, branch: BRANCH }) },
-];
+const LADDER = [{ id: 'random' }, { id: 'greedy' }, { id: `lookahead${K}` }];   // output order + labels
+const serial = process.argv.includes('--serial');
 
-const out = [];
-for (const persona of PERSONAS) {
-  const byRung = {};
-  for (const rung of LADDER) byRung[rung.id] = runPersona({ config: CONFIG, dictionary, words, persona, seeds, agentFor: rung.agentFor });
-  const g = byRung.greedy, l = byRung[`lookahead${K}`], r = byRung.random;
-  // Dimension sweeps at the greedy rung (only when flagged).
-  const dims = {};
-  if (doLoadout) dims.loadoutOn = runPersona({ config: CONFIG, dictionary, words, persona, seeds, agentFor: (shop) => greedyAgent(shop), loadout: loadoutOn });
-  if (doEvents) dims.eventsOn = runPersona({ config: CONFIG, dictionary, words, persona, seeds, agentFor: (shop) => greedyAgent(shop), events: true });
-  out.push({
-    persona: persona.name, byRung, dims,
-    skillGap: mcnemar(l.wonFlags, g.wonFlags),
-    greedyOverRandom: g.winRate - r.winRate,
-    lookaheadOverGreedy: l.winRate - g.winRate,
+// One task = one runPersona call (independent, per-seed-deterministic). Kinds map to ladder rungs + the
+// optional dimension sweeps. greedy/loadout/events all use the greedy agent (dims are greedy-rung deltas).
+const KINDS = ['random', 'greedy', 'lookahead', ...(doLoadout ? ['loadout'] : []), ...(doEvents ? ['events'] : [])];
+const tasks = [];
+for (let pi = 0; pi < PERSONAS.length; pi++) for (const kind of KINDS) tasks.push({ personaIdx: pi, kind, N, K, BRANCH });
+
+// Persistent worker pool with a pull queue: each worker builds the dictionary once, then drains tasks.
+function runPool(taskList, workerUrl, nWorkers) {
+  const results = new Array(taskList.length);
+  let next = 0, done = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(nWorkers, taskList.length)) }, () => new Worker(workerUrl));
+  return new Promise((resolve, reject) => {
+    const assign = (w) => { if (next < taskList.length) { w._i = next++; w.postMessage(taskList[w._i]); } };
+    for (const w of workers) {
+      w.on('message', (msg) => {
+        results[w._i] = msg;
+        if (++done === taskList.length) { workers.forEach(x => x.terminate()); resolve(results); }
+        else assign(w);
+      });
+      w.on('error', reject);
+      assign(w);
+    }
   });
 }
+
+// In-process path (--serial): same task list, no workers. For a determinism cross-check vs the pool.
+function runTasksSerial(taskList) {
+  const raw = readFileSync(new URL('../assets/enable1.txt', import.meta.url), 'utf8').split(/\r?\n/).filter(Boolean);
+  const dictionary = makeDictionary(raw);
+  const words = raw.filter(w => w.length >= CONFIG.MIN_WORD_LEN && w.length <= CONFIG.RACK_SIZE).map(w => w.toUpperCase());
+  const seeds = Array.from({ length: N }, (_, i) => i + 1);
+  const agentFor = (kind) => kind === 'random' ? (s) => randomAgent(s) : kind === 'lookahead' ? (s) => lookaheadAgent(s, { k: K, branch: BRANCH }) : (s) => greedyAgent(s);
+  return taskList.map((t) => {
+    const opts = { config: CONFIG, dictionary, words, persona: PERSONAS[t.personaIdx], seeds, agentFor: agentFor(t.kind) };
+    if (t.kind === 'loadout') opts.loadout = loadoutOn;
+    if (t.kind === 'events') opts.events = true;
+    return { personaIdx: t.personaIdx, kind: t.kind, summary: runPersona(opts) };
+  });
+}
+
+const rawResults = serial
+  ? runTasksSerial(tasks)
+  : await runPool(tasks, new URL('./eval-worker.js', import.meta.url), Math.max(1, Math.min((os.cpus()?.length || 2) - 1, tasks.length)));
+
+const byPersona = PERSONAS.map(() => ({}));
+for (const m of rawResults) byPersona[m.personaIdx][m.kind] = m.summary;
+
+const out = PERSONAS.map((persona, pi) => {
+  const r = byPersona[pi];
+  const byRung = { random: r.random, greedy: r.greedy, [`lookahead${K}`]: r.lookahead };
+  const dims = {};
+  if (doLoadout) dims.loadoutOn = r.loadout;
+  if (doEvents) dims.eventsOn = r.events;
+  const g = byRung.greedy, l = byRung[`lookahead${K}`], rr = byRung.random;
+  return {
+    persona: persona.name, byRung, dims,
+    skillGap: mcnemar(l.wonFlags, g.wonFlags),
+    greedyOverRandom: g.winRate - rr.winRate,
+    lookaheadOverGreedy: l.winRate - g.winRate,
+  };
+});
 
 if (json) {
   console.log(toJSON({ N, K, BRANCH, personas: out }));
