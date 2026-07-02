@@ -968,12 +968,13 @@ function renderEventDone(run, ev) {
   wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
-// The Proof — the Wordle-style event. Type a valid word into the active board row via the ON-SCREEN
-// keyboard (tap game-styled keys, not the device keyboard); keys + cells colour green/gold/grey. Solve
-// to claim $ (scales with speed) or a relic. The in-progress guess lives in the module-level wdBuffer.
+// The Proof — a word-deduction event with its OWN look (deliberately NOT a Wordle clone, for trade-dress
+// safety: no colored QWERTY keyboard). Compose a valid word into the active board row via a Letter-Ride
+// letter TRAY — an alphabetical letterpress type-case of tiles, tapped to build the word. Feedback lives
+// only on the board (green/gold/grey = right-spot/present/absent) in the game's palette. Solve to claim $
+// (scales with speed) or a relic. The in-progress guess lives in the module-level wdBuffer.
 let wdBuffer = '';
-const WD_KEYROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
-const WD_RANK = { hit: 3, present: 2, miss: 1 };
+const WD_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 function renderWordle(run) {
   wdBuffer = '';                                   // reset the typed guess on every full render (i.e. after an accepted guess)
@@ -985,13 +986,6 @@ function renderWordle(run) {
   const status = st.status || 'playing';
   const used = guesses.length;
   const coins = cfg.coinsBase + cfg.coinsPerGuessSaved * Math.max(0, max - used);
-
-  // Best-known status per letter (hit > present > miss), for the on-screen keyboard colouring.
-  const keyStatus = {};
-  for (const g of guesses) for (let c = 0; c < g.word.length; c++) {
-    const L = g.word[c].toUpperCase(), s = g.statuses[c];
-    if (!keyStatus[L] || WD_RANK[s] > WD_RANK[keyStatus[L]]) keyStatus[L] = s;
-  }
 
   const activeRow = status === 'playing' ? used : -1;   // the row currently being typed into
   let rows = '';
@@ -1008,19 +1002,16 @@ function renderWordle(run) {
 
   let footer = '';
   if (status === 'playing') {
-    let kbd = '<div class="wd-kbd">';
-    WD_KEYROWS.forEach((row, i) => {
-      kbd += '<div class="wd-krow">';
-      if (i === 2) kbd += `<button class="wd-key-btn wide" data-act="enter">Enter</button>`;
-      for (const ch of row) kbd += `<button class="wd-key-btn ${keyStatus[ch] || ''}" data-k="${ch}">${ch}</button>`;
-      if (i === 2) kbd += `<button class="wd-key-btn wide" data-act="del">&#9003;</button>`;
-      kbd += '</div>';
-    });
-    kbd += '</div>';
+    const tray = `<div class="wd-tray">${WD_LETTERS.map(ch => `<button class="wd-tray-key" data-k="${ch}">${ch}</button>`).join('')}</div>`;
+    const controls = `<div class="wd-tray-controls">
+        <button class="menu-btn wd-ctl" data-act="del">&#9003; Delete</button>
+        <button class="menu-btn primary wd-ctl" data-act="enter">Guess</button>
+      </div>`;
     footer = `
       <div id="wd-msg" class="wd-msg"></div>
-      ${kbd}
-      <div class="wd-hint">${used}/${max} guesses</div>`;
+      ${tray}
+      ${controls}
+      <div class="wd-hint">${used}/${max} guesses &middot; tap letters to compose your word</div>`;
   } else if (status === 'solved') {
     footer = `
       <div class="wd-result win">Solved in ${used}!</div>
@@ -1064,7 +1055,7 @@ function renderWordle(run) {
       if (msg) msg.textContent = r.reason === 'length' ? `Enter a ${len}-letter word.` : r.reason === 'invalid' ? 'Not a valid word.' : '';
     }
   };
-  document.querySelectorAll('.wd-key-btn').forEach((btn) => {
+  document.querySelectorAll('.wd-tray-key, .wd-ctl').forEach((btn) => {
     btn.onclick = () => {
       const { act, k } = btn.dataset;
       if (act === 'enter') return submit();
