@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { CONFIG } from '../src/config.js';
 import { newRun } from '../src/run.js';
-import { chooseNode, resolveEventEV, EVENT_EV } from '../src/sim-events.js';
+import { chooseNode, chooseNodeSmart, resolveEventEV, EVENT_EV } from '../src/sim-events.js';
 
 const dict = { isValid: () => true, findWord: () => null };
 const mkRun = (seed = 1) => newRun({ config: CONFIG, dictionary: dict, seed });
@@ -33,7 +33,14 @@ test('chooseNode: The Press only for the coin engine (archetype null)', () => {
   assert.equal(chooseNode(run, { archetype: 'longWord' }), false);
 });
 
-// ── resolveEventEV: real effect for deterministic events, EV for The Proof/Press ──
+test('chooseNodeSmart: shops when a targeted keystone is affordable, else defers to the event heuristic', () => {
+  const run = mkRun(); run.nodeEventId = 'wordsmith';
+  const persona = { targetRelicIds: ['vowelBonus'], targetHoneId: 'longWord' };
+  run.coins = run.config.SHOP.cost.buyRelic;                 // can afford the target relic → shop, skip the event
+  assert.equal(chooseNodeSmart(run, persona), false);
+  run.coins = 0;                                             // broke → the free event beats an unaffordable shop
+  assert.equal(chooseNodeSmart(run, persona), true);         // (wordsmith + hone → aggressive heuristic takes it)
+});
 
 test('resolveEventEV: Wordsmith grants a free Refine level to the persona hone', () => {
   const run = mkRun(); run.nodeEventId = 'wordsmith';

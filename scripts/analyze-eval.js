@@ -17,6 +17,7 @@ import { greedyAgent, randomAgent, lookaheadAgent } from '../src/agents.js';
 import { wilsonInterval, mcnemar } from '../src/stats.js';
 import { formatPct, toJSON } from '../src/report.js';
 import { buildLoadout } from '../src/meta.js';
+import { chooseNodeSmart } from '../src/sim-events.js';
 
 const arg = (name, def) => { const a = process.argv.find(x => x.startsWith(`--${name}=`)); return a ? Number(a.slice(name.length + 3)) : def; };
 const json = process.argv.includes('--json');
@@ -38,7 +39,7 @@ const serial = process.argv.includes('--serial');
 
 // One task = one runPersona call (independent, per-seed-deterministic). Kinds map to ladder rungs + the
 // optional dimension sweeps. greedy/loadout/events all use the greedy agent (dims are greedy-rung deltas).
-const KINDS = ['random', 'greedy', 'lookahead', ...(doLoadout ? ['loadout'] : []), ...(doEvents ? ['events'] : [])];
+const KINDS = ['random', 'greedy', 'lookahead', ...(doLoadout ? ['loadout'] : []), ...(doEvents ? ['events', 'eventsSmart'] : [])];
 const tasks = [];
 for (let pi = 0; pi < PERSONAS.length; pi++) for (const kind of KINDS) tasks.push({ personaIdx: pi, kind, N, K, BRANCH });
 
@@ -72,6 +73,7 @@ function runTasksSerial(taskList) {
     const opts = { config: CONFIG, dictionary, words, persona: PERSONAS[t.personaIdx], seeds, agentFor: agentFor(t.kind) };
     if (t.kind === 'loadout') opts.loadout = loadoutOn;
     if (t.kind === 'events') opts.events = true;
+    if (t.kind === 'eventsSmart') { opts.events = true; opts.nodePolicy = chooseNodeSmart; }
     return { personaIdx: t.personaIdx, kind: t.kind, summary: runPersona(opts) };
   });
 }
@@ -88,7 +90,7 @@ const out = PERSONAS.map((persona, pi) => {
   const byRung = { random: r.random, greedy: r.greedy, [`lookahead${K}`]: r.lookahead };
   const dims = {};
   if (doLoadout) dims.loadoutOn = r.loadout;
-  if (doEvents) dims.eventsOn = r.events;
+  if (doEvents) { dims.eventsOn = r.events; dims.eventsSmartOn = r.eventsSmart; }
   const g = byRung.greedy, l = byRung[`lookahead${K}`], rr = byRung.random;
   return {
     persona: persona.name, byRung, dims,
@@ -118,6 +120,7 @@ if (json) {
       const gw = row.byRung.greedy.winRate, parts = [];
       if (row.dims.loadoutOn) parts.push(`+loadout ${formatPct(row.dims.loadoutOn.winRate)} (Δ ${formatPct(row.dims.loadoutOn.winRate - gw)})`);
       if (row.dims.eventsOn) parts.push(`+events ${formatPct(row.dims.eventsOn.winRate)} (Δ ${formatPct(row.dims.eventsOn.winRate - gw)})`);
+      if (row.dims.eventsSmartOn) parts.push(`+events(smart) ${formatPct(row.dims.eventsSmartOn.winRate)} (Δ ${formatPct(row.dims.eventsSmartOn.winRate - gw)})`);
       console.log(`dimensions (greedy baseline ${formatPct(gw)}): ${parts.join('; ')}`);
     }
     console.log('');

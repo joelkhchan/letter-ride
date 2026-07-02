@@ -54,6 +54,20 @@ export function chooseNode(run, persona = {}) {
   }
 }
 
+// A "skilled" node policy: prefer the SHOP when the player can afford a TARGETED build advance right now
+// (its keystone relic or a refine) — targeted power beats a random event. Otherwise (too broke to buy the
+// good stuff) fall back to the aggressive value heuristic and take the free/cheap event. Used to measure
+// how much of the raw +events win boost is the naive take-everything policy vs a genuine balance edge.
+export function chooseNodeSmart(run, persona = {}) {
+  if (!run.nodeEventId) return false;
+  const owned = new Set(run.relics.map(r => r.id));
+  const wantsRelic = (persona.targetRelicIds || []).some(r => !owned.has(r));
+  const canBuyRelic = wantsRelic && run.coins >= (run.config.SHOP?.cost?.buyRelic ?? Infinity);
+  const canBuyHone = persona.targetHoneId && run.coins >= (run.config.HONE?.cost ?? Infinity);
+  if (canBuyRelic || canBuyHone) return false;   // shop this node: buy the targeted keystone/refine
+  return chooseNode(run, persona);               // else the free event beats an unaffordable shop
+}
+
 // Resolve the offered event by expected value / real effect (see philosophy above). Mutates run.
 export function resolveEventEV(run, persona = {}, cfg = EVENT_EV) {
   const id = run.nodeEventId;

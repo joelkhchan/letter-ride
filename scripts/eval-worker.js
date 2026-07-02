@@ -9,6 +9,7 @@ import { makeDictionary } from '../src/dictionary.js';
 import { PERSONAS, runPersona } from '../src/sim.js';
 import { greedyAgent, randomAgent, lookaheadAgent } from '../src/agents.js';
 import { buildLoadout } from '../src/meta.js';
+import { chooseNodeSmart } from '../src/sim-events.js';
 
 const raw = readFileSync(new URL('../assets/enable1.txt', import.meta.url), 'utf8').split(/\r?\n/).filter(Boolean);
 const dictionary = makeDictionary(raw);
@@ -29,6 +30,7 @@ parentPort.on('message', (task) => {
     : (shop) => greedyAgent(shop);                 // greedy / loadout / events all use the greedy agent
   const opts = { config: CONFIG, dictionary, words, persona, seeds, agentFor };
   if (kind === 'loadout') opts.loadout = loadoutOn;
-  if (kind === 'events') opts.events = true;
+  if (kind === 'events') opts.events = true;                                    // aggressive node policy (default)
+  if (kind === 'eventsSmart') { opts.events = true; opts.nodePolicy = chooseNodeSmart; }   // shop-when-affordable
   parentPort.postMessage({ personaIdx, kind, summary: runPersona(opts) });
 });
