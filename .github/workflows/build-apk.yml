@@ -112,3 +112,13 @@ jobs:
           gh release view ota >/dev/null 2>&1 || gh release create ota --title "Letter Ride OTA bundles" --notes "Auto-published web bundles for in-app self-update. Do not delete this release."
           gh release upload ota bundle.zip latest.json --clobber
           echo "Published OTA bundle version ${{ github.run_number }}"
+
+      - name: Publish stable APK download (GitHub Release "apk")
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Keep the public sideload link (releases/download/apk/app-debug.apk) pointing at THIS build,
+          # so the author never has to sideload a stale APK (OTA self-update is CORS-blocked on-device).
+          gh release view apk >/dev/null 2>&1 || gh release create apk --title "Letter Ride APK (latest)" --notes "Stable sideload link, auto-refreshed each build. Do not delete this release."
+          gh release upload apk android/app/build/outputs/apk/debug/app-debug.apk --clobber
+          echo "Refreshed stable APK download to build ${{ github.run_number }}"
