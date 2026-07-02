@@ -5,7 +5,7 @@
 // Resolution philosophy (author-owned, per the 2026-07-01 harness decision):
 //   - Deterministic-effect events (The Blank / Redaction / Wordsmith / Ink Merchant) apply their REAL
 //     effect via events.js — no fudge.
-//   - The push-your-luck (The Press) and Wordle (The Proof) events resolve by EXPECTED VALUE, NOT by a
+//   - The push-your-luck (The Press) and word-deduction (The Proof) events resolve by EXPECTED VALUE, NOT by a
 //     bot playing them out. The Proof's solve-probability + guess-count are DOCUMENTED CONSTANTS below
 //     (EVENT_EV) so they're one-line tunable; they are estimates, not a solver.
 //
@@ -14,13 +14,13 @@
 // is a distinct scenario from events-off (we are measuring its effect, not preserving baseline draws).
 import { EVENTS, applyEventOption, pressStart, pressDraw, pressBank } from './events.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
-import { wordleCoins } from './wordle.js';
+import { proofCoins } from './proof.js';
 import { makeRng } from './rng.js';
 
 // TUNE: the EV model's assumptions for the two "played" events. These are estimates the author owns.
 export const EVENT_EV = {
-  wordleSolveProb: 0.85,   // chance the EV model treats a common-word Wordle (The Proof) as solved
-  wordleAvgGuesses: 4,     // guesses used on a solve → reward = wordleCoins(avgGuesses)
+  proofSolveProb: 0.85,   // chance the EV model treats a common-word puzzle (The Proof) as solved
+  proofAvgGuesses: 4,     // guesses used on a solve → reward = proofCoins(avgGuesses)
   pressDraws: 3,           // The Press: conservative "draw N then bank" stop rule
 };
 
@@ -75,15 +75,15 @@ export function resolveEventEV(run, persona = {}, cfg = EVENT_EV) {
   const rng = nodeRng(run);
 
   if (id === 'theProof') {
-    // EV auto-resolve (no solver): solved w.p. cfg.wordleSolveProb. On solve the player claims a reward:
-    // a relic if they still want any (the game grants a RANDOM unowned relic — wordleClaim, NOT a chosen
+    // EV auto-resolve (no solver): solved w.p. cfg.proofSolveProb. On solve the player claims a reward:
+    // a relic if they still want any (the game grants a RANDOM unowned relic — proofClaim, NOT a chosen
     // one, so we mirror that), else speed-scaled coins.
-    if (rng() <= cfg.wordleSolveProb) {
+    if (rng() <= cfg.proofSolveProb) {
       const owned = new Set(run.relics.map(r => r.id));
       const pool = ALL_RELIC_IDS.filter(r => !owned.has(r) && RELICS[r]);
       const wantsRelic = pool.length && (persona.targetRelicIds || []).some(r => !owned.has(r));
-      if (wantsRelic) run.relics.push(RELICS[pool[Math.floor(rng() * pool.length)]]);   // random unowned, per wordleClaim
-      else run.coins += wordleCoins(cfg.wordleAvgGuesses, run.config.WORDLE);
+      if (wantsRelic) run.relics.push(RELICS[pool[Math.floor(rng() * pool.length)]]);   // random unowned, per proofClaim
+      else run.coins += proofCoins(cfg.proofAvgGuesses, run.config.PROOF);
     }
     return;
   }

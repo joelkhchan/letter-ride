@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { EVENTS, ALL_EVENT_IDS, applyEventOption, pressStart, pressDraw, pressBank, wordleStart, wordleGuess, wordleClaim } from '../src/events.js';
+import { EVENTS, ALL_EVENT_IDS, applyEventOption, pressStart, pressDraw, pressBank, proofStart, proofGuess, proofClaim } from '../src/events.js';
 import { newRun } from '../src/run.js';
 import { makeDictionary } from '../src/dictionary.js';
 import { RELICS, ALL_RELIC_IDS } from '../src/relics.js';
@@ -20,29 +20,29 @@ test('roster: 6 events, 2 interactive (The Press + The Proof)', () => {
   assert.deepEqual(interactive, ['thePress', 'theProof']);
 });
 
-const wcfg = { ...config, WORDLE: { length: 5, maxGuesses: 6, coinsBase: 3, coinsPerGuessSaved: 3 } };
+const wcfg = { ...config, PROOF: { length: 5, maxGuesses: 6, coinsBase: 3, coinsPerGuessSaved: 3 } };
 const wdict = makeDictionary(['crane', 'slate', 'cat']);
 
 test('The Proof: start picks target, scores guesses, solve + claim scales coins with speed', () => {
   const run = newRun({ config: wcfg, dictionary: wdict, seed: 1 });
-  wordleStart(run, ['crane']);
-  assert.equal(run.wordle.target, 'crane');
-  assert.equal(wordleGuess(run, 'zzzzz').ok, false);   // not a valid word
-  assert.equal(wordleGuess(run, 'cat').ok, false);     // wrong length
-  assert.equal(wordleGuess(run, 'slate').status, 'playing');
-  assert.equal(wordleGuess(run, 'crane').status, 'solved');
+  proofStart(run, ['crane']);
+  assert.equal(run.proof.target, 'crane');
+  assert.equal(proofGuess(run, 'zzzzz').ok, false);   // not a valid word
+  assert.equal(proofGuess(run, 'cat').ok, false);     // wrong length
+  assert.equal(proofGuess(run, 'slate').status, 'playing');
+  assert.equal(proofGuess(run, 'crane').status, 'solved');
   const before = run.coins;
-  assert.equal(wordleClaim(run, 'coins').ok, true);
+  assert.equal(proofClaim(run, 'coins').ok, true);
   assert.equal(run.coins - before, 3 + 3 * (6 - 2));   // solved in 2 guesses -> 15
-  assert.equal(wordleClaim(run, 'coins').ok, false);   // no double-claim
+  assert.equal(proofClaim(run, 'coins').ok, false);   // no double-claim
 });
 
 test('The Proof: fails after maxGuesses with no solve; reward not claimable', () => {
   const run = newRun({ config: wcfg, dictionary: wdict, seed: 1 });
-  wordleStart(run, ['crane']);
-  for (let i = 0; i < 6; i++) wordleGuess(run, 'slate');
-  assert.equal(run.wordle.status, 'failed');
-  assert.equal(wordleClaim(run, 'coins').ok, false);
+  proofStart(run, ['crane']);
+  for (let i = 0; i < 6; i++) proofGuess(run, 'slate');
+  assert.equal(run.proof.status, 'failed');
+  assert.equal(proofClaim(run, 'coins').ok, false);
 });
 
 test('autoResolve events are single-option, need no input, and apply cleanly on pick', () => {

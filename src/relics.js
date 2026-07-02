@@ -201,7 +201,7 @@ export const RELICS = {
     coinsPerWord: 2, evaluate: () => ({}),
   },
 
-  // ── Foresight relic (the Scrabble bag-tracking lever; `peek` is read by the UI, not scoring) ──
+  // ── Foresight relic (the bag-tracking lever; `peek` is read by the UI, not scoring) ──
   galleyProof: {
     id: 'galleyProof', name: 'Galley Proof', desc: 'See your next 2 draws',
     peek: 2, evaluate: () => ({}),

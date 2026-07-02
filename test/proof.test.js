@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { scoreGuess, isSolved, wordleCoins, pickTarget } from '../src/wordle.js';
+import { scoreGuess, isSolved, proofCoins, pickTarget } from '../src/proof.js';
 
 test('scoreGuess: all hits when guess equals target', () => {
   assert.deepEqual(scoreGuess('roast', 'roast'), ['hit', 'hit', 'hit', 'hit', 'hit']);
@@ -27,10 +27,10 @@ test('scoreGuess: a guessed letter beyond the target count is a miss, not presen
   assert.deepEqual(r, ['miss', 'hit', 'present', 'miss', 'hit']);
 });
 
-test('wordleCoins scales with guesses saved (fewer guesses = more $)', () => {
+test('proofCoins scales with guesses saved (fewer guesses = more $)', () => {
   const cfg = { maxGuesses: 6, coinsBase: 3, coinsPerGuessSaved: 3 };
-  assert.equal(wordleCoins(1, cfg), 3 + 3 * 5);   // solved in 1 -> 18
-  assert.equal(wordleCoins(6, cfg), 3 + 3 * 0);   // solved on the last guess -> 3
+  assert.equal(proofCoins(1, cfg), 3 + 3 * 5);   // solved in 1 -> 18
+  assert.equal(proofCoins(6, cfg), 3 + 3 * 0);   // solved on the last guess -> 3
 });
 
 test('pickTarget is deterministic for a given RNG and stays in the pool', () => {

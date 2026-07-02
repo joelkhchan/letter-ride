@@ -366,7 +366,7 @@ button { font-family: var(--font-body); color: var(--ink); }
 #event-ui .event-desc { font-size: 0.93em; color: var(--ink-soft); margin-bottom: 12px; }
 .event-option-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; margin: 5px 0; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--night-sunk); color: var(--ink); font-size: 0.95rem; cursor: pointer; transition: border-color 0.1s, background 0.1s; }
 .event-option-btn:hover:not([disabled]) { border-color: var(--gold); background: var(--gold-wash); }
-/* The Proof (Wordle event) board */
+/* The Proof (word-deduction event) board */
 .wd-board { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 14px 0; }
 .wd-row { display: flex; gap: 6px; }
 .wd-cell { width: 2.4rem; height: 2.4rem; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; border-radius: var(--radius-sm); border: 1px solid var(--line); color: var(--ink); background: var(--night-sunk); text-transform: uppercase; }
@@ -386,6 +386,18 @@ button { font-family: var(--font-body); color: var(--ink); }
 .wd-tray-key { width: 2rem; height: 2.4rem; font-family: var(--font-display); font-weight: 700; font-size: 1rem; text-transform: uppercase; border-radius: 4px; border: 1px solid var(--gold-deep); background: linear-gradient(180deg, var(--tile-a, #f3e6c8), var(--tile-b, #e7d4ab)); color: var(--tile-ink); cursor: pointer; }
 .wd-tray-key:active { transform: translateY(1px); }
 .wd-tray-controls { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+/* Credits & attribution: a small menu link + a scrollable overlay body (CC-BY visible attribution). */
+.menu-credits { margin-top: 16px; background: none; border: none; color: var(--ink-soft); font-size: 0.8rem; text-decoration: underline; cursor: pointer; font-family: inherit; }
+.menu-credits:hover { color: var(--gold); }
+.credits-body { width: min(600px, 94vw); height: 66vh; overflow-y: auto; background: var(--night-sunk); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-size: 0.82rem; line-height: 1.45; color: var(--ink); text-align: left; }
+.credits-body .cr-h { color: var(--gold); font-family: var(--font-display); margin: 14px 0 6px; font-size: 1rem; }
+.credits-body h3.cr-h { font-size: 1.1rem; }
+.credits-body .cr-row { color: var(--ink-soft); padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.credits-body .cr-li { margin: 3px 0; }
+.credits-body .cr-note { color: var(--ink-soft); font-style: italic; margin: 6px 0; }
+.credits-body .cr-sp { height: 6px; }
+.credits-body code { background: rgba(255,255,255,0.08); padding: 0 3px; border-radius: 3px; font-size: 0.9em; }
+.credits-body a { color: var(--gold); }
 .wd-msg { min-height: 1.2rem; color: #c0392b; font-size: 0.9rem; text-align: center; margin-top: 6px; }
 .wd-hint { text-align: center; font-size: 0.85rem; color: var(--ink-soft); }
 .wd-result { text-align: center; font-weight: 700; margin: 10px 0; }

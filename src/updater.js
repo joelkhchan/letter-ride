@@ -64,7 +64,17 @@ async function checkForUpdate(Updater, trigger) {
 
     let remote;
     try {
-      remote = await (await fetch(cfg.manifestUrl, { cache: 'no-store' })).json();   // { version, url }
+      // Fetch the manifest via NATIVE HTTP (CapacitorHttp) so it isn't subject to the WebView's CORS.
+      // The old browser fetch() failed ("Failed to fetch") because GitHub 302-redirects the release URL to
+      // a signed host that sends no CORS headers for the app origin. Native HTTP follows the redirect and
+      // ignores CORS. Falls back to fetch() on the web (no CapacitorHttp there).
+      const Http = window.Capacitor?.Plugins?.CapacitorHttp;
+      if (Http) {
+        const res = await Http.get({ url: cfg.manifestUrl, headers: { 'Cache-Control': 'no-store' } });
+        remote = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;   // GitHub serves it as octet-stream → data may be a string
+      } else {
+        remote = await (await fetch(cfg.manifestUrl, { cache: 'no-store' })).json();   // { version, url }
+      }
     } catch (e) {
       setState({ status: 'offline', lastError: `manifest fetch failed: ${e?.message || e}` });
       return;

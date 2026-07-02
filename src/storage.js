@@ -15,7 +15,7 @@ export function serializeRun(run) {
     endless: run.endless ?? false,                       // endless-mode flag + round counter (persist mid-endless)
     endlessRound: run.endlessRound || 0,
     wonBase: run.wonBase ?? false,                       // base run cleared (an endless loss still records a win)
-    wordle: run.wordle ?? null,                          // The Proof mid-event state (target/guesses/status)
+    proof: run.proof ?? null,                          // The Proof mid-event state (target/guesses/status)
     loadoutMetaPenalty: run.loadoutMetaPenalty || 0,     // Meta deducted at run end for opted-in perks
     roundIndex: run.roundIndex,
     target: run.target,
@@ -68,7 +68,7 @@ export function deserializeRun(data, { config, dictionary }) {
     endless: data.endless ?? false,
     endlessRound: data.endlessRound || 0,
     wonBase: data.wonBase ?? false,
-    wordle: data.wordle ?? null,
+    proof: data.proof ?? null,
     loadoutMetaPenalty: data.loadoutMetaPenalty || 0,
     roundIndex: data.roundIndex,
     target: data.target,

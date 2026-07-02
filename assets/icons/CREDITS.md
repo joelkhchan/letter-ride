@@ -1,18 +1,12 @@
-# Icon attribution
+# Credits and attribution
 
-Letter Ride's engraved relic seals use glyphs from **game-icons.net**, which is **CC BY 3.0 and
-REQUIRES visible attribution** of each icon's author. This file is that attribution; it ships with
-the app and is referenced from the in-game credits. Source SVGs were recolored (aged gold via CSS
-mask) and reframed as seals; CC BY permits this with attribution.
+## Icons: game-icons.net (CC BY 3.0)
 
-Two relic marks are **original to Letter Ride** (no third-party attribution needed): Vowel Bonus
-is a struck Zilla Slab "A", and Wildcard Rares (`relic-wildcardRares.svg`) is a hand-drawn star.
-(The 2026-06-29 content relics + bosses were placeholder struck glyph-seals; on 2026-06-30 they were
-replaced with curated engraved game-icons art, attributed in the tables below.)
+The icons listed below are from game-icons.net, licensed under Creative Commons Attribution 3.0 Unported (CC BY 3.0), https://creativecommons.org/licenses/by/3.0/. The icons have been recolored and reframed. Attribution to each author is provided as required by the license.
 
-## Relic glyphs — game-icons.net, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
+### Relic icons (`assets/icons/relics/`)
 
-| File (`assets/icons/relics/`) | Original glyph | Author |
+| File | Icon | Author |
 |---|---|---|
 | `relic-rareHoarder.svg` | chest | Delapouite |
 | `relic-rareSurge.svg` | cut-diamond | Lorc |
@@ -44,11 +38,9 @@ replaced with curated engraved game-icons art, attributed in the tables below.)
 | `relic-royaltyPress.svg` | jewel-crown | Delapouite |
 | `relic-galleyProof.svg` | spectacles | Lorc |
 
-All of the above are by their named authors, sourced from https://game-icons.net, licensed CC BY 3.0.
+### Boss and currency icons
 
-## Boss + Meta-currency glyphs — game-icons.net, CC BY 3.0
-
-| File | Original glyph | Author |
+| File | Icon | Author |
 |---|---|---|
 | `bosses/boss-mute.svg` | silence | Lorc |
 | `bosses/boss-toll.svg` | gate | Delapouite |
@@ -61,15 +53,15 @@ All of the above are by their named authors, sourced from https://game-icons.net
 | `buckets/mastery.svg` | laurel-crown | Lorc |
 | `buckets/diversity.svg` | split-arrows | Delapouite |
 | `buckets/discovery.svg` | compass | Lorc |
-| `bags/swap-bag.svg` | swap-bag (New Run deck bags) | Lorc |
+| `bags/swap-bag.svg` | swap-bag | Lorc |
 
-## General UI glyphs — Tabler Icons (MIT, https://github.com/tabler/tabler-icons/blob/main/LICENSE)
+## Icons: Tabler Icons (MIT License)
 
-MIT does not require visible attribution; listed for provenance. Recolored via CSS mask (currentColor).
+The interface icons listed below are from Tabler Icons, licensed under the MIT License, https://github.com/tabler/tabler-icons/blob/main/LICENSE. The icons have been recolored.
 
-| File | Tabler glyph | Used for |
+| File | Icon | Use |
 |---|---|---|
-| `ui/coins.svg` | coins | in-run $ (HUD) |
+| `ui/coins.svg` | coins | in-run currency |
 | `ui/tools.svg` | tools | hones |
 | `ui/player-play.svg` | player-play | Resume Run |
 | `ui/plus.svg` | plus | New Run |
@@ -80,31 +72,15 @@ MIT does not require visible attribution; listed for provenance. Recolored via C
 | `ui/arrows-shuffle.svg` | arrows-shuffle | Shuffle |
 | `ui/refresh.svg` | refresh | Reroll |
 | `ui/player-track-next.svg` | player-track-next | Continue |
-| `ui/arrow-left.svg` | arrow-left | Back (pushed screens) |
+| `ui/arrow-left.svg` | arrow-left | Back |
 
-`ui/wild-star.svg` is original to Letter Ride (the same hand-drawn star as Wildcard Rares), used for wild tiles. No third-party attribution needed.
+## Original artwork
 
-> The wider exploration set (other elements, Tabler line candidates) lives in the uncommitted
-> `candidates/` scratch folder used to build the comparison galleries; only the shipped relic
-> glyphs above are committed and require attribution.
+The following are original to Letter Ride and carry no third-party attribution: `relic-wildcardRares.svg` (star), `ui/wild-star.svg` (star), and the Vowel Bonus mark (a typographic "A").
 
-## Word lists (`assets/enable1.txt` + `assets/modern-words.txt`)
+## Word lists
 
-- **`enable1.txt`** — the **ENABLE** word list (Enhanced North American Benchmark LExicon), compiled
-  by Alan Beale & M. Cooper. **Public domain** (no restriction; crediting requested). ~172.8k words,
-  frozen ~2000. https://github.com/dolph/dictionary
-- **`modern-words.txt`** — a 2026-06-30 supplement of ~13k modern/common words ENABLE lacks
-  (email, selfie, emoji, blog, podcast, hashtag, bitcoin, vape, etc.). Derived from **SCOWL** (Spell
-  Checker Oriented Word Lists) by Kevin Atkinson — a permissive list requiring only this copyright
-  notice. http://wordlist.aspell.net/ . Generated as: `(SCOWL size-70 US, lowercase-only, length ≥ 3,
-  must contain a vowel) − ENABLE − SCOWL's own abbreviation/contraction lists`, then a few real words
-  SCOWL mis-tags as abbreviations were restored (email, app, admin, hazmat, nimby, vocab) and a few
-  moderns it lacked were added (zen, wifi, wiki, vlog). No proper nouns or acronyms/abbreviations.
-  SCOWL copyright: "Copyright 2000-2019 by Kevin Atkinson"; see the SCOWL readme for the full notice.
-- **`wordle-answers.txt`** — ~4,400 common 5-letter words used as the hidden-word pool for "The Proof"
-  (Wordle event). Derived 2026-06-30 as SCOWL size-50 (common) 5-letter lowercase words ∩ the game
-  dictionary, so every target is both common and guessable. Same SCOWL attribution as above.
-- **`two-letter-words.txt`** — the 107 NWL2023 (NASPA Word List) Scrabble-legal two-letter words, so
-  that with `MIN_WORD_LEN: 2` every playable 2-letter word is valid. The word list itself is factual
-  (not copyrightable); sourced 2026-06-30 from the published NWL2023 two-letter set. ENABLE already
-  held 96 of them; this file is the authoritative full set (the merge dedupes).
+- `enable1.txt`: the ENABLE word list (Enhanced North American Benchmark LExicon), compiled by Alan Beale and M. Cooper. Public domain. https://github.com/dolph/dictionary
+- `modern-words.txt`: derived from SCOWL (Spell Checker Oriented Word Lists). Copyright 2000-2019 by Kevin Atkinson. Used under the SCOWL license. http://wordlist.aspell.net/
+- `proof-answers.txt`: derived from SCOWL. Copyright 2000-2019 by Kevin Atkinson. Used under the SCOWL license. http://wordlist.aspell.net/
+- `two-letter-words.txt`: the two-letter words valid in the NASPA Word List 2023 (NWL2023).

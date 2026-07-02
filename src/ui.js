@@ -621,7 +621,7 @@ export function renderRun(run, profile) {
       // If the event was already resolved (persisted nodeResolved=true), skip re-offering it.
       if (run.nodeResolved) { renderEventDone(run, EVENTS[run.nodeEventId] || { name: '', desc: '' }); return; }
       const ev = EVENTS[run.nodeEventId];
-      if (ev?.id === 'theProof') { renderWordle(run); return; }
+      if (ev?.id === 'theProof') { renderProof(run); return; }
       if (ev?.interactive) { renderPress(run); return; }
       renderEventOneShot(run); return;
     }
@@ -968,7 +968,7 @@ function renderEventDone(run, ev) {
   wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
-// The Proof — a word-deduction event with its OWN look (deliberately NOT a Wordle clone, for trade-dress
+// The Proof — a word-deduction event with its OWN look (deliberately its own distinct look, for trade-dress
 // safety: no colored QWERTY keyboard). Compose a valid word into the active board row via a Letter-Ride
 // letter TRAY — an alphabetical letterpress type-case of tiles, tapped to build the word. Feedback lives
 // only on the board (green/gold/grey = right-spot/present/absent) in the game's palette. Solve to claim $
@@ -976,10 +976,10 @@ function renderEventDone(run, ev) {
 let wdBuffer = '';
 const WD_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-function renderWordle(run) {
+function renderProof(run) {
   wdBuffer = '';                                   // reset the typed guess on every full render (i.e. after an accepted guess)
-  const st = run.wordle || {};
-  const cfg = run.config.WORDLE;
+  const st = run.proof || {};
+  const cfg = run.config.PROOF;
   const len = st.length || cfg.length;
   const max = st.maxGuesses || cfg.maxGuesses;
   const guesses = st.guesses || [];
@@ -1049,7 +1049,7 @@ function renderWordle(run) {
     }
   };
   const submit = () => {
-    const r = handlers.onWordleGuess?.(wdBuffer.trim().toLowerCase());   // re-renders on success (buffer resets)
+    const r = handlers.onProofGuess?.(wdBuffer.trim().toLowerCase());   // re-renders on success (buffer resets)
     if (r && !r.ok) {
       const msg = document.getElementById('wd-msg');
       if (msg) msg.textContent = r.reason === 'length' ? `Enter a ${len}-letter word.` : r.reason === 'invalid' ? 'Not a valid word.' : '';
@@ -1063,9 +1063,9 @@ function renderWordle(run) {
       if (k && wdBuffer.length < len) { wdBuffer += k.toLowerCase(); syncRow(); }
     };
   });
-  on('wd-coins', () => handlers.onWordleClaim?.('coins'));
-  on('wd-relic', () => handlers.onWordleClaim?.('relic'));
-  on('wd-continue', () => handlers.onWordleGiveUp?.());
+  on('wd-coins', () => handlers.onProofClaim?.('coins'));
+  on('wd-relic', () => handlers.onProofClaim?.('relic'));
+  on('wd-continue', () => handlers.onProofGiveUp?.());
   wireDescPopovers(document.getElementById('relics-mods-panel'));
 }
 
@@ -1382,6 +1382,7 @@ export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
         <button id="menu-stats" class="menu-btn">${lineIconHtml('chart-bar')}Stats</button>
       </div>
       <div class="menu-meta">${metaSealHtml({ size: 'sm' })}<span>Meta: ${metaTotal}</span></div>
+      <button id="menu-credits" class="menu-credits">Credits &amp; attribution</button>
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   on('menu-resume', () => handlers.onResume?.());
@@ -1390,6 +1391,51 @@ export function renderMenu(hasRun, metaTotal = 0, pending = 0) {
   on('menu-settings', () => handlers.onOpenSettings?.());
   on('menu-achievements', () => handlers.onOpenAchievements?.());
   on('menu-stats', () => handlers.onOpenStats?.());
+  on('menu-credits', () => showCreditsOverlay());
+}
+
+// Credits & attribution overlay — surfaces assets/icons/CREDITS.md in-game (the CC-BY visible-attribution
+// obligation for the game-icons.net glyphs + the word-list credits). Fetched at runtime so it stays in
+// sync with the file; rendered with a light markdown pass (headings / bold / links / bullets / tables).
+function showCreditsOverlay() {
+  document.getElementById('credits-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'credits-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.78);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:200;padding:18px;';
+  overlay.innerHTML = `
+    <div style="font-family:var(--font-display);font-weight:700;color:var(--gold);font-size:1.15rem;">Credits &amp; attribution</div>
+    <div id="credits-body" class="credits-body">Loading…</div>
+    <button id="credits-close" class="menu-btn">Close</button>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#credits-close').onclick = () => overlay.remove();
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = (s) => esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const mdToHtml = (md) => {
+    let html = '', para = [];
+    // Consecutive prose lines are one paragraph (so bold/links that wrap across source line-breaks match,
+    // and text reads as paragraphs rather than hard-wrapped fragments). Structural lines flush the buffer.
+    const flush = () => { if (para.length) { html += `<div class="cr-p">${inline(para.join(' '))}</div>`; para = []; } };
+    for (const raw of md.split(/\r?\n/)) {
+      const line = raw.trimEnd();
+      if (/^\s*\|?[\s:|-]*-{2,}[\s:|-]*\|?\s*$/.test(line)) continue;                 // table separator row (|---|---|) → skip
+      if (line.startsWith('|')) { flush(); const cells = line.split('|').map(c => c.trim()).filter(Boolean); html += `<div class="cr-row">${cells.map(inline).join(' &middot; ')}</div>`; }
+      else if (line.startsWith('## ')) { flush(); html += `<h4 class="cr-h">${inline(line.slice(3))}</h4>`; }
+      else if (line.startsWith('# ')) { flush(); html += `<h3 class="cr-h">${inline(line.slice(2))}</h3>`; }
+      else if (line.startsWith('> ')) { flush(); html += `<div class="cr-note">${inline(line.slice(2))}</div>`; }
+      else if (line.startsWith('- ')) { flush(); html += `<div class="cr-li">&bull; ${inline(line.slice(2))}</div>`; }
+      else if (!line) { flush(); html += '<div class="cr-sp"></div>'; }
+      else para.push(line);
+    }
+    flush();
+    return html;
+  };
+  fetch('assets/icons/CREDITS.md', { cache: 'no-store' })
+    .then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
+    .then(md => { const b = document.getElementById('credits-body'); if (b) b.innerHTML = mdToHtml(md); })
+    .catch(() => { const b = document.getElementById('credits-body'); if (b) b.textContent = 'Credits file unavailable. Icons: game-icons.net (CC BY 3.0). Word lists: ENABLE (public domain) + SCOWL (Kevin Atkinson).'; });
 }
 
 // The Stats screen: comprehensive player-facing analytics, derived by statsSummary (profile.js).
@@ -1578,6 +1624,7 @@ export function renderSettings(hasRun) {
       ${updaterStatusHtml()}
       <div class="menu-buttons">
         <button id="set-update-check" class="menu-btn">Check for update now</button>
+        <button id="set-update-apk" class="menu-btn">Download latest APK</button>
       </div>
     </div>`;
   const on = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
@@ -1593,6 +1640,15 @@ export function renderSettings(hasRun) {
     if (btn) { btn.disabled = true; btn.textContent = 'Checking…'; }
     await checkNow();
     renderSettings(hasRun);
+  });
+  on('set-update-apk', () => {
+    // Guaranteed manual path: open the stable APK link in the system browser. Derive it from the baked
+    // manifest URL (…/releases/download/ota/latest.json → …/apk/app-debug.apk); fall back to the known URL.
+    const m = updaterState().manifestUrl;
+    const url = m && m.includes('ota/latest.json')
+      ? m.replace('ota/latest.json', 'apk/app-debug.apk')
+      : 'https://github.com/joelkhchan/letter-ride/releases/download/apk/app-debug.apk';
+    try { window.open(url, '_system'); } catch { window.open(url, '_blank'); }
   });
   wireBack();
 }

@@ -1,11 +1,11 @@
-// src/wordle.js — pure logic for "The Proof", the Wordle-style event. No DOM, no globals.
+// src/proof.js — pure logic for "The Proof", the word-deduction event. No DOM, no globals.
 // All randomness for target selection flows through a caller-supplied seeded RNG.
 
 // Score a guess against the target. Returns one status per position:
 //   'hit'     right letter, right spot
 //   'present' letter is in the word, wrong spot
 //   'miss'    letter not in the word (or no unmatched instance remains)
-// Duplicate letters are handled the standard Wordle way: each target letter can satisfy one tile.
+// Duplicate letters are handled the standard way: each target letter can satisfy one tile.
 export function scoreGuess(guess, target) {
   const g = String(guess).toLowerCase();
   const t = String(target).toLowerCase();
@@ -29,8 +29,8 @@ export function isSolved(statuses) {
 }
 
 // Coins offered for a solve, scaling with how FEW guesses were used. Player may take this $ OR a
-// relic instead (the relic is flat; the $ rewards speed). Magnitudes from CONFIG.WORDLE.
-export function wordleCoins(guessesUsed, cfg) {
+// relic instead (the relic is flat; the $ rewards speed). Magnitudes from CONFIG.PROOF.
+export function proofCoins(guessesUsed, cfg) {
   const max = cfg.maxGuesses;
   const saved = Math.max(0, max - guessesUsed);
   return cfg.coinsBase + cfg.coinsPerGuessSaved * saved;

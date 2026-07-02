@@ -82,7 +82,7 @@ for (const c of byFreq) {
   if (fr >= 19 && (tv[c] || 0) <= 1) flag = '⚠️ rare but cheap';
   console.log(`  ${c} |   ${String(tv[c]).padStart(3)} | ${occShare.padStart(6)} | ${String(fr).padStart(8)} | ${String(vr).padStart(7)} | ${flag}`);
 }
-console.log(`(freqRank 1 = most frequent; valRank 1 = cheapest. Scrabble-style pricing wants freqRank≈valRank.)\n`);
+console.log(`(freqRank 1 = most frequent; valRank 1 = cheapest. value-vs-frequency pricing wants freqRank≈valRank.)\n`);
 
 // ── 3. First / last-letter frequency ──────────────────────────────────────────
 console.log(`── 3. First & last letter frequency (informs Anchor / Fresh Start / start-or-end relics) ──`);

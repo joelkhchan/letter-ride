@@ -11,7 +11,7 @@ export const CONFIG = {
   HAND_FLOOR: 6,        // effective hand size never drops below this - the -hand stack cap (tunable)
   PLAYS_PER_ROUND: 4,
   DISCARDS_PER_ROUND: 2,
-  MIN_WORD_LEN: 2,                                        // 2-letter words allowed (2026-06-30); the dictionary's 2-letter set = the NWL2023 Scrabble-legal 107 (assets/two-letter-words.txt), so every 2-letter play is valid
+  MIN_WORD_LEN: 2,                                        // 2-letter words allowed (2026-06-30); the dictionary's 2-letter set = the NWL2023 two-letter set (assets/two-letter-words.txt), so every 2-letter play is valid
   LENGTH_BONUS_PER_LETTER: 5,                              // +5 × (len - 3), min 0
   TIER0_TARGETS: [20, 35, 55, 80, 110, 145, 185, 230],     // beatable from base bag, no shop
   PASSAGES: 4,                                             // run = PASSAGES x (Word, Phrase, Sentence)
@@ -29,9 +29,9 @@ export const CONFIG = {
   // escalating factor f_n = startFactor + factorStep·(n−1)·n/2 → 1.25, 1.5, 2, 2.75, 3.75… rounded
   // to roundTo. Author-set 2026-06-30. TUNE for how fast the wall arrives.
   ENDLESS: { startFactor: 1.25, factorStep: 0.25, roundTo: 10 },
-  // "The Proof" — Wordle-style event. Guess a hidden common word; reward $ (scales with speed) OR a
+  // "The Proof" — word-deduction event. Guess a hidden common word; reward $ (scales with speed) OR a
   // relic on solve. coins = coinsBase + coinsPerGuessSaved × (maxGuesses − guessesUsed). TUNE.
-  WORDLE: { length: 5, maxGuesses: 6, coinsBase: 3, coinsPerGuessSaved: 3 },
+  PROOF: { length: 5, maxGuesses: 6, coinsBase: 3, coinsPerGuessSaved: 3 },
   COINS_ON_CLEAR: { base: 4, perUnusedPlay: 1, perUnusedDiscard: 1 }, // Tier 1
   INTEREST: { enabled: true, per: 5, rate: 1, cap: 12 },            // $1 per $5 held, max $12 (raised 2026-06-29: rewards saving toward a keystone relic; soft ceiling now at $60 held)
   SHOP: {

@@ -55,17 +55,17 @@ test('resolveEventEV: Redaction removes 2 bag tiles', () => {
   assert.equal(run.bag.tiles.length, before - 2);
 });
 
-test('resolveEventEV: The Proof with solveProb 1 grants a (random, per wordleClaim) unowned relic when the persona wants relics', () => {
+test('resolveEventEV: The Proof with solveProb 1 grants a (random, per proofClaim) unowned relic when the persona wants relics', () => {
   const run = mkRun(); run.nodeEventId = 'theProof';
   const before = run.relics.length;
-  resolveEventEV(run, { targetRelicIds: ['vowelBonus'] }, { ...EVENT_EV, wordleSolveProb: 1 });
+  resolveEventEV(run, { targetRelicIds: ['vowelBonus'] }, { ...EVENT_EV, proofSolveProb: 1 });
   assert.equal(run.relics.length, before + 1, 'a solve grants one unowned relic (random, matching the real event)');
 });
 
 test('resolveEventEV: The Proof with solveProb 0 grants nothing', () => {
   const run = mkRun(); run.nodeEventId = 'theProof';
   const beforeR = run.relics.length, beforeC = run.coins;
-  resolveEventEV(run, { targetRelicIds: ['vowelBonus'] }, { ...EVENT_EV, wordleSolveProb: 0 });
+  resolveEventEV(run, { targetRelicIds: ['vowelBonus'] }, { ...EVENT_EV, proofSolveProb: 0 });
   assert.equal(run.relics.length, beforeR);
   assert.equal(run.coins, beforeC);
 });
@@ -73,7 +73,7 @@ test('resolveEventEV: The Proof with solveProb 0 grants nothing', () => {
 test('resolveEventEV: The Proof with no relic appetite grants speed-scaled coins on solve', () => {
   const run = mkRun(); run.nodeEventId = 'theProof';
   const beforeC = run.coins;
-  resolveEventEV(run, { targetRelicIds: [] }, { ...EVENT_EV, wordleSolveProb: 1, wordleAvgGuesses: 4 });
+  resolveEventEV(run, { targetRelicIds: [] }, { ...EVENT_EV, proofSolveProb: 1, proofAvgGuesses: 4 });
   assert.ok(run.coins > beforeC, 'coins reward on solve when no relic is wanted');
 });
 

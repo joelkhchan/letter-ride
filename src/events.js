@@ -3,7 +3,7 @@
 import { makeTile, WILD } from './tiles.js';
 import { RELICS, ALL_RELIC_IDS } from './relics.js';
 import { shuffle, makeRng } from './rng.js';
-import { scoreGuess, isSolved, wordleCoins, pickTarget } from './wordle.js';
+import { scoreGuess, isSolved, proofCoins, pickTarget } from './proof.js';
 
 // helper: pick N distinct random tiles from the bag via run.rng
 function pickRandomTiles(run, n) {
@@ -112,25 +112,25 @@ export function pressBank(run) {
   return run;
 }
 
-// --- The Proof: a Wordle-style guess-the-word event ---
+// --- The Proof: a word-deduction guess-the-word event ---
 
 // Begin the event: pick a target from the supplied common-word pool via a SEPARATE seeded stream
 // (constant 0x7f4a7c15, distinct from bossOrder/event-pick), so it never desyncs run.rng.
-export function wordleStart(run, answers) {
-  const cfg = run.config.WORDLE;
+export function proofStart(run, answers) {
+  const cfg = run.config.PROOF;
   const stream = makeRng((run.seed ^ 0x7f4a7c15 ^ run.roundIndex) >>> 0);
-  run.wordle = {
+  run.proof = {
     target: pickTarget(answers, stream),
     guesses: [],                 // [{ word, statuses }]
     maxGuesses: cfg.maxGuesses,
     length: cfg.length,
     status: 'playing',           // 'playing' | 'solved' | 'failed'
   };
-  return run.wordle;
+  return run.proof;
 }
 
-export function wordleGuess(run, word) {
-  const st = run.wordle;
+export function proofGuess(run, word) {
+  const st = run.proof;
   if (!st || st.status !== 'playing') return { ok: false, reason: 'done' };
   const g = String(word || '').toLowerCase();
   if (g.length !== st.length) return { ok: false, reason: 'length' };
@@ -143,10 +143,10 @@ export function wordleGuess(run, word) {
 }
 
 // Claim the solve reward: 'coins' (scales with speed) or 'relic' (a random unowned relic).
-export function wordleClaim(run, choice) {
-  const st = run.wordle;
+export function proofClaim(run, choice) {
+  const st = run.proof;
   if (!st || st.status !== 'solved' || st.claimed) return { ok: false, reason: 'not-claimable' };
-  const cfg = run.config.WORDLE;
+  const cfg = run.config.PROOF;
   let granted = { type: 'coins', amount: 0 };
   const owned = new Set(run.relics.map(r => r.id));
   const pool = ALL_RELIC_IDS.filter(id => !owned.has(id));
@@ -155,7 +155,7 @@ export function wordleClaim(run, choice) {
     run.relics.push(RELICS[pick]);
     granted = { type: 'relic', id: pick };
   } else {
-    const amount = wordleCoins(st.guesses.length, cfg);   // fall back to coins if 'relic' but all owned
+    const amount = proofCoins(st.guesses.length, cfg);   // fall back to coins if 'relic' but all owned
     run.coins += amount;
     granted = { type: 'coins', amount };
   }
