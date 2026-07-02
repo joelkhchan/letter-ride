@@ -61,14 +61,14 @@ export function resolveEventEV(run, persona = {}, cfg = EVENT_EV) {
   const rng = nodeRng(run);
 
   if (id === 'theProof') {
-    // EV auto-resolve (no solver): solved w.p. cfg.wordleSolveProb. On solve, take a relic if the persona
-    // still wants one (prefer an unowned target), else speed-scaled coins.
+    // EV auto-resolve (no solver): solved w.p. cfg.wordleSolveProb. On solve the player claims a reward:
+    // a relic if they still want any (the game grants a RANDOM unowned relic — wordleClaim, NOT a chosen
+    // one, so we mirror that), else speed-scaled coins.
     if (rng() <= cfg.wordleSolveProb) {
       const owned = new Set(run.relics.map(r => r.id));
-      const targets = (persona.targetRelicIds || []).filter(r => !owned.has(r) && RELICS[r]);
-      const anyPool = ALL_RELIC_IDS.filter(r => !owned.has(r));
-      if (targets.length) run.relics.push(RELICS[targets[Math.floor(rng() * targets.length)]]);
-      else if (anyPool.length && (persona.targetRelicIds || []).length) run.relics.push(RELICS[anyPool[Math.floor(rng() * anyPool.length)]]);
+      const pool = ALL_RELIC_IDS.filter(r => !owned.has(r) && RELICS[r]);
+      const wantsRelic = pool.length && (persona.targetRelicIds || []).some(r => !owned.has(r));
+      if (wantsRelic) run.relics.push(RELICS[pool[Math.floor(rng() * pool.length)]]);   // random unowned, per wordleClaim
       else run.coins += wordleCoins(cfg.wordleAvgGuesses, run.config.WORDLE);
     }
     return;

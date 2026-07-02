@@ -48,12 +48,11 @@ test('resolveEventEV: Redaction removes 2 bag tiles', () => {
   assert.equal(run.bag.tiles.length, before - 2);
 });
 
-test('resolveEventEV: The Proof with solveProb 1 grants an unowned target relic', () => {
+test('resolveEventEV: The Proof with solveProb 1 grants a (random, per wordleClaim) unowned relic when the persona wants relics', () => {
   const run = mkRun(); run.nodeEventId = 'theProof';
   const before = run.relics.length;
   resolveEventEV(run, { targetRelicIds: ['vowelBonus'] }, { ...EVENT_EV, wordleSolveProb: 1 });
-  assert.equal(run.relics.length, before + 1);
-  assert.ok(run.relics.some(r => r.id === 'vowelBonus'), 'grants the wanted target relic');
+  assert.equal(run.relics.length, before + 1, 'a solve grants one unowned relic (random, matching the real event)');
 });
 
 test('resolveEventEV: The Proof with solveProb 0 grants nothing', () => {
